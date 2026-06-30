@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Excellent Services | Portfólio</title>
+
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Inter,Arial,sans-serif}
+    html{scroll-behavior:smooth}
+    body{background:#f7faf8;color:#071008;overflow-x:hidden}
+    a{text-decoration:none;color:inherit}
+
+    .loading-screen{
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      background:
+        radial-gradient(circle at top left,rgba(0,230,118,.18),transparent 32%),
+        linear-gradient(180deg,#ffffff 0%,#f4faf6 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      transition:opacity .8s ease, visibility .8s ease;
+    }
+
+    .loading-screen.hide{
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+    }
+
+    .loading-box{
+      width:min(430px,100%);
+      text-align:center;
+      background:rgba(255,255,255,.78);
+      border:1px solid rgba(7,16,8,.08);
+      border-radius:32px;
+      padding:38px 30px;
+      box-shadow:0 30px 80px rgba(5,20,10,.10);
+      backdrop-filter:blur(18px);
+    }
+
+    .loading-logo{
+      font-size:1.7rem;
+      font-weight:900;
+      letter-spacing:-1px;
+      margin-bottom:12px;
+    }
+
+    .loading-logo span{color:#00b85c}
+
+    .loading-text{
+      color:#56635b;
+      line-height:1.6;
+      margin-bottom:26px;
+      font-size:.98rem;
+    }
+
+    .progress-area{
+      width:100%;
+      height:12px;
+      background:#e6eee9;
+      border-radius:999px;
+      overflow:hidden;
+      position:relative;
+    }
+
+    .progress-bar{
+      width:0%;
+      height:100%;
+      border-radius:999px;
+      background:linear-gradient(135deg,#00e676,#00a94f);
+      animation:progressFill 8s ease forwards;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .progress-bar::before{
+      content:"";
+      position:absolute;
+      top:-80%;
+      left:-35%;
+      width:35%;
+      height:260%;
+      background:rgba(255,255,255,.55);
+      transform:rotate(25deg);
+      animation:shine 1.8s ease infinite;
+    }
+
+    @keyframes progressFill{
+      from{width:0%}
+      to{width:100%}
+    }
+
+    @keyframes shine{
+      from{left:-45%}
+      to{left:125%}
+    }
+
+    .loading-percent{
+      margin-top:14px;
+      color:#00a652;
+      font-weight:900;
+      font-size:.92rem;
+    }
+
+    .page{
+      min-height:100vh;
+      background:radial-gradient(circle at top left,rgba(0,230,118,.14),transparent 34%),
+      linear-gradient(180deg,#fff 0%,#f5faf7 45%,#fff 100%);
+      opacity:0;
+      transform:translateY(14px);
+      transition:opacity .8s ease, transform .8s ease;
+    }
+
+    .page.ready{
+      opacity:1;
+      transform:translateY(0);
+    }
+
+    header{
+      width:100%;
+      padding:22px 7%;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      position:sticky;
+      top:0;
+      z-index:50;
+      backdrop-filter:blur(18px);
+      background:rgba(255,255,255,.82);
+      border-bottom:1px solid rgba(7,16,8,.08)
+    }
+
+    .logo{font-size:1.45rem;font-weight:900;letter-spacing:-1px}
+    .logo span{color:#00b85c}
+
+    nav{display:flex;gap:30px;font-size:.95rem;color:#34443a}
+    nav a:hover{color:#00b85c}
+
+    .btn{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:14px 25px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#00e676,#00a94f);
+      color:#031006;
+      font-weight:850;
+      overflow:hidden;
+      border:none;
+      cursor:pointer;
+      box-shadow:0 14px 34px rgba(0,184,92,.24);
+      transition:.3s ease;
+      white-space:nowrap
+    }
+
+    .btn::before{
+      content:"";
+      position:absolute;
+      top:-80%;
+      left:-35%;
+      width:35%;
+      height:260%;
+      background:rgba(255,255,255,.55);
+      transform:rotate(25deg);
+      transition:.6s
+    }
+
+    .btn:hover::before{left:125%}
+    .btn:hover{transform:translateY(-3px);box-shadow:0 18px 46px rgba(0,184,92,.34)}
+
+    .btn-outline{
+      background:#fff;
+      color:#071008;
+      border:1px solid rgba(7,16,8,.12);
+      box-shadow:0 12px 28px rgba(0,0,0,.05)
+    }
+
+    .container{width:min(1180px,86%);margin:0 auto}
+
+    .hero{
+      min-height:calc(100vh - 82px);
+      padding:72px 0 80px;
+      display:grid;
+      grid-template-columns:1fr .92fr;
+      align-items:center;
+      gap:76px
+    }
+
+    .badge{
+      display:inline-flex;
+      padding:9px 15px;
+      border-radius:999px;
+      background:rgba(0,184,92,.09);
+      border:1px solid rgba(0,184,92,.18);
+      color:#00783b;
+      font-size:.9rem;
+      margin-bottom:24px;
+      font-weight:700
+    }
+
+    h1{
+      font-size:clamp(3.1rem,5.4vw,5.9rem);
+      line-height:.96;
+      letter-spacing:-4px;
+      margin-bottom:26px
+    }
+
+    h1 span{color:#00b85c}
+
+    .hero p{
+      color:#445047;
+      font-size:1.12rem;
+      line-height:1.75;
+      max-width:610px;
+      margin-bottom:34px
+    }
+
+    .hero-actions{display:flex;gap:16px;flex-wrap:wrap}
+
+    .hero-card{
+      min-height:530px;
+      border-radius:36px;
+      background:#fff;
+      border:1px solid rgba(7,16,8,.08);
+      overflow:hidden;
+      box-shadow:0 30px 80px rgba(5,20,10,.12)
+    }
+
+    .hero-image{
+      width:100%;
+      height:100%;
+      min-height:530px;
+      object-fit:cover;
+      display:block
+    }
+
+    section{padding:88px 0}
+
+    .section-title{max-width:720px;margin-bottom:42px}
+    .section-title h2{
+      font-size:clamp(2.1rem,3.6vw,3.45rem);
+      letter-spacing:-2px;
+      line-height:1.05;
+      margin-bottom:15px
+    }
+
+    .section-title p{color:#56635b;line-height:1.75;font-size:1.03rem}
+
+    .services{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:18px
+    }
+
+    .service-card{
+      padding:30px;
+      border-radius:28px;
+      background:#fff;
+      border:1px solid rgba(7,16,8,.08);
+      min-height:255px;
+      transition:.3s ease;
+      box-shadow:0 18px 44px rgba(0,0,0,.04)
+    }
+
+    .service-card:hover{
+      transform:translateY(-8px);
+      border-color:rgba(0,184,92,.28);
+      box-shadow:0 26px 65px rgba(0,184,92,.10)
+    }
+
+    .icon{
+      width:58px;
+      height:58px;
+      border-radius:19px;
+      display:grid;
+      place-items:center;
+      margin-bottom:22px;
+      color:#fff;
+      background:linear-gradient(135deg,#0f7b3b,#00b85c);
+      border:none;
+      box-shadow:0 14px 30px rgba(0,184,92,.22);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .icon::before{
+      content:"";
+      position:absolute;
+      width:42px;
+      height:90px;
+      background:rgba(255,255,255,.18);
+      transform:rotate(28deg);
+      top:-24px;
+      left:-28px;
+    }
+
+    .icon svg{
+      width:32px;
+      height:32px;
+      display:block;
+      position:relative;
+      z-index:2;
+    }
+
+    .icon-system{background:linear-gradient(135deg,#063c25,#00b85c)}
+    .icon-app{background:linear-gradient(135deg,#082f24,#00c267)}
+    .icon-site{background:linear-gradient(135deg,#06302d,#00a95a)}
+    .icon-excel{background:linear-gradient(135deg,#0f7b3b,#00b85c)}
+
+    .service-card h3{font-size:1.22rem;margin-bottom:12px}
+    .service-card p{color:#56635b;line-height:1.65;font-size:.95rem}
+
+    .portfolio-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:22px
+    }
+
+    .project{
+      border-radius:30px;
+      overflow:hidden;
+      background:#fff;
+      border:1px solid rgba(7,16,8,.08);
+      transition:.3s ease;
+      box-shadow:0 18px 44px rgba(0,0,0,.04)
+    }
+
+    .project:hover{
+      transform:translateY(-8px);
+      border-color:rgba(0,184,92,.28);
+      box-shadow:0 26px 65px rgba(0,184,92,.10)
+    }
+
+    .project-img{
+      width:100%;
+      height:245px;
+      object-fit:cover;
+      display:block
+    }
+
+    .project-info{padding:25px}
+    .project-info small{color:#00a652;font-weight:800}
+    .project-info h3{margin:10px 0;font-size:1.32rem}
+    .project-info p{color:#56635b;line-height:1.65}
+
+    /* NOVA ÁREA DE STATS */
+    .stats-section{
+      padding-top:70px;
+      padding-bottom:90px;
+    }
+
+    .stats-head{
+      max-width:760px;
+      margin-bottom:30px;
+    }
+
+    .stats-head h2{
+      font-size:clamp(2rem,3.4vw,3.15rem);
+      letter-spacing:-2px;
+      line-height:1.05;
+      margin-bottom:14px;
+      color:#071008;
+    }
+
+    .stats-head p{
+      color:#56635b;
+      line-height:1.75;
+      font-size:1.02rem;
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:22px;
+    }
+
+    .stat{
+      position:relative;
+      overflow:hidden;
+      border-radius:30px;
+      padding:28px;
+      background:
+        linear-gradient(180deg,#06120b 0%, #04170c 100%);
+      color:#fff;
+      border:1px solid rgba(0,230,118,.10);
+      box-shadow:
+        0 20px 55px rgba(3,18,10,.18),
+        inset 0 1px 0 rgba(255,255,255,.03);
+      min-height:220px;
+      transition:.35s ease;
+    }
+
+    .stat::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:radial-gradient(circle at top right,rgba(0,230,118,.18),transparent 38%);
+      pointer-events:none;
+    }
+
+    .stat::after{
+      content:"";
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:4px;
+      background:linear-gradient(90deg,#00e676,#76ffb6);
+    }
+
+    .stat:hover{
+      transform:translateY(-8px);
+      box-shadow:
+        0 28px 70px rgba(0,184,92,.16),
+        inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .stat-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:26px;
+      position:relative;
+      z-index:2;
+    }
+
+    .stat-badge{
+      font-size:.77rem;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:#9eb7a8;
+    }
+
+    .stat-icon{
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
+      background:rgba(0,230,118,.10);
+      border:1px solid rgba(0,230,118,.16);
+      color:#00e676;
+      flex-shrink:0;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .stat-icon svg{
+      width:20px;
+      height:20px;
+      display:block;
+    }
+
+    .stat h3{
+      font-size:3rem;
+      color:#00f27c;
+      margin-bottom:16px;
+      letter-spacing:-2px;
+      line-height:1;
+      position:relative;
+      z-index:2;
+    }
+
+    .stat-line{
+      width:46px;
+      height:4px;
+      border-radius:999px;
+      background:linear-gradient(90deg,#00e676,#79ffb9);
+      margin-bottom:16px;
+      position:relative;
+      z-index:2;
+      opacity:.95;
+    }
+
+    .stat p{
+      color:#eef6f0;
+      font-weight:600;
+      line-height:1.5;
+      font-size:1rem;
+      position:relative;
+      z-index:2;
+      max-width:240px;
+    }
+
+    .process{
+      display:grid;
+      grid-template-columns:.95fr 1.05fr;
+      gap:56px;
+      align-items:center
+    }
+
+    .process-box{
+      border-radius:34px;
+      padding:42px;
+      background:#fff;
+      border:1px solid rgba(7,16,8,.08);
+      box-shadow:0 24px 68px rgba(0,0,0,.06)
+    }
+
+    .step{
+      padding:23px 0;
+      border-bottom:1px solid rgba(7,16,8,.08)
+    }
+
+    .step:first-child{padding-top:0}
+    .step:last-child{border-bottom:none;padding-bottom:0}
+    .step strong{color:#00a652;display:block;margin-bottom:8px;font-size:1.02rem}
+    .step p{color:#56635b;line-height:1.65}
+
+    .cta{
+      text-align:center;
+      border-radius:42px;
+      padding:76px 34px;
+      background:linear-gradient(135deg,rgba(0,230,118,.18),rgba(255,255,255,.05)),#071008;
+      box-shadow:0 30px 80px rgba(0,0,0,.11)
+    }
+
+    .cta h2{
+      font-size:clamp(2.1rem,3.8vw,4rem);
+      letter-spacing:-2px;
+      line-height:1.05;
+      margin-bottom:18px;
+      color:#fff
+    }
+
+    .cta p{
+      max-width:720px;
+      margin:0 auto 30px;
+      color:#dce4de;
+      line-height:1.75
+    }
+
+    footer{
+      padding:34px 7%;
+      display:flex;
+      justify-content:space-between;
+      gap:20px;
+      color:#56635b;
+      border-top:1px solid rgba(7,16,8,.08);
+      flex-wrap:wrap;
+      background:#fff
+    }
+
+    .popup-bg{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.58);
+      backdrop-filter:blur(10px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:999;
+      padding:20px
+    }
+
+    .popup-bg.active{display:flex}
+
+    .popup{
+      width:100%;
+      max-width:460px;
+      background:#fff;
+      border:1px solid rgba(0,184,92,.18);
+      border-radius:30px;
+      padding:36px;
+      text-align:center;
+      position:relative;
+      box-shadow:0 30px 90px rgba(0,0,0,.22)
+    }
+
+    .popup h2{font-size:1.8rem;margin-bottom:10px;letter-spacing:-1px}
+    .popup p{color:#56635b;margin-bottom:24px;line-height:1.6}
+    .popup-btn{width:100%;margin-top:12px}
+
+    .fechar{
+      position:absolute;
+      right:18px;
+      top:14px;
+      background:transparent;
+      color:#071008;
+      border:none;
+      font-size:32px;
+      cursor:pointer
+    }
+
+    .reveal{
+      opacity:0;
+      transform:translateY(35px);
+      transition:1s ease
+    }
+
+    .reveal.active{
+      opacity:1;
+      transform:translateY(0)
+    }
+
+    @media(max-width:1100px){
+      .services,.stats{grid-template-columns:repeat(2,1fr)}
+      .hero{gap:44px}
+    }
+
+    @media(max-width:980px){
+      nav{display:none}
+      .hero,.process{grid-template-columns:1fr}
+      .portfolio-grid{grid-template-columns:1fr 1fr}
+      .hero-card,.hero-image{min-height:480px}
+    }
+
+    @media(max-width:620px){
+      .container{width:calc(100% - 40px)}
+      header{padding:20px}
+      .hero{padding-top:54px}
+      h1{letter-spacing:-2px}
+      .services,.portfolio-grid,.stats{grid-template-columns:1fr}
+      .hero-card,.hero-image{min-height:420px}
+      .btn{width:100%}
+      footer{text-align:center;justify-content:center}
+      .loading-box{padding:32px 24px;border-radius:26px}
+      .stat{min-height:auto}
+      .stat h3{font-size:2.7rem}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-box">
+      <div class="loading-logo">
+        <span>Excel</span>lent Services
+      </div>
+      <p class="loading-text">
+        Preparando uma experiência personalizada para você.
+      </p>
+
+      <div class="progress-area">
+        <div class="progress-bar"></div>
+      </div>
+
+      <div class="loading-percent" id="loadingPercent">0%</div>
+    </div>
+  </div>
+
+  <div class="page" id="page">
+    <header>
+      <a href="#" class="logo"><span>Excel</span>lent Services</a>
+
+      <nav>
+        <a href="#servicos">Serviços</a>
+        <a href="#portfolio">Portfólio</a>
+        <a href="#processo">Processo</a>
+        <a href="#contato">Contato</a>
+      </nav>
+
+      <button class="btn" onclick="abrirWhatsapp()">Solicitar projeto</button>
+    </header>
+
+    <main>
+      <div class="container">
+        <section class="hero reveal">
+          <div>
+            <div class="badge" id="badge"></div>
+            <h1 id="heroTitulo"></h1>
+            <p id="heroTexto"></p>
+
+            <div class="hero-actions">
+              <a href="#portfolio" class="btn">Ver portfólio</a>
+              <a href="#servicos" class="btn btn-outline">Conhecer serviços</a>
+            </div>
+          </div>
+
+          <div class="hero-card">
+            <img id="heroImagem" class="hero-image" src="" alt="Excellent Services">
+          </div>
+        </section>
+      </div>
+
+      <section id="servicos" class="reveal">
+        <div class="container">
+          <div class="section-title">
+            <h2 id="servicosTitulo"></h2>
+            <p id="servicosTexto"></p>
+          </div>
+
+          <div class="services" id="servicosCards"></div>
+        </div>
+      </section>
+
+      <section id="portfolio" class="reveal">
+        <div class="container">
+          <div class="section-title">
+            <h2 id="portfolioTitulo"></h2>
+            <p id="portfolioTexto"></p>
+          </div>
+
+          <div class="portfolio-grid" id="portfolioCards"></div>
+        </div>
+      </section>
+
+      <section class="reveal stats-section">
+        <div class="container">
+          <div class="stats-head">
+            <h2>Resultados que refletem nossa consistência.</h2>
+            <p>
+              Unimos personalização, agilidade e suporte para entregar soluções
+              que transmitem confiança, organização e profissionalismo.
+            </p>
+          </div>
+
+          <div class="stats" id="statsCards"></div>
+        </div>
+      </section>
+
+      <section id="processo" class="reveal">
+        <div class="container">
+          <div class="process">
+            <div class="section-title">
+              <h2 id="processoTitulo"></h2>
+              <p id="processoTexto"></p>
+            </div>
+
+            <div class="process-box" id="processoCards"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contato" class="reveal">
+        <div class="container">
+          <div class="cta">
+            <h2 id="ctaTitulo"></h2>
+            <p id="ctaTexto"></p>
+            <button class="btn" onclick="abrirWhatsapp()">Solicitar projeto agora</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2026 Excellent Services. Todos os direitos reservados.</p>
+      <p>Sistemas • Apps • Sites • Sistemas em Excel</p>
+    </footer>
+  </div>
+
+  <div class="popup-bg" id="popupWhatsapp">
+    <div class="popup">
+      <button class="fechar" onclick="fecharWhatsapp()">×</button>
+      <h2>Escolha um WhatsApp</h2>
+      <p>Selecione uma das opções abaixo para falar com a Excellent Services.</p>
+
+      <a class="btn popup-btn" target="_blank" href="https://wa.me/5511934664498">
+        WhatsApp 1 — (11) 93466-4498
+      </a>
+
+      <a class="btn popup-btn" target="_blank" href="https://wa.me/5515991422218">
+        WhatsApp 2 — (15) 99142-2218
+      </a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCbr3SgZVJZuubqj8TGHaeBv8EJbCgXvn0",
+      authDomain: "planilhasimple.firebaseapp.com",
+      databaseURL: "https://planilhasimple-default-rtdb.firebaseio.com",
+      projectId: "planilhasimple",
+      storageBucket: "planilhasimple.firebasestorage.app",
+      messagingSenderId: "71116250745",
+      appId: "1:71116250745:web:51a2e7c27b2766f2f0bea8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const dadosPadrao = {
+      badge: "Sistemas, Apps, Sites e Sistemas em Excel personalizados",
+      heroTitulo: "Soluções digitais modernas para empresas que querem crescer.",
+      heroTexto: "A Excellent Services desenvolve soluções personalizadas para empresas: sistemas, apps, sites, páginas profissionais e sistemas em Excel. Já ajudamos diversas empresas pelo mundo a organizar processos, melhorar sua presença digital e trabalhar com mais profissionalismo.",
+      heroImagem: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=900&q=80",
+
+      servicosTitulo: "Soluções completas e personalizadas.",
+      servicosTexto: "Desenvolvemos projetos sob medida para cada negócio, unindo design, tecnologia, organização e praticidade.",
+      servicos: [
+        {
+          titulo:"Sistemas personalizados",
+          texto:"Sistemas sob medida para gestão de clientes, vendas, financeiro, estoque, projetos, equipes, relatórios e processos internos."
+        },
+        {
+          titulo:"Apps personalizados",
+          texto:"Aplicativos modernos para digitalizar processos, melhorar o atendimento e facilitar o acesso de clientes e equipes."
+        },
+        {
+          titulo:"Sites profissionais",
+          texto:"Sites institucionais, páginas de vendas e landing pages modernas, responsivas, estratégicas e com aparência premium."
+        },
+        {
+          titulo:"Sistemas em Excel",
+          texto:"Soluções em Excel com dashboards, automações, macros, controles inteligentes, relatórios e gestão visual personalizada."
+        }
+      ],
+
+      portfolioTitulo: "Projetos desenvolvidos com foco em resultado.",
+      portfolioTexto: "Criamos interfaces modernas, funcionais e profissionais para empresas que desejam mais controle, presença digital e eficiência.",
+      portfolio: [
+        {
+          categoria:"Sistema empresarial",
+          titulo:"Gestão financeira premium",
+          texto:"Interface limpa para acompanhar receitas, despesas, indicadores, clientes, relatórios e evolução do negócio.",
+          imagem:"https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80"
+        },
+        {
+          categoria:"Dashboard personalizado",
+          titulo:"Controle operacional",
+          texto:"Plataforma para organizar vendas, tarefas, equipe, estoque, financeiro e relatórios em um só lugar.",
+          imagem:"https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80"
+        },
+        {
+          categoria:"Site profissional",
+          titulo:"Landing page de alta conversão",
+          texto:"Design estratégico, moderno e responsivo para apresentar ofertas, serviços e empresas com mais autoridade.",
+          imagem:"https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80"
+        }
+      ],
+
+      stats: [
+        {numero:"+50",texto:"Projetos digitais desenvolvidos"},
+        {numero:"Global",texto:"Empresas atendidas em diferentes regiões do mundo"},
+        {numero:"100%",texto:"Soluções personalizadas"},
+        {numero:"7-30d",texto:"Suporte após a entrega, conforme complexidade"}
+      ],
+
+      processoTitulo: "Processo simples, direto e profissional.",
+      processoTexto: "Da primeira conversa até a entrega final, cada etapa é pensada para transformar sua necessidade em uma solução clara, bonita e funcional.",
+      processo: [
+        {titulo:"01 — Diagnóstico",texto:"Entendemos o problema, objetivo, público, operação e recursos necessários para o projeto."},
+        {titulo:"02 — Estruturação",texto:"Organizamos a ideia em telas, fluxos, funcionalidades, identidade visual e experiência do usuário."},
+        {titulo:"03 — Desenvolvimento",texto:"Criamos o projeto com foco em design, usabilidade, velocidade, segurança e profissionalismo."},
+        {titulo:"04 — Entrega e suporte",texto:"Você recebe a solução pronta para usar, com suporte de 7 a 30 dias após a entrega, dependendo da complexidade do projeto."}
+      ],
+
+      ctaTitulo: "Vamos transformar sua ideia em uma solução profissional?",
+      ctaTexto: "Solicite um orçamento para sistema, app, site, sistema em Excel, dashboard, automação ou página personalizada."
+    };
+
+    const siteRef = ref(db, "excellentServices/site");
+    let firebaseCarregado = false;
+
+    const tempoMinimoLoading = new Promise(resolve => {
+      setTimeout(resolve, 8000);
+    });
+
+    const dadosFirebase = new Promise(resolve => {
+      onValue(siteRef, async (snapshot) => {
+        if (firebaseCarregado) return;
+        firebaseCarregado = true;
+
+        if (snapshot.exists()) {
+          const dados = completarDados(snapshot.val());
+          await carregarDados(dados);
+          resolve();
+        } else {
+          await set(siteRef, dadosPadrao);
+          await carregarDados(dadosPadrao);
+          resolve();
+        }
+      }, async () => {
+        await carregarDados(dadosPadrao);
+        resolve();
+      });
+    });
+
+    Promise.all([tempoMinimoLoading, dadosFirebase]).then(() => {
+      abrirPagina();
+    });
+
+    function completarDados(dados) {
+      return {
+        ...dadosPadrao,
+        ...dados,
+        servicos: dados.servicos || dadosPadrao.servicos,
+        portfolio: dados.portfolio || dadosPadrao.portfolio,
+        stats: dados.stats || dadosPadrao.stats,
+        processo: dados.processo || dadosPadrao.processo
+      };
+    }
+
+    function preCarregarImagem(src) {
+      return new Promise(resolve => {
+        if (!src) {
+          resolve();
+          return;
+        }
+
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = resolve;
+        img.src = src;
+      });
+    }
+
+    async function carregarDados(dados) {
+      document.getElementById("badge").textContent = dados.badge;
+
+      const titulo = dados.heroTitulo || "";
+      document.getElementById("heroTitulo").innerHTML = destacarPalavra(titulo);
+
+      document.getElementById("heroTexto").textContent = dados.heroTexto;
+      document.getElementById("heroImagem").src = dados.heroImagem;
+
+      document.getElementById("servicosTitulo").textContent = dados.servicosTitulo;
+      document.getElementById("servicosTexto").textContent = dados.servicosTexto;
+
+      document.getElementById("servicosCards").innerHTML = dados.servicos.map((item) => `
+        <div class="service-card">
+          ${iconeServico(item.titulo)}
+          <h3>${item.titulo}</h3>
+          <p>${item.texto}</p>
+        </div>
+      `).join("");
+
+      document.getElementById("portfolioTitulo").textContent = dados.portfolioTitulo;
+      document.getElementById("portfolioTexto").textContent = dados.portfolioTexto;
+
+      document.getElementById("portfolioCards").innerHTML = dados.portfolio.map(item => `
+        <div class="project">
+          <img class="project-img" src="${item.imagem}" alt="${item.titulo}">
+          <div class="project-info">
+            <small>${item.categoria}</small>
+            <h3>${item.titulo}</h3>
+            <p>${item.texto}</p>
+          </div>
+        </div>
+      `).join("");
+
+      document.getElementById("statsCards").innerHTML = dados.stats.map((item, index) => `
+        <div class="stat">
+          <div class="stat-top">
+            <span class="stat-badge">${rotuloStat(index)}</span>
+            <div class="stat-icon">
+              ${iconeStat(index)}
+            </div>
+          </div>
+          <h3>${item.numero}</h3>
+          <div class="stat-line"></div>
+          <p>${item.texto}</p>
+        </div>
+      `).join("");
+
+      document.getElementById("processoTitulo").textContent = dados.processoTitulo;
+      document.getElementById("processoTexto").textContent = dados.processoTexto;
+
+      document.getElementById("processoCards").innerHTML = dados.processo.map(item => `
+        <div class="step">
+          <strong>${item.titulo}</strong>
+          <p>${item.texto}</p>
+        </div>
+      `).join("");
+
+      document.getElementById("ctaTitulo").textContent = dados.ctaTitulo;
+      document.getElementById("ctaTexto").textContent = dados.ctaTexto;
+
+      const imagens = [
+        dados.heroImagem,
+        ...dados.portfolio.map(item => item.imagem)
+      ];
+
+      await Promise.all(imagens.map(src => preCarregarImagem(src)));
+    }
+
+    function iconeServico(titulo) {
+      const texto = (titulo || "").toLowerCase();
+
+      if (texto.includes("excel")) {
+        return `
+          <div class="icon icon-excel">
+            <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+              <rect x="16" y="10" width="34" height="44" rx="5" fill="rgba(255,255,255,.24)"/>
+              <rect x="22" y="16" width="22" height="6" rx="1.5" fill="rgba(255,255,255,.62)"/>
+              <rect x="22" y="27" width="8" height="6" rx="1.5" fill="rgba(255,255,255,.55)"/>
+              <rect x="34" y="27" width="10" height="6" rx="1.5" fill="rgba(255,255,255,.55)"/>
+              <rect x="22" y="37" width="8" height="6" rx="1.5" fill="rgba(255,255,255,.55)"/>
+              <rect x="34" y="37" width="10" height="6" rx="1.5" fill="rgba(255,255,255,.55)"/>
+              <rect x="8" y="20" width="24" height="24" rx="5" fill="#ffffff"/>
+              <path d="M15 27L25 37M25 27L15 37" stroke="#0f7b3b" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+          </div>
+        `;
+      }
+
+      if (texto.includes("app")) {
+        return `
+          <div class="icon icon-app">
+            <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+              <rect x="19" y="7" width="26" height="50" rx="8" fill="rgba(255,255,255,.26)"/>
+              <rect x="22" y="11" width="20" height="42" rx="6" fill="rgba(255,255,255,.20)"/>
+              <rect x="26" y="18" width="12" height="12" rx="4" fill="#ffffff"/>
+              <path d="M29 24H35" stroke="#0f7b3b" stroke-width="3" stroke-linecap="round"/>
+              <path d="M32 21V27" stroke="#0f7b3b" stroke-width="3" stroke-linecap="round"/>
+              <rect x="26" y="35" width="12" height="3.8" rx="1.9" fill="rgba(255,255,255,.72)"/>
+              <rect x="27.5" y="42" width="9" height="3.8" rx="1.9" fill="rgba(255,255,255,.55)"/>
+              <circle cx="32" cy="50" r="2.2" fill="#ffffff"/>
+            </svg>
+          </div>
+        `;
+      }
+
+      if (texto.includes("site") || texto.includes("web")) {
+        return `
+          <div class="icon icon-site">
+            <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+              <rect x="8" y="13" width="48" height="38" rx="7" fill="rgba(255,255,255,.24)"/>
+              <rect x="12" y="18" width="40" height="29" rx="5" fill="rgba(255,255,255,.16)"/>
+              <path d="M12 25H52" stroke="rgba(255,255,255,.75)" stroke-width="3"/>
+              <circle cx="18" cy="21.5" r="2" fill="#ffffff"/>
+              <circle cx="25" cy="21.5" r="2" fill="rgba(255,255,255,.70)"/>
+              <circle cx="32" cy="21.5" r="2" fill="rgba(255,255,255,.50)"/>
+              <rect x="18" y="31" width="28" height="5" rx="2.5" fill="#ffffff"/>
+              <rect x="18" y="40" width="17" height="4.5" rx="2.25" fill="rgba(255,255,255,.68)"/>
+            </svg>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="icon icon-system">
+          <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <rect x="10" y="10" width="44" height="18" rx="6" fill="rgba(255,255,255,.24)"/>
+            <rect x="15" y="15" width="34" height="8" rx="3" fill="rgba(255,255,255,.18)"/>
+            <circle cx="20" cy="19" r="2.4" fill="#ffffff"/>
+            <rect x="27" y="17" width="17" height="4" rx="2" fill="rgba(255,255,255,.70)"/>
+            <rect x="10" y="36" width="44" height="18" rx="6" fill="rgba(255,255,255,.24)"/>
+            <rect x="15" y="41" width="34" height="8" rx="3" fill="rgba(255,255,255,.18)"/>
+            <circle cx="20" cy="45" r="2.4" fill="#ffffff"/>
+            <rect x="27" y="43" width="17" height="4" rx="2" fill="rgba(255,255,255,.70)"/>
+            <path d="M32 28V36" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    function rotuloStat(index) {
+      const rotulos = ["Projetos", "Presença", "Personalização", "Suporte"];
+      return rotulos[index] || "Destaque";
+    }
+
+    function iconeStat(index) {
+      const icones = [
+        `<svg viewBox="0 0 24 24" fill="none"><path d="M5 19h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 16V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 16V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17 16v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+        `<svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 100 18 9 9 0 000-18z" stroke="currentColor" stroke-width="2"/><path d="M3 12h18" stroke="currentColor" stroke-width="2"/><path d="M12 3c2.5 2.4 4 5.6 4 9s-1.5 6.6-4 9c-2.5-2.4-4-5.6-4-9s1.5-6.6 4-9z" stroke="currentColor" stroke-width="2"/></svg>`,
+        `<svg viewBox="0 0 24 24" fill="none"><path d="M12 4l7 3v5c0 4.2-2.7 7.7-7 8-4.3-.3-7-3.8-7-8V7l7-3z" stroke="currentColor" stroke-width="2"/><path d="M9.5 12l1.7 1.7L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        `<svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 11-2.34-5.66" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+      ];
+      return icones[index] || icones[0];
+    }
+
+    function destacarPalavra(titulo) {
+      const palavras = ["crescer", "profissional", "resultado", "moderna", "digitais"];
+      let texto = titulo;
+
+      for (const palavra of palavras) {
+        const regex = new RegExp(`(${palavra})`, "i");
+        if (regex.test(texto)) {
+          texto = texto.replace(regex, "<span>$1</span>");
+          break;
+        }
+      }
+
+      return texto;
+    }
+
+    function abrirPagina() {
+      document.getElementById("page").classList.add("ready");
+      document.getElementById("loadingScreen").classList.add("hide");
+      revelarAoRolar();
+    }
+
+    let percentual = 0;
+    const loadingPercent = document.getElementById("loadingPercent");
+
+    const contador = setInterval(() => {
+      percentual++;
+
+      if (percentual <= 100) {
+        loadingPercent.textContent = percentual + "%";
+      }
+
+      if (percentual >= 100) {
+        clearInterval(contador);
+        loadingPercent.textContent = "Concluído";
+      }
+    }, 80);
+
+    window.abrirWhatsapp = function() {
+      document.getElementById("popupWhatsapp").classList.add("active");
+    }
+
+    window.fecharWhatsapp = function() {
+      document.getElementById("popupWhatsapp").classList.remove("active");
+    }
+
+    document.getElementById("popupWhatsapp").addEventListener("click", function(e) {
+      if (e.target === this) fecharWhatsapp();
+    });
+
+    const reveals = document.querySelectorAll(".reveal");
+
+    function revelarAoRolar() {
+      reveals.forEach(item => {
+        const windowHeight = window.innerHeight;
+        const elementTop = item.getBoundingClientRect().top;
+
+        if (elementTop < windowHeight - 90) {
+          item.classList.add("active");
+        }
+      });
+    }
+
+    window.addEventListener("scroll", revelarAoRolar);
+  </script>
+</body>
+</html>
