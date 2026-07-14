@@ -5,79 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Excellent Services | Portfólio</title>
 
-  <script>
-    // Verifica o horário e aplica o tema ANTES da página carregar para evitar "piscar" a tela branca
-    function aplicarTemaInteligente() {
-      const horaAtual = new Date().getHours();
-      // Entre 18h da noite (incluso) até as 10h da manhã do dia seguinte (0 a 9)
-      if (horaAtual >= 18 || horaAtual < 10) {
-        document.documentElement.classList.add('dark-mode');
-      } else {
-        document.documentElement.classList.remove('dark-mode');
-      }
-    }
-    aplicarTemaInteligente();
-    // Continua checando a cada minuto caso a pessoa deixe o site aberto na virada do horário
-    setInterval(aplicarTemaInteligente, 60000);
-  </script>
-
   <style>
     :root {
-      /* Cores Modo Claro (Padrão) */
-      --bg-body: #f7faf8;
-      --bg-card: #ffffff;
-      --bg-header: rgba(255, 255, 255, 0.82);
-      --bg-popup: #ffffff;
-      --bg-grad-mid: #f5faf7;
-      --progress-bg: #e6eee9;
-
-      --text-main: #071008;
-      --text-muted: #56635b;
-      --text-p: #445047;
-      --text-btn: #031006;
-      --text-nav: #34443a;
-      --text-cta-p: #dce4de;
-      --text-stat-p: #eef6f0;
-      --text-footer: #56635b;
-
-      --accent-main: #00e676; /* Verde Principal */
-      --accent-dark: #00a94f;
-      --accent-text: #00b85c;
-      --accent-alt: #00a652;
-      --accent-badge-text: #00783b;
-      --accent-badge-bg: rgba(0, 184, 92, 0.09);
-      --accent-badge-border: rgba(0, 184, 92, 0.18);
-      --accent-stat-num: #00f27c;
-
-      --border-color: rgba(7, 16, 8, 0.08);
-
-      --shadow-light: rgba(0, 0, 0, 0.04);
-      --shadow-medium: rgba(5, 20, 10, 0.12);
-      --shadow-process: rgba(0, 0, 0, 0.06);
-      --shadow-btn: rgba(0, 184, 92, 0.24);
-      --shadow-btn-hover: rgba(0, 184, 92, 0.34);
-      --shadow-hover: rgba(0, 184, 92, 0.10);
-
-      --loading-grad: rgba(0, 230, 118, 0.18);
-
-      --stat-bg-1: #06120b;
-      --stat-bg-2: #04170c;
-      --stat-border: rgba(0, 230, 118, 0.10);
-      --stat-line: linear-gradient(90deg, #00e676, #79ffb9);
-      --stat-badge-color: #9eb7a8;
-      --stat-icon-bg: rgba(0, 230, 118, 0.10);
-      --stat-icon-border: rgba(0, 230, 118, 0.16);
-
-      --icon-system-1: #063c25;
-      --icon-app-1: #082f24;
-      --icon-app-2: #00c267;
-      --icon-site-1: #06302d;
-      --icon-site-2: #00a95a;
-      --icon-excel-1: #0f7b3b;
-    }
-
-    html.dark-mode {
-      /* Cores Modo Escuro/Dourado */
+      /* Cores Padrão - Preto e Dourado (Premium) */
       --bg-body: #0a0a0a;
       --bg-card: #141414;
       --bg-header: rgba(15, 15, 15, 0.85);
@@ -132,7 +62,7 @@
 
     *{margin:0;padding:0;box-sizing:border-box;font-family:Inter,Arial,sans-serif}
     html{scroll-behavior:smooth}
-    body{background:var(--bg-body);color:var(--text-main);overflow-x:hidden;transition:background 0.5s ease, color 0.5s ease;}
+    body{background:var(--bg-body);color:var(--text-main);overflow-x:hidden;}
     a{text-decoration:none;color:inherit}
 
     .loading-screen{
@@ -975,7 +905,7 @@
     const siteRef = ref(db, "excellentServices/site");
     let firebaseCarregado = false;
 
-    // Loading reduzido para 3 segundos[cite: 2]
+    // Loading reduzido para 3 segundos
     const tempoMinimoLoading = new Promise(resolve => {
       setTimeout(resolve, 3000); 
     });
@@ -1069,7 +999,7 @@
         </div>
       `}).join("");
 
-      // Inicia os carrosseis para imagens que tenham mais de uma foto[cite: 2]
+      // Inicia os carrosseis para imagens que tenham mais de uma foto
       document.querySelectorAll('.carousel-img').forEach(imgElement => {
         if (imgElement.dataset.imgs) {
           try {
@@ -1079,7 +1009,7 @@
               setInterval(() => {
                 idxAtual = (idxAtual + 1) % imagensExtras.length;
                 imgElement.src = imagensExtras[idxAtual];
-              }, 2000); // Muda a imagem a cada 2 segundos[cite: 2]
+              }, 2000); // Muda a imagem a cada 2 segundos
             }
           } catch(e) { console.error("Erro no carrossel", e); }
         }
@@ -1235,7 +1165,7 @@
     let percentual = 0;
     const loadingPercent = document.getElementById("loadingPercent");
 
-    // Contador de loading ajustado para completar os 100% em 3 segundos[cite: 2]
+    // Contador de loading ajustado para completar os 100% em 3 segundos
     const contador = setInterval(() => {
       percentual++;
 
