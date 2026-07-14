@@ -18,13 +18,13 @@
       --text-main: #f0f0f0;
       --text-muted: #a0a0a0;
       --text-p: #cccccc;
-      --text-btn: #111111; /* Letra escura no botão dourado para destaque */
+      --text-btn: #111111; 
       --text-nav: #e0e0e0;
       --text-cta-p: #cccccc;
       --text-stat-p: #dddddd;
       --text-footer: #888888;
 
-      --accent-main: #f3c623; /* Dourado Principal */
+      --accent-main: #f3c623; 
       --accent-dark: #cda415;
       --accent-text: #f3c623;
       --accent-alt: #f3c623;
@@ -387,13 +387,6 @@
       transform:translateY(-8px);
       border-color:var(--accent-badge-border);
       box-shadow:0 26px 65px var(--shadow-hover)
-    }
-
-    .project-img{
-      width:100%;
-      height:245px;
-      display:block;
-      transition: opacity 0.3s ease;
     }
 
     .project-info{padding:25px}
@@ -905,7 +898,6 @@
     const siteRef = ref(db, "excellentServices/site");
     let firebaseCarregado = false;
 
-    // Loading reduzido para 3 segundos
     const tempoMinimoLoading = new Promise(resolve => {
       setTimeout(resolve, 3000); 
     });
@@ -984,13 +976,20 @@
 
       document.getElementById("portfolioCards").innerHTML = dados.portfolio.map(item => {
         const imagensArray = item.imagens || [item.imagem];
-        const dadosImagensBase64 = encodeURIComponent(JSON.stringify(imagensArray));
-        const srcImagemInicial = imagensArray.find(img => img) || item.imagem;
         const ajusteCSS = item.ajuste || 'cover';
+
+        // Mapeia todas as imagens em uma trilha lado a lado para o efeito de deslize suave
+        const trackHtml = imagensArray.filter(img => img).map(img => 
+          `<img src="${img}" style="width: 100%; height: 100%; object-fit: ${ajusteCSS}; flex-shrink: 0;" alt="${item.titulo}">`
+        ).join("");
 
         return `
         <div class="project">
-          <img class="project-img carousel-img" src="${srcImagemInicial}" style="object-fit: ${ajusteCSS};" data-imgs="${dadosImagensBase64}" alt="${item.titulo}">
+          <div class="carousel-container" style="overflow: hidden; width: 100%; height: 245px; position: relative;">
+            <div class="carousel-track" data-count="${imagensArray.length}" data-idx="0" style="display: flex; height: 100%; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);">
+              ${trackHtml}
+            </div>
+          </div>
           <div class="project-info">
             <small>${item.categoria}</small>
             <h3>${item.titulo}</h3>
@@ -999,19 +998,17 @@
         </div>
       `}).join("");
 
-      // Inicia os carrosseis para imagens que tenham mais de uma foto
-      document.querySelectorAll('.carousel-img').forEach(imgElement => {
-        if (imgElement.dataset.imgs) {
-          try {
-            const imagensExtras = JSON.parse(decodeURIComponent(imgElement.dataset.imgs)).filter(img => img);
-            if (imagensExtras.length > 1) {
-              let idxAtual = 0;
-              setInterval(() => {
-                idxAtual = (idxAtual + 1) % imagensExtras.length;
-                imgElement.src = imagensExtras[idxAtual];
-              }, 2000); // Muda a imagem a cada 2 segundos
-            }
-          } catch(e) { console.error("Erro no carrossel", e); }
+      // Inicia a lógica para deslizar o flex container (transição suave para a esquerda)
+      document.querySelectorAll('.carousel-track').forEach(track => {
+        const count = parseInt(track.dataset.count);
+        if (count > 1) {
+          setInterval(() => {
+            let idx = parseInt(track.dataset.idx);
+            idx = (idx + 1) % count;
+            track.dataset.idx = idx;
+            // Translada a trilha inteira para a esquerda baseada no índice
+            track.style.transform = `translateX(-${idx * 100}%)`;
+          }, 2000); 
         }
       });
 
@@ -1042,7 +1039,7 @@
       document.getElementById("ctaTitulo").textContent = dados.ctaTitulo;
       document.getElementById("ctaTexto").textContent = dados.ctaTexto;
 
-      // Pré-carrega todas as imagens para não dar erro visual no carrossel
+      // Pré-carrega todas as imagens para o carrossel não engasgar
       const imagensParaCarregar = [dados.heroImagem];
       dados.portfolio.forEach(item => {
         if(item.imagens && item.imagens.length > 0) {
@@ -1165,7 +1162,6 @@
     let percentual = 0;
     const loadingPercent = document.getElementById("loadingPercent");
 
-    // Contador de loading ajustado para completar os 100% em 3 segundos
     const contador = setInterval(() => {
       percentual++;
 
