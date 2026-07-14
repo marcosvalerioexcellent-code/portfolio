@@ -72,7 +72,7 @@
       height:100%;
       border-radius:999px;
       background:linear-gradient(135deg,#00e676,#00a94f);
-      animation:progressFill 8s ease forwards;
+      animation:progressFill 3s ease forwards; /* Ajustado para 3 segundos */
       position:relative;
       overflow:hidden;
     }
@@ -253,7 +253,7 @@
 
     .services{
       display:grid;
-      grid-template-columns:repeat(4,1fr);
+      grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); /* Permitirá que múltiplos itens pulem para baixo */
       gap:18px
     }
 
@@ -317,7 +317,7 @@
 
     .portfolio-grid{
       display:grid;
-      grid-template-columns:repeat(3,1fr);
+      grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
       gap:22px
     }
 
@@ -339,8 +339,8 @@
     .project-img{
       width:100%;
       height:245px;
-      object-fit:cover;
-      display:block
+      display:block;
+      transition: opacity 0.3s ease; /* Transição para carrossel */
     }
 
     .project-info{padding:25px}
@@ -348,7 +348,6 @@
     .project-info h3{margin:10px 0;font-size:1.32rem}
     .project-info p{color:#56635b;line-height:1.65}
 
-    /* NOVA ÁREA DE STATS */
     .stats-section{
       padding-top:70px;
       padding-bottom:90px;
@@ -812,19 +811,22 @@
           categoria:"Sistema empresarial",
           titulo:"Gestão financeira premium",
           texto:"Interface limpa para acompanhar receitas, despesas, indicadores, clientes, relatórios e evolução do negócio.",
-          imagem:"https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80"
+          imagens:["https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80"],
+          ajuste: "cover"
         },
         {
           categoria:"Dashboard personalizado",
           titulo:"Controle operacional",
           texto:"Plataforma para organizar vendas, tarefas, equipe, estoque, financeiro e relatórios em um só lugar.",
-          imagem:"https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80"
+          imagens:["https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80"],
+          ajuste: "cover"
         },
         {
           categoria:"Site profissional",
           titulo:"Landing page de alta conversão",
           texto:"Design estratégico, moderno e responsivo para apresentar ofertas, serviços e empresas com mais autoridade.",
-          imagem:"https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80"
+          imagens:["https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80"],
+          ajuste: "cover"
         }
       ],
 
@@ -851,8 +853,9 @@
     const siteRef = ref(db, "excellentServices/site");
     let firebaseCarregado = false;
 
+    // Loading reduzido para 3 segundos
     const tempoMinimoLoading = new Promise(resolve => {
-      setTimeout(resolve, 8000);
+      setTimeout(resolve, 3000); 
     });
 
     const dadosFirebase = new Promise(resolve => {
@@ -927,16 +930,38 @@
       document.getElementById("portfolioTitulo").textContent = dados.portfolioTitulo;
       document.getElementById("portfolioTexto").textContent = dados.portfolioTexto;
 
-      document.getElementById("portfolioCards").innerHTML = dados.portfolio.map(item => `
+      document.getElementById("portfolioCards").innerHTML = dados.portfolio.map(item => {
+        const imagensArray = item.imagens || [item.imagem];
+        const dadosImagensBase64 = encodeURIComponent(JSON.stringify(imagensArray));
+        const srcImagemInicial = imagensArray.find(img => img) || item.imagem;
+        const ajusteCSS = item.ajuste || 'cover';
+
+        return `
         <div class="project">
-          <img class="project-img" src="${item.imagem}" alt="${item.titulo}">
+          <img class="project-img carousel-img" src="${srcImagemInicial}" style="object-fit: ${ajusteCSS};" data-imgs="${dadosImagensBase64}" alt="${item.titulo}">
           <div class="project-info">
             <small>${item.categoria}</small>
             <h3>${item.titulo}</h3>
             <p>${item.texto}</p>
           </div>
         </div>
-      `).join("");
+      `}).join("");
+
+      // Inicia os carrosseis para imagens que tenham mais de uma foto
+      document.querySelectorAll('.carousel-img').forEach(imgElement => {
+        if (imgElement.dataset.imgs) {
+          try {
+            const imagensExtras = JSON.parse(decodeURIComponent(imgElement.dataset.imgs)).filter(img => img);
+            if (imagensExtras.length > 1) {
+              let idxAtual = 0;
+              setInterval(() => {
+                idxAtual = (idxAtual + 1) % imagensExtras.length;
+                imgElement.src = imagensExtras[idxAtual];
+              }, 2000); // Muda a imagem a cada 2 segundos
+            }
+          } catch(e) { console.error("Erro no carrossel", e); }
+        }
+      });
 
       document.getElementById("statsCards").innerHTML = dados.stats.map((item, index) => `
         <div class="stat">
@@ -965,12 +990,17 @@
       document.getElementById("ctaTitulo").textContent = dados.ctaTitulo;
       document.getElementById("ctaTexto").textContent = dados.ctaTexto;
 
-      const imagens = [
-        dados.heroImagem,
-        ...dados.portfolio.map(item => item.imagem)
-      ];
+      // Pré-carrega todas as imagens para não dar erro visual no carrossel
+      const imagensParaCarregar = [dados.heroImagem];
+      dados.portfolio.forEach(item => {
+        if(item.imagens && item.imagens.length > 0) {
+          imagensParaCarregar.push(...item.imagens);
+        } else if (item.imagem) {
+          imagensParaCarregar.push(item.imagem);
+        }
+      });
 
-      await Promise.all(imagens.map(src => preCarregarImagem(src)));
+      await Promise.all(imagensParaCarregar.map(src => preCarregarImagem(src)));
     }
 
     function iconeServico(titulo) {
@@ -1083,6 +1113,7 @@
     let percentual = 0;
     const loadingPercent = document.getElementById("loadingPercent");
 
+    // Contador de loading ajustado para completar os 100% em 3 segundos
     const contador = setInterval(() => {
       percentual++;
 
@@ -1094,7 +1125,7 @@
         clearInterval(contador);
         loadingPercent.textContent = "Concluído";
       }
-    }, 80);
+    }, 30);
 
     window.abrirWhatsapp = function() {
       document.getElementById("popupWhatsapp").classList.add("active");
