@@ -65,6 +65,12 @@
     body{background:var(--bg-body);color:var(--text-main);overflow-x:hidden;}
     a{text-decoration:none;color:inherit}
 
+    /* CLASSE DE DESTAQUE DE TEXTO */
+    .highlight-gold {
+      color: var(--accent-text);
+      font-weight: 800;
+    }
+
     .loading-screen{
       position:fixed;
       inset:0;
@@ -848,7 +854,7 @@
         </div>
       </section>
 
-      <!-- NOVA SEÇÃO SOBRE / EQUIPE (ANTES DO CONTATO) -->
+      <!-- SEÇÃO SOBRE / EQUIPE (ANTES DO CONTATO) -->
       <section id="sobre" class="reveal" style="padding-top: 20px;">
         <div class="container">
           <div class="equipe-list" id="equipeCards"></div>
@@ -905,87 +911,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const dadosPadrao = {
-      badge: "Sistemas, Apps, Sites e Sistemas em Excel personalizados",
-      heroTitulo: "Soluções digitais modernas para empresas que querem crescer.",
-      heroTexto: "A Excellent Services desenvolve soluções personalizadas para empresas: sistemas, apps, sites, páginas profissionais e sistemas em Excel. Já ajudamos diversas empresas pelo mundo a organizar processos, melhorar sua presença digital e trabalhar com mais profissionalismo.",
-      heroImagem: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=900&q=80",
-
-      servicosTitulo: "Soluções completas e personalizadas.",
-      servicosTexto: "Desenvolvemos projetos sob medida para cada negócio, unindo design, tecnologia, organização e praticidade.",
-      servicos: [
-        {
-          titulo:"Sistemas personalizados",
-          texto:"Sistemas sob medida para gestão de clientes, vendas, financeiro, estoque, projetos, equipes, relatórios e processos internos."
-        },
-        {
-          titulo:"Apps personalizados",
-          texto:"Aplicativos modernos para digitalizar processos, melhorar o atendimento e facilitar o acesso de clientes e equipes."
-        },
-        {
-          titulo:"Sites profissionais",
-          texto:"Sites institucionais, páginas de vendas e landing pages modernas, responsivas, estratégicas e com aparência premium."
-        },
-        {
-          titulo:"Sistemas em Excel",
-          texto:"Soluções em Excel com dashboards, automações, macros, controles inteligentes, relatórios e gestão visual personalizada."
-        }
-      ],
-
-      portfolioTitulo: "Projetos desenvolvidos com foco em resultado.",
-      portfolioTexto: "Criamos interfaces modernas, funcionais e profissionais para empresas que desejam mais controle, presença digital e eficiência.",
-      portfolio: [
-        {
-          categoria:"Sistema empresarial",
-          titulo:"Gestão financeira premium",
-          texto:"Interface limpa para acompanhar receitas, despesas, indicadores, clientes, relatórios e evolução do negócio.",
-          imagens:["https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80"],
-          ajuste: "cover"
-        },
-        {
-          categoria:"Dashboard personalizado",
-          titulo:"Controle operacional",
-          texto:"Plataforma para organizar vendas, tarefas, equipe, estoque, financeiro e relatórios em um só lugar.",
-          imagens:["https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80"],
-          ajuste: "cover"
-        },
-        {
-          categoria:"Site profissional",
-          titulo:"Landing page de alta conversão",
-          texto:"Design estratégico, moderno e responsivo para apresentar ofertas, serviços e empresas com mais autoridade.",
-          imagens:["https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80"],
-          ajuste: "cover"
-        }
-      ],
-
-      stats: [
-        {numero:"+50",texto:"Projetos digitais desenvolvidos"},
-        {numero:"Global",texto:"Empresas atendidas em diferentes regiões do mundo"},
-        {numero:"100%",texto:"Soluções personalizadas"},
-        {numero:"7-30d",texto:"Suporte após a entrega, conforme complexidade"}
-      ],
-
-      processoTitulo: "Processo simples, direto e profissional.",
-      processoTexto: "Da primeira conversa até a entrega final, cada etapa é pensada para transformar sua necessidade em uma solução clara, bonita e funcional.",
-      processo: [
-        {titulo:"01 — Diagnóstico",texto:"Entendemos o problema, objetivo, público, operação e recursos necessários para o projeto."},
-        {titulo:"02 — Estruturação",texto:"Organizamos a ideia em telas, fluxos, funcionalidades, identidade visual e experiência do usuário."},
-        {titulo:"03 — Desenvolvimento",texto:"Criamos o projeto com foco em design, usabilidade, velocidade, segurança e profissionalismo."},
-        {titulo:"04 — Entrega e suporte",texto:"Você recebe a solução pronta para usar, com suporte de 7 a 30 dias após a entrega, dependendo da complexidade do projeto."}
-      ],
-      
-      equipe: [
-        {
-          titulo: "Sobre a Excellent Services",
-          texto: "Fundada com o propósito de transformar ideias e processos operacionais em soluções digitais de alto nível. Acreditamos que um design premium aliado a uma tecnologia robusta é o segredo para o sucesso de qualquer empresa moderna.",
-          imagem: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=80"
-        }
-      ],
-
-      ctaTitulo: "Vamos transformar sua ideia em uma solução profissional?",
-      ctaTexto: "Solicite um orçamento para sistema, app, site, sistema em Excel, dashboard, automação ou página personalizada."
-    };
-
     const siteRef = ref(db, "excellentServices/site");
     let firebaseCarregado = false;
 
@@ -999,16 +924,11 @@
         firebaseCarregado = true;
 
         if (snapshot.exists()) {
-          const dados = completarDados(snapshot.val());
+          const dados = snapshot.val();
           await carregarDados(dados);
-          resolve();
-        } else {
-          await set(siteRef, dadosPadrao);
-          await carregarDados(dadosPadrao);
           resolve();
         }
       }, async () => {
-        await carregarDados(dadosPadrao);
         resolve();
       });
     });
@@ -1016,18 +936,6 @@
     Promise.all([tempoMinimoLoading, dadosFirebase]).then(() => {
       abrirPagina();
     });
-
-    function completarDados(dados) {
-      return {
-        ...dadosPadrao,
-        ...dados,
-        servicos: dados.servicos || dadosPadrao.servicos,
-        portfolio: dados.portfolio || dadosPadrao.portfolio,
-        stats: dados.stats || dadosPadrao.stats,
-        processo: dados.processo || dadosPadrao.processo,
-        equipe: dados.equipe || dadosPadrao.equipe || []
-      };
-    }
 
     function preCarregarImagem(src) {
       return new Promise(resolve => {
@@ -1043,89 +951,104 @@
       });
     }
 
+    // A MÁGICA DO TEXTO DOURADO: Lê os asteriscos e colore a palavra
+    function formatarTextoMarkdown(texto) {
+      if (!texto) return "";
+      let formatado = texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      formatado = formatado.replace(/\n/g, "<br>");
+      formatado = formatado.replace(/\*(.*?)\*/g, '<span class="highlight-gold">$1</span>');
+      return formatado;
+    }
+
     async function carregarDados(dados) {
-      document.getElementById("badge").textContent = dados.badge;
+      if(!dados) return;
 
-      const titulo = dados.heroTitulo || "";
-      document.getElementById("heroTitulo").innerHTML = destacarPalavra(titulo);
+      document.getElementById("badge").innerHTML = formatarTextoMarkdown(dados.badge);
+      document.getElementById("heroTitulo").innerHTML = formatarTextoMarkdown(dados.heroTitulo);
+      document.getElementById("heroTexto").innerHTML = formatarTextoMarkdown(dados.heroTexto);
+      document.getElementById("heroImagem").src = dados.heroImagem || "";
 
-      document.getElementById("heroTexto").textContent = dados.heroTexto;
-      document.getElementById("heroImagem").src = dados.heroImagem;
+      document.getElementById("servicosTitulo").innerHTML = formatarTextoMarkdown(dados.servicosTitulo);
+      document.getElementById("servicosTexto").innerHTML = formatarTextoMarkdown(dados.servicosTexto);
 
-      document.getElementById("servicosTitulo").textContent = dados.servicosTitulo;
-      document.getElementById("servicosTexto").textContent = dados.servicosTexto;
+      if(dados.servicos) {
+        document.getElementById("servicosCards").innerHTML = dados.servicos.map((item) => `
+          <div class="service-card">
+            ${iconeServico(item.titulo)}
+            <h3>${formatarTextoMarkdown(item.titulo)}</h3>
+            <p>${formatarTextoMarkdown(item.texto)}</p>
+          </div>
+        `).join("");
+      }
 
-      document.getElementById("servicosCards").innerHTML = dados.servicos.map((item) => `
-        <div class="service-card">
-          ${iconeServico(item.titulo)}
-          <h3>${item.titulo}</h3>
-          <p>${item.texto}</p>
-        </div>
-      `).join("");
+      document.getElementById("portfolioTitulo").innerHTML = formatarTextoMarkdown(dados.portfolioTitulo);
+      document.getElementById("portfolioTexto").innerHTML = formatarTextoMarkdown(dados.portfolioTexto);
 
-      document.getElementById("portfolioTitulo").textContent = dados.portfolioTitulo;
-      document.getElementById("portfolioTexto").textContent = dados.portfolioTexto;
+      if(dados.portfolio) {
+        document.getElementById("portfolioCards").innerHTML = dados.portfolio.map(item => {
+          const imagensArray = item.imagens || [item.imagem];
+          const ajusteCSS = item.ajuste || 'cover';
 
-      document.getElementById("portfolioCards").innerHTML = dados.portfolio.map(item => {
-        const imagensArray = item.imagens || [item.imagem];
-        const ajusteCSS = item.ajuste || 'cover';
+          const trackHtml = imagensArray.filter(img => img).map(img => 
+            `<img src="${img}" style="width: 100%; height: 100%; object-fit: ${ajusteCSS}; flex-shrink: 0;" alt="${item.titulo}">`
+          ).join("");
 
-        const trackHtml = imagensArray.filter(img => img).map(img => 
-          `<img src="${img}" style="width: 100%; height: 100%; object-fit: ${ajusteCSS}; flex-shrink: 0;" alt="${item.titulo}">`
-        ).join("");
-
-        return `
-        <div class="project">
-          <div class="carousel-container" style="overflow: hidden; width: 100%; height: 245px; position: relative;">
-            <div class="carousel-track" data-count="${imagensArray.length}" data-idx="0" style="display: flex; height: 100%; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);">
-              ${trackHtml}
+          return `
+          <div class="project">
+            <div class="carousel-container" style="overflow: hidden; width: 100%; height: 245px; position: relative;">
+              <div class="carousel-track" data-count="${imagensArray.length}" data-idx="0" style="display: flex; height: 100%; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);">
+                ${trackHtml}
+              </div>
+            </div>
+            <div class="project-info">
+              <small>${formatarTextoMarkdown(item.categoria)}</small>
+              <h3>${formatarTextoMarkdown(item.titulo)}</h3>
+              <p>${formatarTextoMarkdown(item.texto)}</p>
             </div>
           </div>
-          <div class="project-info">
-            <small>${item.categoria}</small>
-            <h3>${item.titulo}</h3>
-            <p>${item.texto}</p>
-          </div>
-        </div>
-      `}).join("");
+        `}).join("");
 
-      document.querySelectorAll('.carousel-track').forEach(track => {
-        const count = parseInt(track.dataset.count);
-        if (count > 1) {
-          setInterval(() => {
-            let idx = parseInt(track.dataset.idx);
-            idx = (idx + 1) % count;
-            track.dataset.idx = idx;
-            track.style.transform = `translateX(-${idx * 100}%)`;
-          }, 2000); 
-        }
-      });
+        document.querySelectorAll('.carousel-track').forEach(track => {
+          const count = parseInt(track.dataset.count);
+          if (count > 1) {
+            setInterval(() => {
+              let idx = parseInt(track.dataset.idx);
+              idx = (idx + 1) % count;
+              track.dataset.idx = idx;
+              track.style.transform = `translateX(-${idx * 100}%)`;
+            }, 2000); 
+          }
+        });
+      }
 
-      document.getElementById("statsCards").innerHTML = dados.stats.map((item, index) => `
-        <div class="stat">
-          <div class="stat-top">
-            <span class="stat-badge">${rotuloStat(index)}</span>
-            <div class="stat-icon">
-              ${iconeStat(index)}
+      if(dados.stats) {
+        document.getElementById("statsCards").innerHTML = dados.stats.map((item, index) => `
+          <div class="stat">
+            <div class="stat-top">
+              <span class="stat-badge">${rotuloStat(index)}</span>
+              <div class="stat-icon">
+                ${iconeStat(index)}
+              </div>
             </div>
+            <h3>${formatarTextoMarkdown(item.numero)}</h3>
+            <div class="stat-line"></div>
+            <p>${formatarTextoMarkdown(item.texto)}</p>
           </div>
-          <h3>${item.numero}</h3>
-          <div class="stat-line"></div>
-          <p>${item.texto}</p>
-        </div>
-      `).join("");
+        `).join("");
+      }
 
-      document.getElementById("processoTitulo").textContent = dados.processoTitulo;
-      document.getElementById("processoTexto").textContent = dados.processoTexto;
+      document.getElementById("processoTitulo").innerHTML = formatarTextoMarkdown(dados.processoTitulo);
+      document.getElementById("processoTexto").innerHTML = formatarTextoMarkdown(dados.processoTexto);
 
-      document.getElementById("processoCards").innerHTML = dados.processo.map(item => `
-        <div class="step">
-          <strong>${item.titulo}</strong>
-          <p>${item.texto}</p>
-        </div>
-      `).join("");
+      if(dados.processo) {
+        document.getElementById("processoCards").innerHTML = dados.processo.map(item => `
+          <div class="step">
+            <strong>${formatarTextoMarkdown(item.titulo)}</strong>
+            <p>${formatarTextoMarkdown(item.texto)}</p>
+          </div>
+        `).join("");
+      }
 
-      // RENDERIZAÇÃO DA SEÇÃO EQUIPE / SOBRE COM IMAGENS ALTERNADAS
       if (dados.equipe && dados.equipe.length > 0) {
         document.getElementById("equipeCards").innerHTML = dados.equipe.map(item => `
           <div class="equipe-card">
@@ -1133,23 +1056,19 @@
               <img class="equipe-img" src="${item.imagem}" alt="${item.titulo}">
             </div>
             <div class="equipe-info">
-              <h2>${item.titulo}</h2>
-              <p>${item.texto.replace(/\n/g, "<br>")}</p>
+              <h2>${formatarTextoMarkdown(item.titulo)}</h2>
+              <p>${formatarTextoMarkdown(item.texto)}</p>
             </div>
           </div>
         `).join("");
       }
 
-      document.getElementById("ctaTitulo").textContent = dados.ctaTitulo;
-      document.getElementById("ctaTexto").textContent = dados.ctaTexto;
+      document.getElementById("ctaTitulo").innerHTML = formatarTextoMarkdown(dados.ctaTitulo);
+      document.getElementById("ctaTexto").innerHTML = formatarTextoMarkdown(dados.ctaTexto);
 
       const imagensParaCarregar = [dados.heroImagem];
-      dados.portfolio.forEach(item => {
-        if(item.imagens && item.imagens.length > 0) imagensParaCarregar.push(...item.imagens);
-      });
-      if(dados.equipe) {
-        dados.equipe.forEach(item => { if(item.imagem) imagensParaCarregar.push(item.imagem); });
-      }
+      if(dados.portfolio) dados.portfolio.forEach(item => { if(item.imagens && item.imagens.length > 0) imagensParaCarregar.push(...item.imagens); });
+      if(dados.equipe) dados.equipe.forEach(item => { if(item.imagem) imagensParaCarregar.push(item.imagem); });
 
       await Promise.all(imagensParaCarregar.map(src => preCarregarImagem(src)));
     }
@@ -1238,21 +1157,6 @@
         `<svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 11-2.34-5.66" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
       ];
       return icones[index] || icones[0];
-    }
-
-    function destacarPalavra(titulo) {
-      const palavras = ["crescer", "profissional", "resultado", "moderna", "digitais"];
-      let texto = titulo;
-
-      for (const palavra of palavras) {
-        const regex = new RegExp(`(${palavra})`, "i");
-        if (regex.test(texto)) {
-          texto = texto.replace(regex, "<span>$1</span>");
-          break;
-        }
-      }
-
-      return texto;
     }
 
     function abrirPagina() {
