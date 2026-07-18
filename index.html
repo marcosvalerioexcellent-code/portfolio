@@ -389,6 +389,13 @@
       box-shadow:0 26px 65px var(--shadow-hover)
     }
 
+    .project-img{
+      width:100%;
+      height:245px;
+      display:block;
+      transition: opacity 0.3s ease;
+    }
+
     .project-info{padding:25px}
     .project-info small{color:var(--accent-alt);font-weight:800}
     .project-info h3{margin:10px 0;font-size:1.32rem}
@@ -557,6 +564,64 @@
     .step strong{color:var(--accent-alt);display:block;margin-bottom:8px;font-size:1.02rem}
     .step p{color:var(--text-muted);line-height:1.65}
 
+    /* NOVA SEÇÃO EQUIPE / SOBRE */
+    .equipe-list {
+      display: flex;
+      flex-direction: column;
+      gap: 80px;
+    }
+
+    .equipe-card {
+      display: flex;
+      align-items: center;
+      gap: 60px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 36px;
+      padding: 40px;
+      box-shadow: 0 20px 60px var(--shadow-light);
+    }
+
+    /* A MÁGICA: Inverte a posição (Esquerda/Direita) a cada item par */
+    .equipe-card:nth-child(even) {
+      flex-direction: row-reverse;
+    }
+
+    .equipe-img-wrapper {
+      flex: 1;
+      border-radius: 24px;
+      overflow: hidden;
+      min-height: 380px;
+      box-shadow: 0 15px 40px var(--shadow-medium);
+      position: relative;
+    }
+
+    .equipe-img {
+      width: 100%;
+      height: 100%;
+      min-height: 380px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .equipe-info {
+      flex: 1.2;
+    }
+
+    .equipe-info h2 {
+      font-size: clamp(2rem, 3vw, 2.8rem);
+      letter-spacing: -1.5px;
+      margin-bottom: 18px;
+      color: var(--accent-text);
+      line-height: 1.1;
+    }
+
+    .equipe-info p {
+      color: var(--text-muted);
+      line-height: 1.75;
+      font-size: 1.05rem;
+    }
+
     .cta{
       text-align:center;
       border-radius:42px;
@@ -653,6 +718,16 @@
       .hero,.process{grid-template-columns:1fr}
       .portfolio-grid{grid-template-columns:1fr 1fr}
       .hero-card,.hero-image{min-height:480px}
+      
+      .equipe-card, .equipe-card:nth-child(even) {
+        flex-direction: column;
+        gap: 30px;
+        padding: 30px;
+      }
+      .equipe-img-wrapper, .equipe-img {
+        width: 100%;
+        min-height: 300px;
+      }
     }
 
     @media(max-width:620px){
@@ -697,6 +772,7 @@
         <a href="#servicos">Serviços</a>
         <a href="#portfolio">Portfólio</a>
         <a href="#processo">Processo</a>
+        <a href="#sobre">Equipe</a>
         <a href="#contato">Contato</a>
       </nav>
 
@@ -769,6 +845,13 @@
 
             <div class="process-box" id="processoCards"></div>
           </div>
+        </div>
+      </section>
+
+      <!-- NOVA SEÇÃO SOBRE / EQUIPE (ANTES DO CONTATO) -->
+      <section id="sobre" class="reveal" style="padding-top: 20px;">
+        <div class="container">
+          <div class="equipe-list" id="equipeCards"></div>
         </div>
       </section>
 
@@ -890,6 +973,14 @@
         {titulo:"03 — Desenvolvimento",texto:"Criamos o projeto com foco em design, usabilidade, velocidade, segurança e profissionalismo."},
         {titulo:"04 — Entrega e suporte",texto:"Você recebe a solução pronta para usar, com suporte de 7 a 30 dias após a entrega, dependendo da complexidade do projeto."}
       ],
+      
+      equipe: [
+        {
+          titulo: "Sobre a Excellent Services",
+          texto: "Fundada com o propósito de transformar ideias e processos operacionais em soluções digitais de alto nível. Acreditamos que um design premium aliado a uma tecnologia robusta é o segredo para o sucesso de qualquer empresa moderna.",
+          imagem: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=80"
+        }
+      ],
 
       ctaTitulo: "Vamos transformar sua ideia em uma solução profissional?",
       ctaTexto: "Solicite um orçamento para sistema, app, site, sistema em Excel, dashboard, automação ou página personalizada."
@@ -933,7 +1024,8 @@
         servicos: dados.servicos || dadosPadrao.servicos,
         portfolio: dados.portfolio || dadosPadrao.portfolio,
         stats: dados.stats || dadosPadrao.stats,
-        processo: dados.processo || dadosPadrao.processo
+        processo: dados.processo || dadosPadrao.processo,
+        equipe: dados.equipe || dadosPadrao.equipe || []
       };
     }
 
@@ -978,7 +1070,6 @@
         const imagensArray = item.imagens || [item.imagem];
         const ajusteCSS = item.ajuste || 'cover';
 
-        // Mapeia todas as imagens em uma trilha lado a lado para o efeito de deslize suave
         const trackHtml = imagensArray.filter(img => img).map(img => 
           `<img src="${img}" style="width: 100%; height: 100%; object-fit: ${ajusteCSS}; flex-shrink: 0;" alt="${item.titulo}">`
         ).join("");
@@ -998,7 +1089,6 @@
         </div>
       `}).join("");
 
-      // Inicia a lógica para deslizar o flex container (transição suave para a esquerda)
       document.querySelectorAll('.carousel-track').forEach(track => {
         const count = parseInt(track.dataset.count);
         if (count > 1) {
@@ -1006,7 +1096,6 @@
             let idx = parseInt(track.dataset.idx);
             idx = (idx + 1) % count;
             track.dataset.idx = idx;
-            // Translada a trilha inteira para a esquerda baseada no índice
             track.style.transform = `translateX(-${idx * 100}%)`;
           }, 2000); 
         }
@@ -1036,18 +1125,31 @@
         </div>
       `).join("");
 
+      // RENDERIZAÇÃO DA SEÇÃO EQUIPE / SOBRE COM IMAGENS ALTERNADAS
+      if (dados.equipe && dados.equipe.length > 0) {
+        document.getElementById("equipeCards").innerHTML = dados.equipe.map(item => `
+          <div class="equipe-card">
+            <div class="equipe-img-wrapper">
+              <img class="equipe-img" src="${item.imagem}" alt="${item.titulo}">
+            </div>
+            <div class="equipe-info">
+              <h2>${item.titulo}</h2>
+              <p>${item.texto.replace(/\n/g, "<br>")}</p>
+            </div>
+          </div>
+        `).join("");
+      }
+
       document.getElementById("ctaTitulo").textContent = dados.ctaTitulo;
       document.getElementById("ctaTexto").textContent = dados.ctaTexto;
 
-      // Pré-carrega todas as imagens para o carrossel não engasgar
       const imagensParaCarregar = [dados.heroImagem];
       dados.portfolio.forEach(item => {
-        if(item.imagens && item.imagens.length > 0) {
-          imagensParaCarregar.push(...item.imagens);
-        } else if (item.imagem) {
-          imagensParaCarregar.push(item.imagem);
-        }
+        if(item.imagens && item.imagens.length > 0) imagensParaCarregar.push(...item.imagens);
       });
+      if(dados.equipe) {
+        dados.equipe.forEach(item => { if(item.imagem) imagensParaCarregar.push(item.imagem); });
+      }
 
       await Promise.all(imagensParaCarregar.map(src => preCarregarImagem(src)));
     }
@@ -1132,7 +1234,7 @@
       const icones = [
         `<svg viewBox="0 0 24 24" fill="none"><path d="M5 19h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 16V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 16V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17 16v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
         `<svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 100 18 9 9 0 000-18z" stroke="currentColor" stroke-width="2"/><path d="M3 12h18" stroke="currentColor" stroke-width="2"/><path d="M12 3c2.5 2.4 4 5.6 4 9s-1.5 6.6-4 9c-2.5-2.4-4-5.6-4-9s1.5-6.6 4-9z" stroke="currentColor" stroke-width="2"/></svg>`,
-        `<svg viewBox="0 0 24 24" fill="none"><path d="M12 4l7 3v5c0 4.2-2.7 7.7-7 8-4.3-.3-7-3.8-7-8V7l7-3z" stroke="currentColor" stroke-width="2"/><path d="M9.5 12l1.7 1.7L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        `<svg viewBox="0 0 24 24" fill="none"><path d="M9.5 12l1.7 1.7L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
         `<svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 11-2.34-5.66" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
       ];
       return icones[index] || icones[0];
