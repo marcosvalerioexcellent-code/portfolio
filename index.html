@@ -42,8 +42,6 @@
       --shadow-btn-hover: rgba(243, 198, 35, 0.3);
       --shadow-hover: rgba(243, 198, 35, 0.1);
 
-      --loading-grad: rgba(243, 198, 35, 0.15);
-
       --stat-bg-1: #111111;
       --stat-bg-2: #0a0a0a;
       --stat-border: rgba(243, 198, 35, 0.15);
@@ -71,13 +69,12 @@
       font-weight: 800;
     }
 
+    /* TELA DE LOADING E FUNDOS 100% PRETOS */
     .loading-screen{
       position:fixed;
       inset:0;
       z-index:9999;
-      background:
-        radial-gradient(circle at top left,var(--loading-grad),transparent 32%),
-        linear-gradient(180deg,var(--bg-card) 0%,var(--bg-body) 100%);
+      background: var(--bg-body);
       display:flex;
       align-items:center;
       justify-content:center;
@@ -94,7 +91,7 @@
     .loading-box{
       width:min(430px,100%);
       text-align:center;
-      background:var(--bg-header);
+      background:var(--bg-card);
       border:1px solid var(--border-color);
       border-radius:32px;
       padding:38px 30px;
@@ -166,18 +163,16 @@
       font-size:.92rem;
     }
 
+    /* FUNDO DA PÁGINA (Preto Limpo) */
     .page{
       min-height:100vh;
-      background:radial-gradient(circle at top left,var(--loading-grad),transparent 34%),
-      linear-gradient(180deg,var(--bg-card) 0%,var(--bg-grad-mid) 45%,var(--bg-card) 100%);
+      background: var(--bg-body);
       opacity:0;
-      transform:translateY(14px);
-      transition:opacity .8s ease, transform .8s ease;
+      transition:opacity .8s ease;
     }
 
     .page.ready{
       opacity:1;
-      transform:translateY(0);
     }
 
     header{
@@ -323,7 +318,7 @@
       background:var(--bg-card);
       border:1px solid var(--border-color);
       min-height:255px;
-      transition:.3s ease;
+      transition:.4s ease;
       box-shadow:0 18px 44px var(--shadow-light)
     }
 
@@ -385,7 +380,7 @@
       overflow:hidden;
       background:var(--bg-card);
       border:1px solid var(--border-color);
-      transition:.3s ease;
+      transition:.4s ease;
       box-shadow:0 18px 44px var(--shadow-light)
     }
 
@@ -449,15 +444,7 @@
         0 20px 55px var(--shadow-medium),
         inset 0 1px 0 rgba(255,255,255,.03);
       min-height:220px;
-      transition:.35s ease;
-    }
-
-    .stat::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:radial-gradient(circle at top right,var(--loading-grad),transparent 38%);
-      pointer-events:none;
+      transition:.4s ease;
     }
 
     .stat::after{
@@ -570,69 +557,76 @@
     .step strong{color:var(--accent-alt);display:block;margin-bottom:8px;font-size:1.02rem}
     .step p{color:var(--text-muted);line-height:1.65}
 
-    /* NOVA SEÇÃO EQUIPE / SOBRE */
+    /* NOVO LAYOUT: EQUIPE / SOBRE (Grid com fotos em cima) */
     .equipe-list {
-      display: flex;
-      flex-direction: column;
-      gap: 80px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 30px;
     }
 
     .equipe-card {
       display: flex;
-      align-items: center;
-      gap: 60px;
+      flex-direction: column;
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 36px;
-      padding: 40px;
+      padding: 24px;
       box-shadow: 0 20px 60px var(--shadow-light);
+      transition: 0.4s ease;
     }
 
-    /* A MÁGICA: Inverte a posição (Esquerda/Direita) a cada item par */
-    .equipe-card:nth-child(even) {
-      flex-direction: row-reverse;
+    .equipe-card:hover {
+      transform: translateY(-8px);
+      border-color: var(--accent-badge-border);
+      box-shadow: 0 26px 65px var(--shadow-hover);
     }
 
     .equipe-img-wrapper {
-      flex: 1;
+      width: 100%;
       border-radius: 24px;
       overflow: hidden;
-      min-height: 380px;
-      box-shadow: 0 15px 40px var(--shadow-medium);
+      height: 380px;
       position: relative;
+      margin-bottom: 20px;
     }
 
     .equipe-img {
       width: 100%;
       height: 100%;
-      min-height: 380px;
       object-fit: cover;
       display: block;
+      transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .equipe-card:hover .equipe-img {
+      transform: scale(1.06);
     }
 
     .equipe-info {
-      flex: 1.2;
+      padding: 0 10px 10px 10px;
+      text-align: center;
     }
 
     .equipe-info h2 {
-      font-size: clamp(2rem, 3vw, 2.8rem);
-      letter-spacing: -1.5px;
-      margin-bottom: 18px;
+      font-size: clamp(1.8rem, 2.5vw, 2.2rem);
+      letter-spacing: -1px;
+      margin-bottom: 12px;
       color: var(--accent-text);
       line-height: 1.1;
     }
 
     .equipe-info p {
       color: var(--text-muted);
-      line-height: 1.75;
-      font-size: 1.05rem;
+      line-height: 1.7;
+      font-size: 1.02rem;
     }
 
     .cta{
       text-align:center;
       border-radius:42px;
       padding:76px 34px;
-      background:linear-gradient(135deg,var(--loading-grad),rgba(255,255,255,.05)),var(--stat-bg-1);
+      background: var(--stat-bg-1);
+      border: 1px solid var(--border-color);
       box-shadow:0 30px 80px var(--shadow-medium)
     }
 
@@ -703,16 +697,47 @@
       cursor:pointer
     }
 
-    .reveal{
-      opacity:0;
-      transform:translateY(35px);
-      transition:1s ease
+    /* EFEITO CASCATA DE SURGIMENTO PREMIUM NOS CARDS */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
     }
 
-    .reveal.active{
-      opacity:1;
-      transform:translateY(0)
+    /* Animação popUp para cada Card das seções */
+    .reveal.active .service-card,
+    .reveal.active .project,
+    .reveal.active .stat,
+    .reveal.active .step,
+    .reveal.active .equipe-card {
+      animation: popUpCard 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      opacity: 0;
     }
+
+    @keyframes popUpCard {
+      0% { opacity: 0; transform: translateY(50px) scale(0.95); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Atrasos (Delays) calculados dinamicamente para o efeito escadinha/cascata */
+    .reveal.active .service-card:nth-child(1), .reveal.active .project:nth-child(1), .reveal.active .stat:nth-child(1), .reveal.active .step:nth-child(1), .reveal.active .equipe-card:nth-child(1) { animation-delay: 0.1s; }
+    .reveal.active .service-card:nth-child(2), .reveal.active .project:nth-child(2), .reveal.active .stat:nth-child(2), .reveal.active .step:nth-child(2), .reveal.active .equipe-card:nth-child(2) { animation-delay: 0.2s; }
+    .reveal.active .service-card:nth-child(3), .reveal.active .project:nth-child(3), .reveal.active .stat:nth-child(3), .reveal.active .step:nth-child(3), .reveal.active .equipe-card:nth-child(3) { animation-delay: 0.3s; }
+    .reveal.active .service-card:nth-child(4), .reveal.active .project:nth-child(4), .reveal.active .stat:nth-child(4), .reveal.active .step:nth-child(4), .reveal.active .equipe-card:nth-child(4) { animation-delay: 0.4s; }
+    .reveal.active .service-card:nth-child(5), .reveal.active .project:nth-child(5), .reveal.active .stat:nth-child(5), .reveal.active .step:nth-child(5), .reveal.active .equipe-card:nth-child(5) { animation-delay: 0.5s; }
+    .reveal.active .service-card:nth-child(6), .reveal.active .project:nth-child(6), .reveal.active .stat:nth-child(6), .reveal.active .step:nth-child(6), .reveal.active .equipe-card:nth-child(6) { animation-delay: 0.6s; }
+
+    /* Efeito cascata também no topo (Hero) */
+    .reveal.active .badge { animation: popUpCard 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; animation-delay: 0.1s; opacity: 0; }
+    .reveal.active h1 { animation: popUpCard 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; animation-delay: 0.2s; opacity: 0; }
+    .reveal.active .hero p { animation: popUpCard 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; animation-delay: 0.3s; opacity: 0; }
+    .reveal.active .hero-actions { animation: popUpCard 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; animation-delay: 0.4s; opacity: 0; }
+    .reveal.active .hero-card { animation: popUpCard 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; animation-delay: 0.5s; opacity: 0; }
 
     @media(max-width:1100px){
       .services,.stats{grid-template-columns:repeat(2,1fr)}
@@ -725,14 +750,12 @@
       .portfolio-grid{grid-template-columns:1fr 1fr}
       .hero-card,.hero-image{min-height:480px}
       
-      .equipe-card, .equipe-card:nth-child(even) {
-        flex-direction: column;
-        gap: 30px;
-        padding: 30px;
+      .equipe-list {
+        grid-template-columns: 1fr;
       }
-      .equipe-img-wrapper, .equipe-img {
-        width: 100%;
+      .equipe-img-wrapper {
         min-height: 300px;
+        height: auto;
       }
     }
 
@@ -911,6 +934,87 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    const dadosPadrao = {
+      badge: "Sistemas, Apps, Sites e Sistemas em Excel personalizados",
+      heroTitulo: "Soluções digitais modernas para empresas que querem crescer.",
+      heroTexto: "A Excellent Services desenvolve soluções personalizadas para empresas: sistemas, apps, sites, páginas profissionais e sistemas em Excel. Já ajudamos diversas empresas pelo mundo a organizar processos, melhorar sua presença digital e trabalhar com mais profissionalismo.",
+      heroImagem: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=900&q=80",
+
+      servicosTitulo: "Soluções completas e personalizadas.",
+      servicosTexto: "Desenvolvemos projetos sob medida para cada negócio, unindo design, tecnologia, organização e praticidade.",
+      servicos: [
+        {
+          titulo:"Sistemas personalizados",
+          texto:"Sistemas sob medida para gestão de clientes, vendas, financeiro, estoque, projetos, equipes, relatórios e processos internos."
+        },
+        {
+          titulo:"Apps personalizados",
+          texto:"Aplicativos modernos para digitalizar processos, melhorar o atendimento e facilitar o acesso de clientes e equipes."
+        },
+        {
+          titulo:"Sites profissionais",
+          texto:"Sites institucionais, páginas de vendas e landing pages modernas, responsivas, estratégicas e com aparência premium."
+        },
+        {
+          titulo:"Sistemas em Excel",
+          texto:"Soluções em Excel com dashboards, automações, macros, controles inteligentes, relatórios e gestão visual personalizada."
+        }
+      ],
+
+      portfolioTitulo: "Projetos desenvolvidos com foco em resultado.",
+      portfolioTexto: "Criamos interfaces modernas, funcionais e profissionais para empresas que desejam mais controle, presença digital e eficiência.",
+      portfolio: [
+        {
+          categoria:"Sistema empresarial",
+          titulo:"Gestão financeira premium",
+          texto:"Interface limpa para acompanhar receitas, despesas, indicadores, clientes, relatórios e evolução do negócio.",
+          imagens:["https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80"],
+          ajuste: "cover"
+        },
+        {
+          categoria:"Dashboard personalizado",
+          titulo:"Controle operacional",
+          texto:"Plataforma para organizar vendas, tarefas, equipe, estoque, financeiro e relatórios em um só lugar.",
+          imagens:["https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80"],
+          ajuste: "cover"
+        },
+        {
+          categoria:"Site profissional",
+          titulo:"Landing page de alta conversão",
+          texto:"Design estratégico, moderno e responsivo para apresentar ofertas, serviços e empresas com mais autoridade.",
+          imagens:["https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80"],
+          ajuste: "cover"
+        }
+      ],
+
+      stats: [
+        {numero:"+50",texto:"Projetos digitais desenvolvidos"},
+        {numero:"Global",texto:"Empresas atendidas em diferentes regiões do mundo"},
+        {numero:"100%",texto:"Soluções personalizadas"},
+        {numero:"7-30d",texto:"Suporte após a entrega, conforme complexidade"}
+      ],
+
+      processoTitulo: "Processo simples, direto e profissional.",
+      processoTexto: "Da primeira conversa até a entrega final, cada etapa é pensada para transformar sua necessidade em uma solução clara, bonita e funcional.",
+      processo: [
+        {titulo:"01 — Diagnóstico",texto:"Entendemos o problema, objetivo, público, operação e recursos necessários para o projeto."},
+        {titulo:"02 — Estruturação",texto:"Organizamos a ideia em telas, fluxos, funcionalidades, identidade visual e experiência do usuário."},
+        {titulo:"03 — Desenvolvimento",texto:"Criamos o projeto com foco em design, usabilidade, velocidade, segurança e profissionalismo."},
+        {titulo:"04 — Entrega e suporte",texto:"Você recebe a solução pronta para usar, com suporte de 7 a 30 dias após a entrega, dependendo da complexidade do projeto."}
+      ],
+      
+      equipe: [
+        {
+          titulo: "Sobre a Excellent Services",
+          texto: "Fundada com o propósito de transformar ideias e processos operacionais em soluções digitais de alto nível. Acreditamos que um design premium aliado a uma tecnologia robusta é o segredo para o sucesso de qualquer empresa moderna.",
+          imagem: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=80"
+        }
+      ],
+
+      ctaTitulo: "Vamos transformar sua ideia em uma solução profissional?",
+      ctaTexto: "Solicite um orçamento para sistema, app, site, sistema em Excel, dashboard, automação ou página personalizada."
+    };
+
     const siteRef = ref(db, "excellentServices/site");
     let firebaseCarregado = false;
 
@@ -924,11 +1028,16 @@
         firebaseCarregado = true;
 
         if (snapshot.exists()) {
-          const dados = snapshot.val();
+          const dados = completarDados(snapshot.val());
           await carregarDados(dados);
+          resolve();
+        } else {
+          await set(siteRef, dadosPadrao);
+          await carregarDados(dadosPadrao);
           resolve();
         }
       }, async () => {
+        await carregarDados(dadosPadrao);
         resolve();
       });
     });
@@ -936,6 +1045,18 @@
     Promise.all([tempoMinimoLoading, dadosFirebase]).then(() => {
       abrirPagina();
     });
+
+    function completarDados(dados) {
+      return {
+        ...dadosPadrao,
+        ...dados,
+        servicos: dados.servicos || dadosPadrao.servicos,
+        portfolio: dados.portfolio || dadosPadrao.portfolio,
+        stats: dados.stats || dadosPadrao.stats,
+        processo: dados.processo || dadosPadrao.processo,
+        equipe: dados.equipe || dadosPadrao.equipe || []
+      };
+    }
 
     function preCarregarImagem(src) {
       return new Promise(resolve => {
@@ -961,8 +1082,6 @@
     }
 
     async function carregarDados(dados) {
-      if(!dados) return;
-
       document.getElementById("badge").innerHTML = formatarTextoMarkdown(dados.badge);
       document.getElementById("heroTitulo").innerHTML = formatarTextoMarkdown(dados.heroTitulo);
       document.getElementById("heroTexto").innerHTML = formatarTextoMarkdown(dados.heroTexto);
@@ -971,84 +1090,77 @@
       document.getElementById("servicosTitulo").innerHTML = formatarTextoMarkdown(dados.servicosTitulo);
       document.getElementById("servicosTexto").innerHTML = formatarTextoMarkdown(dados.servicosTexto);
 
-      if(dados.servicos) {
-        document.getElementById("servicosCards").innerHTML = dados.servicos.map((item) => `
-          <div class="service-card">
-            ${iconeServico(item.titulo)}
-            <h3>${formatarTextoMarkdown(item.titulo)}</h3>
-            <p>${formatarTextoMarkdown(item.texto)}</p>
-          </div>
-        `).join("");
-      }
+      document.getElementById("servicosCards").innerHTML = dados.servicos.map((item) => `
+        <div class="service-card">
+          ${iconeServico(item.titulo)}
+          <h3>${formatarTextoMarkdown(item.titulo)}</h3>
+          <p>${formatarTextoMarkdown(item.texto)}</p>
+        </div>
+      `).join("");
 
       document.getElementById("portfolioTitulo").innerHTML = formatarTextoMarkdown(dados.portfolioTitulo);
       document.getElementById("portfolioTexto").innerHTML = formatarTextoMarkdown(dados.portfolioTexto);
 
-      if(dados.portfolio) {
-        document.getElementById("portfolioCards").innerHTML = dados.portfolio.map(item => {
-          const imagensArray = item.imagens || [item.imagem];
-          const ajusteCSS = item.ajuste || 'cover';
+      document.getElementById("portfolioCards").innerHTML = dados.portfolio.map(item => {
+        const imagensArray = item.imagens || [item.imagem];
+        const ajusteCSS = item.ajuste || 'cover';
 
-          const trackHtml = imagensArray.filter(img => img).map(img => 
-            `<img src="${img}" style="width: 100%; height: 100%; object-fit: ${ajusteCSS}; flex-shrink: 0;" alt="${item.titulo}">`
-          ).join("");
+        const trackHtml = imagensArray.filter(img => img).map(img => 
+          `<img src="${img}" style="width: 100%; height: 100%; object-fit: ${ajusteCSS}; flex-shrink: 0;" alt="${item.titulo}">`
+        ).join("");
 
-          return `
-          <div class="project">
-            <div class="carousel-container" style="overflow: hidden; width: 100%; height: 245px; position: relative;">
-              <div class="carousel-track" data-count="${imagensArray.length}" data-idx="0" style="display: flex; height: 100%; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);">
-                ${trackHtml}
-              </div>
-            </div>
-            <div class="project-info">
-              <small>${formatarTextoMarkdown(item.categoria)}</small>
-              <h3>${formatarTextoMarkdown(item.titulo)}</h3>
-              <p>${formatarTextoMarkdown(item.texto)}</p>
+        return `
+        <div class="project">
+          <div class="carousel-container" style="overflow: hidden; width: 100%; height: 245px; position: relative;">
+            <div class="carousel-track" data-count="${imagensArray.length}" data-idx="0" style="display: flex; height: 100%; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);">
+              ${trackHtml}
             </div>
           </div>
-        `}).join("");
-
-        document.querySelectorAll('.carousel-track').forEach(track => {
-          const count = parseInt(track.dataset.count);
-          if (count > 1) {
-            setInterval(() => {
-              let idx = parseInt(track.dataset.idx);
-              idx = (idx + 1) % count;
-              track.dataset.idx = idx;
-              track.style.transform = `translateX(-${idx * 100}%)`;
-            }, 2000); 
-          }
-        });
-      }
-
-      if(dados.stats) {
-        document.getElementById("statsCards").innerHTML = dados.stats.map((item, index) => `
-          <div class="stat">
-            <div class="stat-top">
-              <span class="stat-badge">${rotuloStat(index)}</span>
-              <div class="stat-icon">
-                ${iconeStat(index)}
-              </div>
-            </div>
-            <h3>${formatarTextoMarkdown(item.numero)}</h3>
-            <div class="stat-line"></div>
+          <div class="project-info">
+            <small>${formatarTextoMarkdown(item.categoria)}</small>
+            <h3>${formatarTextoMarkdown(item.titulo)}</h3>
             <p>${formatarTextoMarkdown(item.texto)}</p>
           </div>
-        `).join("");
-      }
+        </div>
+      `}).join("");
+
+      document.querySelectorAll('.carousel-track').forEach(track => {
+        const count = parseInt(track.dataset.count);
+        if (count > 1) {
+          setInterval(() => {
+            let idx = parseInt(track.dataset.idx);
+            idx = (idx + 1) % count;
+            track.dataset.idx = idx;
+            track.style.transform = `translateX(-${idx * 100}%)`;
+          }, 2000); 
+        }
+      });
+
+      document.getElementById("statsCards").innerHTML = dados.stats.map((item, index) => `
+        <div class="stat">
+          <div class="stat-top">
+            <span class="stat-badge">${rotuloStat(index)}</span>
+            <div class="stat-icon">
+              ${iconeStat(index)}
+            </div>
+          </div>
+          <h3>${formatarTextoMarkdown(item.numero)}</h3>
+          <div class="stat-line"></div>
+          <p>${formatarTextoMarkdown(item.texto)}</p>
+        </div>
+      `).join("");
 
       document.getElementById("processoTitulo").innerHTML = formatarTextoMarkdown(dados.processoTitulo);
       document.getElementById("processoTexto").innerHTML = formatarTextoMarkdown(dados.processoTexto);
 
-      if(dados.processo) {
-        document.getElementById("processoCards").innerHTML = dados.processo.map(item => `
-          <div class="step">
-            <strong>${formatarTextoMarkdown(item.titulo)}</strong>
-            <p>${formatarTextoMarkdown(item.texto)}</p>
-          </div>
-        `).join("");
-      }
+      document.getElementById("processoCards").innerHTML = dados.processo.map(item => `
+        <div class="step">
+          <strong>${formatarTextoMarkdown(item.titulo)}</strong>
+          <p>${formatarTextoMarkdown(item.texto)}</p>
+        </div>
+      `).join("");
 
+      // RENDERIZAÇÃO DA SEÇÃO EQUIPE / SOBRE (Layout Grid)
       if (dados.equipe && dados.equipe.length > 0) {
         document.getElementById("equipeCards").innerHTML = dados.equipe.map(item => `
           <div class="equipe-card">
@@ -1067,8 +1179,12 @@
       document.getElementById("ctaTexto").innerHTML = formatarTextoMarkdown(dados.ctaTexto);
 
       const imagensParaCarregar = [dados.heroImagem];
-      if(dados.portfolio) dados.portfolio.forEach(item => { if(item.imagens && item.imagens.length > 0) imagensParaCarregar.push(...item.imagens); });
-      if(dados.equipe) dados.equipe.forEach(item => { if(item.imagem) imagensParaCarregar.push(item.imagem); });
+      dados.portfolio.forEach(item => {
+        if(item.imagens && item.imagens.length > 0) imagensParaCarregar.push(...item.imagens);
+      });
+      if(dados.equipe) {
+        dados.equipe.forEach(item => { if(item.imagem) imagensParaCarregar.push(item.imagem); });
+      }
 
       await Promise.all(imagensParaCarregar.map(src => preCarregarImagem(src)));
     }
@@ -1157,6 +1273,21 @@
         `<svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 11-2.34-5.66" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
       ];
       return icones[index] || icones[0];
+    }
+
+    function destacarPalavra(titulo) {
+      const palavras = ["crescer", "profissional", "resultado", "moderna", "digitais"];
+      let texto = titulo;
+
+      for (const palavra of palavras) {
+        const regex = new RegExp(`(${palavra})`, "i");
+        if (regex.test(texto)) {
+          texto = texto.replace(regex, "<span>$1</span>");
+          break;
+        }
+      }
+
+      return texto;
     }
 
     function abrirPagina() {
