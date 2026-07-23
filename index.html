@@ -878,7 +878,7 @@
     <div class="popup">
       <button class="fechar" onclick="fecharPopupCategorias()">×</button>
       <h2 id="popupCategoriasTitulo">Selecione as opções</h2>
-      <p>Escolha o departamento que deseja falar.</p>
+      <p id="popupCategoriasSubtitulo">Escolha o departamento que deseja falar.</p>
       <div id="categoriasBtnsArea"></div>
     </div>
   </div>
@@ -889,7 +889,7 @@
       <button class="fechar" onclick="fecharPopupContatos()">×</button>
       <button class="btn-voltar" onclick="voltarParaCategorias()">←</button>
       <h2 id="popupContatosTitulo">Fale com um de nossos representantes</h2>
-      <p>Selecione um dos contatos abaixo.</p>
+      <p id="popupContatosSubtitulo">Selecione um dos contatos abaixo.</p>
       <div id="contatosBtnsArea"></div>
     </div>
   </div>
@@ -961,7 +961,9 @@
 
       // NOVOS DADOS: POP-UP DE CONTATO
       contatosTitulo1: "Selecione as opções",
+      contatosSubtitulo1: "Escolha o departamento que deseja falar.",
       contatosTitulo2: "Fale com um de nossos representantes",
+      contatosSubtitulo2: "Selecione um dos contatos abaixo.",
       categoriasContato: [
         {
           categoria: "Sites",
@@ -1024,7 +1026,9 @@
         equipeTexto: dados.equipeTexto || dadosPadrao.equipeTexto,
         equipe: dados.equipe || dadosPadrao.equipe || [],
         contatosTitulo1: dados.contatosTitulo1 || dadosPadrao.contatosTitulo1,
+        contatosSubtitulo1: dados.contatosSubtitulo1 || dadosPadrao.contatosSubtitulo1,
         contatosTitulo2: dados.contatosTitulo2 || dadosPadrao.contatosTitulo2,
+        contatosSubtitulo2: dados.contatosSubtitulo2 || dadosPadrao.contatosSubtitulo2,
         categoriasContato: dados.categoriasContato || dadosPadrao.categoriasContato
       };
     }
@@ -1143,7 +1147,9 @@
 
       // POP-UP CONTATOS
       document.getElementById("popupCategoriasTitulo").innerHTML = formatarTextoMarkdown(dados.contatosTitulo1);
+      document.getElementById("popupCategoriasSubtitulo").innerHTML = formatarTextoMarkdown(dados.contatosSubtitulo1);
       document.getElementById("popupContatosTitulo").innerHTML = formatarTextoMarkdown(dados.contatosTitulo2);
+      document.getElementById("popupContatosSubtitulo").innerHTML = formatarTextoMarkdown(dados.contatosSubtitulo2);
 
       if (dados.categoriasContato && dados.categoriasContato.length > 0) {
         window.categoriasContatoGlobais = dados.categoriasContato;
