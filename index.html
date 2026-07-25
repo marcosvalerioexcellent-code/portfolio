@@ -76,7 +76,8 @@
       position:fixed;
       inset:0;
       z-index:9999;
-      background: var(--bg-body);
+      background: rgba(8,8,8,.82);
+      backdrop-filter: blur(8px);
       display:flex;
       align-items:center;
       justify-content:center;
@@ -131,7 +132,7 @@
       height:100%;
       border-radius:999px;
       background:linear-gradient(135deg,var(--accent-main),var(--accent-dark));
-      animation:progressFill 3s ease forwards;
+      transition:width .45s cubic-bezier(.4,0,.2,1);
       position:relative;
       overflow:hidden;
     }
@@ -148,11 +149,6 @@
       animation:shine 1.8s ease infinite;
     }
 
-    @keyframes progressFill{
-      from{width:0%}
-      to{width:100%}
-    }
-
     @keyframes shine{
       from{left:-45%}
       to{left:125%}
@@ -165,16 +161,65 @@
       font-size:.92rem;
     }
 
-    /* FUNDO DA PÁGINA (Preto Limpo) */
+    /* FUNDO DA PÁGINA (Preto Limpo, com efeito por trás) */
     .page{
       min-height:100vh;
-      background: var(--bg-body);
+      background: transparent;
+      position:relative;
+      z-index:2;
       opacity:0;
       transition:opacity .8s ease;
     }
 
     .page.ready{
       opacity:1;
+    }
+
+    /* EFEITO DE FUNDO IMPRESSIONANTE (auras + partículas douradas) */
+    .bg-glow{
+      position:fixed;
+      inset:0;
+      z-index:0;
+      overflow:hidden;
+      pointer-events:none;
+    }
+
+    .bg-glow::before,
+    .bg-glow::after{
+      content:"";
+      position:absolute;
+      width:min(75vw,900px);
+      height:min(75vw,900px);
+      border-radius:50%;
+      filter:blur(90px);
+      will-change:transform;
+      animation:floatGlow 20s ease-in-out infinite;
+    }
+
+    .bg-glow::before{
+      top:-20%;
+      left:-16%;
+      background:radial-gradient(circle, rgba(243,198,35,.22), rgba(243,198,35,0) 70%);
+    }
+
+    .bg-glow::after{
+      bottom:-24%;
+      right:-16%;
+      background:radial-gradient(circle, rgba(243,198,35,.16), rgba(243,198,35,0) 70%);
+      animation-delay:-10s;
+      animation-duration:25s;
+    }
+
+    @keyframes floatGlow{
+      0%,100%{ transform:translate(0,0) scale(1); }
+      50%{ transform:translate(7%,8%) scale(1.2); }
+    }
+
+    #bgParticles{
+      position:fixed;
+      inset:0;
+      z-index:1;
+      pointer-events:none;
     }
 
     header{
@@ -762,6 +807,9 @@
 </head>
 
 <body>
+  <div class="bg-glow" aria-hidden="true"></div>
+  <canvas id="bgParticles" aria-hidden="true"></canvas>
+
   <div class="loading-screen" id="loadingScreen">
     <div class="loading-box">
       <div class="loading-logo">
@@ -911,6 +959,156 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    /* ---------- EFEITO DE FUNDO INTERATIVO: partículas + luz que reage ao visitante ---------- 
+       Roda independente do carregamento dos dados, tanto na tela de
+       loading quanto por trás da página inteira depois. */
+    (function iniciarFundoInterativo() {
+      const canvas = document.getElementById("bgParticles");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const reduzMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      let w, h, dpr, particulas = [];
+      const pointer = { x: 0, y: 0, ativo: false };
+      let brilhoClique = 0; // 0 a 1, acende no clique/toque e apaga sozinho
+
+      function redimensionar() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = window.innerWidth;
+        h = window.innerHeight;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = w + "px";
+        canvas.style.height = h + "px";
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        criarParticulas();
+      }
+
+      function criarParticulas() {
+        const qtd = Math.max(40, Math.min(110, Math.round((w * h) / 16000)));
+        particulas = Array.from({ length: qtd }, () => ({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3,
+          r: Math.random() * 1.7 + 0.7
+        }));
+      }
+
+      // ---- Interação: mouse e toque (desativada se o visitante prefere menos movimento) ----
+      function atualizarPonteiro(x, y) {
+        pointer.x = x; pointer.y = y; pointer.ativo = true;
+      }
+
+      function acenderBrilho() { brilhoClique = 1; }
+
+      if (!reduzMovimento) {
+        window.addEventListener("mousemove", e => atualizarPonteiro(e.clientX, e.clientY), { passive: true });
+        window.addEventListener("touchmove", e => {
+          if (e.touches[0]) atualizarPonteiro(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: true });
+        window.addEventListener("touchstart", e => {
+          if (e.touches[0]) { atualizarPonteiro(e.touches[0].clientX, e.touches[0].clientY); acenderBrilho(); }
+        }, { passive: true });
+
+        window.addEventListener("mouseleave", () => { pointer.ativo = false; });
+        window.addEventListener("touchend", () => { pointer.ativo = false; });
+
+        window.addEventListener("click", acenderBrilho);
+      }
+
+      function desenhar() {
+        ctx.clearRect(0, 0, w, h);
+
+        const raioRepulsao = 130;
+        const raioLinhaCursor = 210;
+
+        for (const p of particulas) {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0) p.x = w; else if (p.x > w) p.x = 0;
+          if (p.y < 0) p.y = h; else if (p.y > h) p.y = 0;
+
+          if (pointer.ativo) {
+            const dx = p.x - pointer.x, dy = p.y - pointer.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < raioRepulsao && dist > 0.01) {
+              const forca = (raioRepulsao - dist) / raioRepulsao;
+              p.x += (dx / dist) * forca * 3.4;
+              p.y += (dy / dist) * forca * 3.4;
+            }
+          }
+        }
+
+        // linhas entre partículas próximas
+        const distMax = Math.min(140, w * 0.11);
+        for (let i = 0; i < particulas.length; i++) {
+          for (let j = i + 1; j < particulas.length; j++) {
+            const a = particulas[i], b = particulas[j];
+            const dx = a.x - b.x, dy = a.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < distMax) {
+              ctx.strokeStyle = `rgba(243,198,35,${0.13 * (1 - dist / distMax)})`;
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.stroke();
+            }
+          }
+        }
+
+        // linhas conectando partículas ao ponteiro (efeito de "teia" reagindo ao visitante)
+        // brilham mais forte por um instante logo após um clique/toque
+        if (pointer.ativo) {
+          const reforco = brilhoClique;
+          if (reforco > 0.02) {
+            ctx.shadowBlur = 12 * reforco;
+            ctx.shadowColor = "rgba(255,214,64,.9)";
+          }
+          for (const p of particulas) {
+            const dx = p.x - pointer.x, dy = p.y - pointer.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < raioLinhaCursor) {
+              const proximidade = 1 - dist / raioLinhaCursor;
+              const alpha = 0.35 * proximidade + 0.5 * reforco * proximidade;
+              ctx.strokeStyle = `rgba(255,224,120,${Math.min(1, alpha)})`;
+              ctx.lineWidth = 1.1 + reforco * 1.2;
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(pointer.x, pointer.y);
+              ctx.stroke();
+            }
+          }
+          ctx.shadowBlur = 0;
+        }
+
+        for (const p of particulas) {
+          ctx.beginPath();
+          ctx.fillStyle = "rgba(255,214,64,.7)";
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (brilhoClique > 0.01) brilhoClique *= 0.9; else brilhoClique = 0;
+
+        if (!reduzMovimento) requestAnimationFrame(desenhar);
+      }
+
+      let resizeTimer;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(redimensionar, 150);
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && !reduzMovimento) requestAnimationFrame(desenhar);
+      });
+
+      redimensionar();
+      desenhar();
+    })();
+
     const dadosPadrao = {
       badge: "Sistemas, Apps, Sites e Sistemas em Excel personalizados",
       heroTitulo: "Soluções digitais modernas para empresas que querem *crescer*.",
@@ -990,12 +1188,30 @@
     const siteRef = ref(db, "excellentServices/site");
     let firebaseCarregado = false;
 
-    const tempoMinimoLoading = new Promise(resolve => { setTimeout(resolve, 3000); });
+    /* ---------- PROGRESSO REAL DE CARREGAMENTO ----------
+       Nada aqui é baseado em segundos: a barra só avança quando
+       uma etapa real termina (conexão, dados recebidos, textos
+       montados, cada imagem pré-carregada, etc). */
+    const progressBarEl = document.querySelector(".progress-bar");
+    const loadingPercentEl = document.getElementById("loadingPercent");
+    let progressoAtual = 0;
+
+    function setProgresso(valor) {
+      valor = Math.max(progressoAtual, Math.min(100, valor));
+      progressoAtual = valor;
+      if (progressBarEl) progressBarEl.style.width = valor + "%";
+      if (loadingPercentEl) {
+        loadingPercentEl.textContent = valor >= 100 ? "Concluído" : Math.round(valor) + "%";
+      }
+    }
+
+    setProgresso(5); // script iniciado
 
     const dadosFirebase = new Promise(resolve => {
       onValue(siteRef, async (snapshot) => {
         if (firebaseCarregado) return;
         firebaseCarregado = true;
+        setProgresso(20); // conexão/resposta do Firebase recebida
 
         if (snapshot.exists()) {
           const dados = completarDados(snapshot.val());
@@ -1007,12 +1223,16 @@
           resolve();
         }
       }, async () => {
+        setProgresso(20);
         await carregarDados(dadosPadrao);
         resolve();
       });
     });
 
-    Promise.all([tempoMinimoLoading, dadosFirebase]).then(() => { abrirPagina(); });
+    dadosFirebase.then(() => {
+      setProgresso(100);
+      setTimeout(abrirPagina, 350); // pequena pausa só para o usuário ver o "Concluído"
+    });
 
     function completarDados(dados) {
       return {
@@ -1050,6 +1270,8 @@
     }
 
     async function carregarDados(dados) {
+      setProgresso(30); // dados recebidos, começando a montar a página
+
       document.getElementById("badge").innerHTML = formatarTextoMarkdown(dados.badge);
       document.getElementById("heroTitulo").innerHTML = formatarTextoMarkdown(dados.heroTitulo);
       document.getElementById("heroTexto").innerHTML = formatarTextoMarkdown(dados.heroTexto);
@@ -1164,8 +1386,20 @@
       dados.portfolio.forEach(item => { if(item.imagens && item.imagens.length > 0) imagensParaCarregar.push(...item.imagens); });
       if(dados.equipe) { dados.equipe.forEach(item => { if(item.imagem) imagensParaCarregar.push(item.imagem); }); }
 
-      await Promise.all(imagensParaCarregar.map(src => preCarregarImagem(src)));
+      const listaImagens = imagensParaCarregar.filter(Boolean);
+      const totalImagens = listaImagens.length || 1;
+      let imagensCarregadas = 0;
+      const faixaInicio = 35, faixaFim = 92; // faixa de progresso dedicada ao carregamento real das imagens
+
+      setProgresso(faixaInicio);
+
+      await Promise.all(listaImagens.map(src => preCarregarImagem(src).then(() => {
+        imagensCarregadas++;
+        setProgresso(faixaInicio + (imagensCarregadas / totalImagens) * (faixaFim - faixaInicio));
+      })));
+
       observarElementos();
+      setProgresso(95); // conteúdo montado e observado, faltando só finalizar
     }
 
     function iconeServico(titulo) {
@@ -1191,14 +1425,6 @@
       document.getElementById("page").classList.add("ready");
       document.getElementById("loadingScreen").classList.add("hide");
     }
-
-    let percentual = 0;
-    const loadingPercent = document.getElementById("loadingPercent");
-    const contador = setInterval(() => {
-      percentual++;
-      if (percentual <= 100) { loadingPercent.textContent = percentual + "%"; }
-      if (percentual >= 100) { clearInterval(contador); loadingPercent.textContent = "Concluído"; }
-    }, 30);
 
     /* FUNÇÕES DOS NOVOS POP-UPS DE WHATSAPP */
     window.abrirWhatsapp = function() { 
