@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#06070c">
+  <meta name="theme-color" content="#08070a">
   <title>Excellent Services | Portfólio</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,46 +12,47 @@
 
   <style>
     :root {
-      /* Paleta - "Sistema" futurista, limpo, dark */
-      --bg-body: #06070c;
+      /* Paleta - Preto premium com detalhes em ouro */
+      --bg-body: #08070a;
       --bg-surface: rgba(255,255,255,0.035);
       --bg-surface-strong: rgba(255,255,255,0.055);
-      --bg-solid: #0c0e18;
-      --bg-header: rgba(6,7,12,0.72);
-      --bg-popup: #0d0f1a;
+      --bg-solid: #0d0b0e;
+      --bg-header: rgba(8,7,10,0.74);
+      --bg-popup: #0e0c10;
 
-      --text-main: #f3f4f8;
-      --text-muted: #8a8ea3;
-      --text-dim: #5c6078;
-      --text-p: #b7bacb;
-      --text-btn: #f6f7fc;
-      --text-nav: #c7cadb;
-      --text-footer: #6b6f85;
+      --text-main: #f4f2ec;
+      --text-muted: #96917f;
+      --text-dim: #6b6252;
+      --text-p: #b9b6ad;
+      --text-btn: #1c1509;
+      --text-nav: #c9c4b6;
+      --text-footer: #6b6656;
 
-      --accent-1: #4c7dff;
-      --accent-2: #9d6bff;
+      --accent-1: #f0cf7e;
+      --accent-2: #a9781f;
       --accent-grad: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-      --accent-text: #6c8cff;
-      --accent-mono: #74e3d7;
+      --gold-shine: linear-gradient(100deg, #8a6116 0%, #e8c064 20%, #fff3cf 36%, #e8c064 52%, #a9781f 68%, #f0cf7e 84%, #8a6116 100%);
+      --accent-text: #e0b24a;
+      --accent-mono: #f2d896;
 
-      --badge-bg: rgba(76,125,255,0.10);
-      --badge-border: rgba(76,125,255,0.28);
-      --badge-text: #aebfff;
+      --badge-bg: rgba(201,151,63,0.12);
+      --badge-border: rgba(201,151,63,0.32);
+      --badge-text: #eccb84;
 
       --border-color: rgba(255,255,255,0.09);
-      --border-strong: rgba(255,255,255,0.18);
+      --border-strong: rgba(214,171,90,0.28);
 
       --shadow-1: rgba(0,0,0,0.45);
       --shadow-2: rgba(0,0,0,0.65);
-      --shadow-glow: rgba(76,125,255,0.16);
-      --shadow-glow-strong: rgba(76,125,255,0.28);
+      --shadow-glow: rgba(180,138,40,0.22);
+      --shadow-glow-strong: rgba(180,138,40,0.38);
 
-      --icon-system-1: #1f2f66;
-      --icon-app-1: #2b2166;
-      --icon-app-2: #9d6bff;
-      --icon-site-1: #1f3a66;
-      --icon-site-2: #4c9eff;
-      --icon-excel-1: #1f4a45;
+      --icon-system-1: #4a3814;
+      --icon-app-1: #382a10;
+      --icon-app-2: #e8b750;
+      --icon-site-1: #443410;
+      --icon-site-2: #f0cf7e;
+      --icon-excel-1: #382a10;
 
       --radius-sm: 12px;
       --radius-md: 18px;
@@ -81,9 +82,9 @@
       z-index:-2;
       pointer-events:none;
       background:
-        radial-gradient(900px circle at 8% 0%, rgba(76,125,255,.10), transparent 55%),
-        radial-gradient(900px circle at 92% 28%, rgba(157,107,255,.09), transparent 55%),
-        radial-gradient(700px circle at 50% 100%, rgba(76,125,255,.06), transparent 55%),
+        radial-gradient(900px circle at 8% 0%, rgba(201,151,63,.10), transparent 55%),
+        radial-gradient(900px circle at 92% 28%, rgba(169,120,31,.09), transparent 55%),
+        radial-gradient(700px circle at 50% 100%, rgba(201,151,63,.06), transparent 55%),
         repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0px, rgba(255,255,255,.022) 1px, transparent 1px, transparent 56px),
         repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0px, rgba(255,255,255,.022) 1px, transparent 1px, transparent 56px);
     }
@@ -94,7 +95,7 @@
       inset:-20% -20%;
       z-index:-1;
       pointer-events:none;
-      background:linear-gradient(100deg, transparent 44%, rgba(76,125,255,.05) 49%, rgba(157,107,255,.08) 50%, rgba(76,125,255,.05) 51%, transparent 56%);
+      background:linear-gradient(100deg, transparent 44%, rgba(201,151,63,.05) 49%, rgba(169,120,31,.08) 50%, rgba(201,151,63,.05) 51%, transparent 56%);
       opacity:0;
       transform:translate3d(-30%,-25%,0);
       animation:bgSweep 17s ease-in-out infinite;
@@ -119,7 +120,8 @@
 
     /* DESTAQUE DE TEXTO (gradiente) */
     .highlight {
-      background:var(--accent-grad);
+      background:var(--gold-shine);
+      background-size:200% auto;
       -webkit-background-clip:text;
       background-clip:text;
       color:var(--accent-text);
@@ -145,8 +147,8 @@
       position:absolute;
       inset:0;
       background:
-        radial-gradient(520px circle at 20% 20%, rgba(76,125,255,.14), transparent 60%),
-        radial-gradient(480px circle at 80% 80%, rgba(157,107,255,.12), transparent 60%),
+        radial-gradient(520px circle at 20% 20%, rgba(201,151,63,.14), transparent 60%),
+        radial-gradient(480px circle at 80% 80%, rgba(169,120,31,.12), transparent 60%),
         repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px, transparent 1px, transparent 46px),
         repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px, transparent 1px, transparent 46px);
       pointer-events:none;
@@ -182,7 +184,7 @@
     .loading-mark .dot{
       width:9px;height:9px;border-radius:50%;
       background:var(--accent-grad);
-      box-shadow:0 0 0 4px rgba(76,125,255,.15);
+      box-shadow:0 0 0 4px rgba(201,151,63,.15);
       animation:pulse 1.8s ease-in-out infinite;
       flex-shrink:0;
     }
@@ -257,7 +259,12 @@
     }
 
     .loading-percent{
+      background:var(--gold-shine);
+      background-size:200% auto;
+      -webkit-background-clip:text;
+      background-clip:text;
       color:var(--accent-mono);
+      -webkit-text-fill-color:transparent;
       font-weight:600;
     }
 
@@ -359,8 +366,8 @@
       z-index:0;
       pointer-events:none;
       background:
-        radial-gradient(560px circle at 12% 18%, rgba(76,125,255,.14), transparent 60%),
-        radial-gradient(480px circle at 88% 68%, rgba(157,107,255,.12), transparent 60%);
+        radial-gradient(560px circle at 12% 18%, rgba(201,151,63,.14), transparent 60%),
+        radial-gradient(480px circle at 88% 68%, rgba(169,120,31,.12), transparent 60%);
       animation:auraFloat 16s ease-in-out infinite alternate;
     }
 
@@ -390,7 +397,7 @@
     .badge .dot{
       width:7px;height:7px;border-radius:50%;
       background:var(--accent-grad);
-      box-shadow:0 0 0 3px rgba(76,125,255,.18);
+      box-shadow:0 0 0 3px rgba(201,151,63,.18);
       animation:pulse 1.8s ease-in-out infinite;
       flex-shrink:0;
     }
@@ -422,7 +429,7 @@
       inset:-18%;
       z-index:0;
       pointer-events:none;
-      background:radial-gradient(circle at center, rgba(76,125,255,.16), rgba(157,107,255,.08) 45%, transparent 70%);
+      background:radial-gradient(circle at center, rgba(201,151,63,.16), rgba(169,120,31,.08) 45%, transparent 70%);
       filter:blur(38px);
     }
 
@@ -633,7 +640,7 @@
       border-radius:12px;
       display:grid;
       place-items:center;
-      background:rgba(76,125,255,.1);
+      background:rgba(201,151,63,.1);
       border:1px solid var(--badge-border);
       color:var(--accent-text);
       flex-shrink:0;
@@ -645,7 +652,8 @@
       font-family:var(--font-mono);
       font-weight:700;
       font-size:2.5rem;
-      background:var(--accent-grad);
+      background:var(--gold-shine);
+      background-size:200% auto;
       -webkit-background-clip:text;
       background-clip:text;
       color:var(--accent-mono);
@@ -812,7 +820,7 @@
       content:"";
       position:absolute;
       inset:0;
-      background:radial-gradient(520px circle at 50% 0%, rgba(76,125,255,.14), transparent 65%);
+      background:radial-gradient(520px circle at 50% 0%, rgba(201,151,63,.14), transparent 65%);
       pointer-events:none;
     }
 
