@@ -1090,12 +1090,16 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
     import { firebaseConfig } from "/firebase-config.js";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    // O site só LÊ dados públicos: usa requisições HTTP simples (sem carregar o SDK do Firebase)
+    const BASE_DB = firebaseConfig.databaseURL + "/excellentServices";
+    const SITE_DB = BASE_DB + "/site";
+    async function lerJson(url) {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }
 
     const dadosPadrao = {
       badge: "Sistemas, Apps, Sites e Sistemas em Excel personalizados",
@@ -1202,9 +1206,6 @@
     requestAnimationFrame(animarProgresso);
     definirProgresso(5, "Inicializando");
 
-    const siteRef = ref(db, "excellentServices/site");
-    let firebaseCarregado = false;
-
     definirProgresso(12, "Conectando ao servidor");
 
     /* ===== IMAGENS CARREGADAS SOB DEMANDA (img:ID) ===== */
@@ -1240,15 +1241,15 @@
 
     function carregarImagensPendentes() {
       imagensPendentes.forEach(async (id) => {
+        imagensPendentes.delete(id);
         const chave = "excellentImg_" + id;
         try {
           const guardada = localStorage.getItem(chave);
           if (guardada) { aplicarImagem(id, guardada); return; }
         } catch (e) {}
         try {
-          const snap = await get(ref(db, "excellentServices/imagens/" + id));
-          if (snap.exists()) {
-            const src = snap.val();
+          const src = await lerJson(BASE_DB + "/imagens/" + id + ".json");
+          if (src) {
             aplicarImagem(id, src);
             try { localStorage.setItem(chave, src); } catch (e) {}
           }
@@ -1256,61 +1257,72 @@
       });
     }
 
-    /* Cache local: mostra a última versão salva na hora e atualiza em segundo plano */
-    const CACHE_KEY = "excellentSiteCache_v1";
-    let cacheTexto = null;
-    try { cacheTexto = localStorage.getItem(CACHE_KEY); } catch (e) {}
-    let cacheDados = null;
-    if (cacheTexto) { try { cacheDados = JSON.parse(cacheTexto); } catch (e) {} }
+    /* Carregamento em duas fases:
+       1) textos leves -> a página abre
+       2) imagens/portfólio/equipe chegam em segundo plano e aparecem na tela */
+    const PESADOS = ["heroImagem", "portfolio", "equipe"];
 
-    const dadosFirebase = new Promise(resolve => {
-      let resolvido = false;
-      const concluir = async (dados) => {
-        if (resolvido) return;
-        resolvido = true;
-        await carregarDados(prepararImagens(dados));
-        carregarImagensPendentes();
-        resolve();
-      };
-
-      // Se existe cache, mostra na hora e confere o servidor em segundo plano.
-      // Sem cache, espera o servidor (nunca mostra conteúdo padrão no lugar do real).
-      if (cacheDados) {
-        setTimeout(() => {
-          if (resolvido) return;
-          definirProgresso(35, "Usando conteúdo salvo");
-          concluir(completarDados(cacheDados));
-        }, 600);
+    async function carregarPesados(chaves) {
+      if (chaves.heroImagem) {
+        lerJson(SITE_DB + "/heroImagem.json").then(v => {
+          renderHero(prepararImagens({ heroImagem: v }));
+          carregarImagensPendentes();
+        }).catch(() => {});
       }
 
-      onValue(siteRef, async (snapshot) => {
-        if (firebaseCarregado) return;
-        firebaseCarregado = true;
-        definirProgresso(35, "Sincronizando conteúdo");
+      const lista = async (chave, aplicar) => {
+        if (!chaves[chave]) return;
+        try {
+          const indices = Object.keys(await lerJson(SITE_DB + "/" + chave + ".json?shallow=true") || {})
+            .sort((x, y) => Number(x) - Number(y));
+          const itens = [];
+          await Promise.all(indices.map(async (i) => {
+            try { itens[i] = await lerJson(SITE_DB + "/" + chave + "/" + i + ".json"); } catch (e) {}
+            aplicar(itens.filter(Boolean));
+          }));
+        } catch (e) {}
+      };
 
-        if (snapshot.exists()) {
-          const novo = snapshot.val();
-          const novoTexto = JSON.stringify(novo);
-          let cacheSalvo = false;
-          try {
-            localStorage.setItem(CACHE_KEY, novoTexto);
-            cacheSalvo = localStorage.getItem(CACHE_KEY) === novoTexto;
-          } catch (e) {}
-          if (!cacheSalvo) { try { localStorage.removeItem(CACHE_KEY); } catch (e) {} }
-          if (!resolvido) {
-            await concluir(completarDados(novo));
-          } else if (cacheTexto !== novoTexto) {
-            // chegou conteúdo mais novo depois da página abrir: recarrega (sem cache, espera o servidor)
-            location.reload();
-          }
-        } else {
-          await concluir(dadosPadrao);
-        }
-      }, async () => {
-        definirProgresso(35, "Usando conteúdo padrão");
-        await concluir(cacheDados ? completarDados(cacheDados) : dadosPadrao);
+      lista("portfolio", itens => {
+        renderPortfolio(prepararImagens({ portfolio: itens }));
+        carregarImagensPendentes();
+        observarElementos();
       });
-    });
+      lista("equipe", itens => {
+        renderEquipe(prepararImagens({ equipe: itens }));
+        carregarImagensPendentes();
+        observarElementos();
+      });
+    }
+
+    const dadosFirebase = (async () => {
+      let leve = null, chaves = null;
+      try {
+        chaves = await lerJson(SITE_DB + ".json?shallow=true");
+        if (chaves) {
+          definirProgresso(35, "Sincronizando conteúdo");
+          const nomes = Object.keys(chaves).filter(k => !PESADOS.includes(k));
+          const valores = await Promise.all(nomes.map(k => lerJson(SITE_DB + "/" + k + ".json")));
+          leve = {};
+          nomes.forEach((k, i) => { leve[k] = valores[i]; });
+        }
+      } catch (e) {
+        leve = null;
+        definirProgresso(35, "Usando conteúdo padrão");
+      }
+
+      if (!leve) { await carregarDados(dadosPadrao); return; }
+
+      const base = completarDados({
+        ...leve,
+        heroImagem: chaves.heroImagem ? "" : dadosPadrao.heroImagem,
+        portfolio: chaves.portfolio ? [] : dadosPadrao.portfolio,
+        equipe: chaves.equipe ? [] : dadosPadrao.equipe
+      });
+      await carregarDados(prepararImagens(base));
+      carregarImagensPendentes();
+      carregarPesados(chaves);
+    })();
 
     dadosFirebase.then(() => {
       definirProgresso(100, "Concluído");
@@ -1353,28 +1365,14 @@
       return formatado;
     }
 
-    async function carregarDados(dados) {
-      document.getElementById("badge").innerHTML = formatarTextoMarkdown(dados.badge);
-      document.getElementById("heroTitulo").innerHTML = formatarTextoMarkdown(dados.heroTitulo);
-      document.getElementById("heroTexto").innerHTML = formatarTextoMarkdown(dados.heroTexto);
+    function renderHero(dados) {
       document.getElementById("heroImagem").src = dados.heroImagem || "";
+    }
 
-      document.getElementById("servicosTitulo").innerHTML = formatarTextoMarkdown(dados.servicosTitulo);
-      document.getElementById("servicosTexto").innerHTML = formatarTextoMarkdown(dados.servicosTexto);
-
-      document.getElementById("servicosCards").innerHTML = dados.servicos.map((item) => `
-        <div class="service-card fade-in-up">
-          ${iconeServico(item.titulo)}
-          <h3>${formatarTextoMarkdown(item.titulo)}</h3>
-          <p>${formatarTextoMarkdown(item.texto)}</p>
-        </div>
-      `).join("");
-
-      document.getElementById("portfolioTitulo").innerHTML = formatarTextoMarkdown(dados.portfolioTitulo);
-      document.getElementById("portfolioTexto").innerHTML = formatarTextoMarkdown(dados.portfolioTexto);
-
-      definirProgresso(45, "Montando página");
-
+    let intervalosCarrossel = [];
+    function renderPortfolio(dados) {
+      intervalosCarrossel.forEach(clearInterval);
+      intervalosCarrossel = [];
       document.getElementById("portfolioCards").innerHTML = dados.portfolio.map(item => {
         const imagensArray = item.imagens || [item.imagem];
         const ajusteCSS = item.ajuste || 'cover';
@@ -1398,14 +1396,56 @@
       document.querySelectorAll('.carousel-track').forEach(track => {
         const count = parseInt(track.dataset.count);
         if (count > 1) {
-          setInterval(() => {
+          intervalosCarrossel.push(setInterval(() => {
             let idx = parseInt(track.dataset.idx);
             idx = (idx + 1) % count;
             track.dataset.idx = idx;
             track.style.transform = `translateX(-${idx * 100}%)`;
-          }, 2000);
+          }, 2000));
         }
       });
+    }
+
+    function renderEquipe(dados) {
+      if (dados.equipe && dados.equipe.length > 0) {
+        document.getElementById("equipeCards").innerHTML = dados.equipe.map(item => `
+          <div class="equipe-card fade-in-up">
+            <div class="equipe-img-wrapper">
+              <img class="equipe-img" src="${item.imagem}" alt="${item.titulo}">
+            </div>
+            <div class="equipe-info">
+              <h2>${formatarTextoMarkdown(item.titulo)}</h2>
+              ${item.subtitulo ? `<h3>${formatarTextoMarkdown(item.subtitulo)}</h3>` : ''}
+              <p>${formatarTextoMarkdown(item.texto)}</p>
+            </div>
+          </div>
+        `).join("");
+      }
+    }
+
+    async function carregarDados(dados) {
+      document.getElementById("badge").innerHTML = formatarTextoMarkdown(dados.badge);
+      document.getElementById("heroTitulo").innerHTML = formatarTextoMarkdown(dados.heroTitulo);
+      document.getElementById("heroTexto").innerHTML = formatarTextoMarkdown(dados.heroTexto);
+      renderHero(dados);
+
+      document.getElementById("servicosTitulo").innerHTML = formatarTextoMarkdown(dados.servicosTitulo);
+      document.getElementById("servicosTexto").innerHTML = formatarTextoMarkdown(dados.servicosTexto);
+
+      document.getElementById("servicosCards").innerHTML = dados.servicos.map((item) => `
+        <div class="service-card fade-in-up">
+          ${iconeServico(item.titulo)}
+          <h3>${formatarTextoMarkdown(item.titulo)}</h3>
+          <p>${formatarTextoMarkdown(item.texto)}</p>
+        </div>
+      `).join("");
+
+      document.getElementById("portfolioTitulo").innerHTML = formatarTextoMarkdown(dados.portfolioTitulo);
+      document.getElementById("portfolioTexto").innerHTML = formatarTextoMarkdown(dados.portfolioTexto);
+
+      definirProgresso(45, "Montando página");
+
+      renderPortfolio(dados);
 
       document.getElementById("statsCards").innerHTML = dados.stats.map((item, index) => `
         <div class="stat fade-in-up">
@@ -1433,20 +1473,7 @@
       document.getElementById("equipeTituloSecao").innerHTML = formatarTextoMarkdown(dados.equipeTitulo);
       document.getElementById("equipeTextoSecao").innerHTML = formatarTextoMarkdown(dados.equipeTexto);
 
-      if (dados.equipe && dados.equipe.length > 0) {
-        document.getElementById("equipeCards").innerHTML = dados.equipe.map(item => `
-          <div class="equipe-card fade-in-up">
-            <div class="equipe-img-wrapper">
-              <img class="equipe-img" src="${item.imagem}" alt="${item.titulo}">
-            </div>
-            <div class="equipe-info">
-              <h2>${formatarTextoMarkdown(item.titulo)}</h2>
-              ${item.subtitulo ? `<h3>${formatarTextoMarkdown(item.subtitulo)}</h3>` : ''}
-              <p>${formatarTextoMarkdown(item.texto)}</p>
-            </div>
-          </div>
-        `).join("");
-      }
+      renderEquipe(dados);
 
       document.getElementById("ctaTitulo").innerHTML = formatarTextoMarkdown(dados.ctaTitulo);
       document.getElementById("ctaTexto").innerHTML = formatarTextoMarkdown(dados.ctaTexto);
