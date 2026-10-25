@@ -1207,24 +1207,50 @@
 
     definirProgresso(12, "Conectando ao servidor");
 
+    /* Cache local: mostra a última versão salva na hora e atualiza em segundo plano */
+    const CACHE_KEY = "excellentSiteCache_v1";
+    let cacheTexto = null;
+    try { cacheTexto = localStorage.getItem(CACHE_KEY); } catch (e) {}
+    let cacheDados = null;
+    if (cacheTexto) { try { cacheDados = JSON.parse(cacheTexto); } catch (e) {} }
+
     const dadosFirebase = new Promise(resolve => {
+      let resolvido = false;
+      const concluir = async (dados) => {
+        if (resolvido) return;
+        resolvido = true;
+        await carregarDados(dados);
+        resolve();
+      };
+
+      // Se o servidor demorar, usa o cache (ou o conteúdo padrão) para não deixar a pessoa esperando
+      setTimeout(() => {
+        if (resolvido) return;
+        definirProgresso(35, "Usando conteúdo salvo");
+        concluir(cacheDados ? completarDados(cacheDados) : dadosPadrao);
+      }, cacheDados ? 600 : 8000);
+
       onValue(siteRef, async (snapshot) => {
         if (firebaseCarregado) return;
         firebaseCarregado = true;
         definirProgresso(35, "Sincronizando conteúdo");
 
         if (snapshot.exists()) {
-          const dados = completarDados(snapshot.val());
-          await carregarDados(dados);
-          resolve();
+          const novo = snapshot.val();
+          const novoTexto = JSON.stringify(novo);
+          try { localStorage.setItem(CACHE_KEY, novoTexto); } catch (e) {}
+          if (!resolvido) {
+            await concluir(completarDados(novo));
+          } else if (cacheTexto !== novoTexto) {
+            // chegou conteúdo mais novo depois da página abrir: recarrega uma vez com o cache atualizado
+            location.reload();
+          }
         } else {
-          await carregarDados(dadosPadrao);
-          resolve();
+          await concluir(dadosPadrao);
         }
       }, async () => {
         definirProgresso(35, "Usando conteúdo padrão");
-        await carregarDados(dadosPadrao);
-        resolve();
+        await concluir(cacheDados ? completarDados(cacheDados) : dadosPadrao);
       });
     });
 
