@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "excellentServices": {
+      "site": {
+        ".read": true,
+        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email.toLowerCase() === 'excellentservices.excel@gmail.com' || root.child('excellentServices').child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() === true)"
+      },
+      "admins": {
+        ".read": "auth != null && auth.token.email_verified === true && auth.token.email.toLowerCase() === 'excellentservices.excel@gmail.com'",
+        "$emailKey": {
+          ".read": "auth != null && auth.token.email_verified === true && auth.token.email.toLowerCase().replace('.', ',') === $emailKey",
+          ".write": "auth != null && auth.token.email_verified === true && auth.token.email.toLowerCase() === 'excellentservices.excel@gmail.com'",
+          ".validate": "newData.val() === true"
+        }
+      }
+    }
+  }
+}

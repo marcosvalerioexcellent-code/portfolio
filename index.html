@@ -1091,17 +1091,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCbr3SgZVJZuubqj8TGHaeBv8EJbCgXvn0",
-      authDomain: "planilhasimple.firebaseapp.com",
-      databaseURL: "https://planilhasimple-default-rtdb.firebaseio.com",
-      projectId: "planilhasimple",
-      storageBucket: "planilhasimple.firebasestorage.app",
-      messagingSenderId: "71116250745",
-      appId: "1:71116250745:web:51a2e7c27b2766f2f0bea8"
-    };
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { firebaseConfig } from "/firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
@@ -1227,7 +1218,6 @@
           await carregarDados(dados);
           resolve();
         } else {
-          await set(siteRef, dadosPadrao);
           await carregarDados(dadosPadrao);
           resolve();
         }
