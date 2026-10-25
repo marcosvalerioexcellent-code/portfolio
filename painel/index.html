@@ -888,6 +888,7 @@
           ]
         };
       }
+      await resolverReferenciasImagens();
       gerarCampos();
     }
 
@@ -934,11 +935,80 @@
 
     window.fecharPopupSave = function() { document.getElementById("popupSave").classList.remove("active"); }
 
+    /* ===== IMAGENS SEPARADAS DO TEXTO (img:ID) ===== */
+    const urlParaId = new Map();   // dataURL -> id já enviado
+    const idsEnviados = new Set();
+
+    async function resolverUma(v) {
+      if (typeof v !== "string" || !v.startsWith("img:")) return v;
+      const id = v.slice(4);
+      try {
+        const snap = await get(ref(db, "excellentServices/imagens/" + id));
+        if (snap.exists()) {
+          const src = snap.val();
+          urlParaId.set(src, id); idsEnviados.add(id);
+          return src;
+        }
+      } catch (e) {}
+      return "";
+    }
+
+    async function resolverReferenciasImagens() {
+      const tarefas = [];
+      if (dados.heroImagem) tarefas.push(resolverUma(dados.heroImagem).then(v => dados.heroImagem = v));
+      (dados.portfolio || []).forEach(p => {
+        if (p.imagens) p.imagens.forEach((v, i) => tarefas.push(resolverUma(v).then(r => p.imagens[i] = r)));
+      });
+      (dados.equipe || []).forEach(e => { if (e.imagem) tarefas.push(resolverUma(e.imagem).then(r => e.imagem = r)); });
+      await Promise.all(tarefas);
+      if (dados.portfolio) dados.portfolio.forEach(p => { if (p.imagens) p.imagens = p.imagens.filter(Boolean); });
+    }
+
+    async function hashImagem(texto) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
+    }
+
+    async function enviarImagem(valor) {
+      if (typeof valor !== "string" || !valor.startsWith("data:")) return valor; // link externo fica como está
+      let id = urlParaId.get(valor);
+      if (!id) {
+        id = await hashImagem(valor);
+        await set(ref(db, "excellentServices/imagens/" + id), valor);
+        urlParaId.set(valor, id); idsEnviados.add(id);
+      }
+      return "img:" + id;
+    }
+
+    async function prepararParaSalvar() {
+      const c = JSON.parse(JSON.stringify(dados));
+      if (c.heroImagem) c.heroImagem = await enviarImagem(c.heroImagem);
+      for (const p of (c.portfolio || [])) {
+        if (p.imagens) { for (let i = 0; i < p.imagens.length; i++) p.imagens[i] = await enviarImagem(p.imagens[i]); }
+      }
+      for (const e of (c.equipe || [])) { if (e.imagem) e.imagem = await enviarImagem(e.imagem); }
+      return c;
+    }
+
+    async function limparImagensSemUso(salvo) {
+      try {
+        const usados = new Set(JSON.stringify(salvo).match(/img:[0-9a-f]{24}/g) || []);
+        const r = await fetch(firebaseConfig.databaseURL + "/excellentServices/imagens.json?shallow=true");
+        const todas = await r.json();
+        if (!todas) return;
+        for (const id of Object.keys(todas)) {
+          if (!usados.has("img:" + id)) await remove(ref(db, "excellentServices/imagens/" + id));
+        }
+      } catch (e) {}
+    }
+
     window.salvarSite = async function() {
       atualizarDadosLocais(); 
       mostrarPopupSalvando(); 
       try {
-        await set(siteRef, dados);
+        const paraSalvar = await prepararParaSalvar();
+        await set(siteRef, paraSalvar);
+        limparImagensSemUso(paraSalvar);
         mostrarPopupResultado(true, "Salvo com sucesso!", "As informações foram atualizadas e já estão online no site.");
       } catch (error) {
         mostrarPopupResultado(false, "Erro ao salvar", "O Firebase rejeitou o salvamento. Erro: " + error.message);
