@@ -1091,7 +1091,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
     import { firebaseConfig } from "/firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
@@ -1207,6 +1207,55 @@
 
     definirProgresso(12, "Conectando ao servidor");
 
+    /* ===== IMAGENS CARREGADAS SOB DEMANDA (img:ID) ===== */
+    const PLACEHOLDER_IMG = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    const imagensPendentes = new Set();
+
+    function refParaPlaceholder(v) {
+      if (typeof v === "string" && v.startsWith("img:")) {
+        const id = v.slice(4);
+        imagensPendentes.add(id);
+        return PLACEHOLDER_IMG + "#" + id;
+      }
+      return v;
+    }
+
+    function prepararImagens(d) {
+      const c = JSON.parse(JSON.stringify(d));
+      c.heroImagem = refParaPlaceholder(c.heroImagem);
+      (c.portfolio || []).forEach(p => {
+        if (p.imagens) p.imagens = p.imagens.map(refParaPlaceholder);
+        if (p.imagem) p.imagem = refParaPlaceholder(p.imagem);
+      });
+      (c.equipe || []).forEach(e => { if (e.imagem) e.imagem = refParaPlaceholder(e.imagem); });
+      return c;
+    }
+
+    function aplicarImagem(id, src) {
+      document.querySelectorAll("img").forEach(img => {
+        const atual = img.getAttribute("src") || "";
+        if (atual.endsWith("#" + id)) img.src = src;
+      });
+    }
+
+    function carregarImagensPendentes() {
+      imagensPendentes.forEach(async (id) => {
+        const chave = "excellentImg_" + id;
+        try {
+          const guardada = localStorage.getItem(chave);
+          if (guardada) { aplicarImagem(id, guardada); return; }
+        } catch (e) {}
+        try {
+          const snap = await get(ref(db, "excellentServices/imagens/" + id));
+          if (snap.exists()) {
+            const src = snap.val();
+            aplicarImagem(id, src);
+            try { localStorage.setItem(chave, src); } catch (e) {}
+          }
+        } catch (e) {}
+      });
+    }
+
     /* Cache local: mostra a última versão salva na hora e atualiza em segundo plano */
     const CACHE_KEY = "excellentSiteCache_v1";
     let cacheTexto = null;
@@ -1219,16 +1268,20 @@
       const concluir = async (dados) => {
         if (resolvido) return;
         resolvido = true;
-        await carregarDados(dados);
+        await carregarDados(prepararImagens(dados));
+        carregarImagensPendentes();
         resolve();
       };
 
-      // Se o servidor demorar, usa o cache (ou o conteúdo padrão) para não deixar a pessoa esperando
-      setTimeout(() => {
-        if (resolvido) return;
-        definirProgresso(35, "Usando conteúdo salvo");
-        concluir(cacheDados ? completarDados(cacheDados) : dadosPadrao);
-      }, cacheDados ? 600 : 8000);
+      // Se existe cache, mostra na hora e confere o servidor em segundo plano.
+      // Sem cache, espera o servidor (nunca mostra conteúdo padrão no lugar do real).
+      if (cacheDados) {
+        setTimeout(() => {
+          if (resolvido) return;
+          definirProgresso(35, "Usando conteúdo salvo");
+          concluir(completarDados(cacheDados));
+        }, 600);
+      }
 
       onValue(siteRef, async (snapshot) => {
         if (firebaseCarregado) return;
@@ -1238,11 +1291,16 @@
         if (snapshot.exists()) {
           const novo = snapshot.val();
           const novoTexto = JSON.stringify(novo);
-          try { localStorage.setItem(CACHE_KEY, novoTexto); } catch (e) {}
+          let cacheSalvo = false;
+          try {
+            localStorage.setItem(CACHE_KEY, novoTexto);
+            cacheSalvo = localStorage.getItem(CACHE_KEY) === novoTexto;
+          } catch (e) {}
+          if (!cacheSalvo) { try { localStorage.removeItem(CACHE_KEY); } catch (e) {} }
           if (!resolvido) {
             await concluir(completarDados(novo));
           } else if (cacheTexto !== novoTexto) {
-            // chegou conteúdo mais novo depois da página abrir: recarrega uma vez com o cache atualizado
+            // chegou conteúdo mais novo depois da página abrir: recarrega (sem cache, espera o servidor)
             location.reload();
           }
         } else {
@@ -1407,22 +1465,6 @@
       } else {
         document.getElementById("categoriasBtnsArea").innerHTML = "<p>Nenhuma opção cadastrada.</p>";
       }
-
-      const imagensParaCarregar = [dados.heroImagem];
-      dados.portfolio.forEach(item => { if(item.imagens && item.imagens.length > 0) imagensParaCarregar.push(...item.imagens); });
-      if(dados.equipe) { dados.equipe.forEach(item => { if(item.imagem) imagensParaCarregar.push(item.imagem); }); }
-
-      const listaImagens = imagensParaCarregar.filter(Boolean);
-      const totalImagens = listaImagens.length || 1;
-      let imagensCarregadas = 0;
-
-      definirProgresso(48, `Carregando imagens (0/${totalImagens})`);
-
-      await Promise.all(listaImagens.map(src => preCarregarImagem(src).then(() => {
-        imagensCarregadas++;
-        const fracao = imagensCarregadas / totalImagens;
-        definirProgresso(48 + fracao * 47, `Carregando imagens (${imagensCarregadas}/${totalImagens})`);
-      })));
 
       definirProgresso(97, "Renderizando");
       observarElementos();

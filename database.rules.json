@@ -12,6 +12,13 @@
           ".write": "auth != null && auth.token.email_verified === true && auth.token.email.toLowerCase() === 'excellentservices.excel@gmail.com'",
           ".validate": "newData.val() === true"
         }
+      },
+      "imagens": {
+        ".read": true,
+        "$id": {
+          ".write": "auth != null && auth.token.email_verified === true && (auth.token.email.toLowerCase() === 'excellentservices.excel@gmail.com' || root.child('excellentServices').child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() === true)",
+          ".validate": "newData.isString() && newData.val().length < 4000000"
+        }
       }
     }
   }
