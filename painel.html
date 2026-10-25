@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Excellent Services | Admin</title>
+  <meta name="robots" content="noindex, nofollow">
+
+  <style>
+    :root {
+      --bg-body: #0a0a0a;
+      --bg-card: #141414;
+      --bg-input: #1a1a1a;
+      --text-main: #f0f0f0;
+      --text-muted: #a0a0a0;
+      --accent-main: #f3c623;
+      --accent-dark: #cda415;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(243, 198, 35, 0.5);
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Inter,Arial,sans-serif}
+
+    body{
+      background: var(--bg-body);
+      color: var(--text-main);
+      padding: 30px;
+    }
+
+    /* TELA DE LOADING DO PAINEL */
+    #adminLoading {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 10, 10, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s ease;
+    }
+    .loading-box-admin {
+      width: min(380px, 100%);
+      text-align: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 32px;
+      padding: 38px 30px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    }
+    .loading-logo {
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+    .loading-logo span { color: var(--accent-main); }
+    .loading-subtext {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    .progress-area {
+      width: 100%;
+      height: 12px;
+      background: #222;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent-main), var(--accent-dark));
+      animation: progressFillAdmin 1s ease forwards;
+    }
+    @keyframes progressFillAdmin {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+    .loading-percent {
+      margin-top: 14px;
+      color: var(--accent-main);
+      font-weight: 900;
+      font-size: .92rem;
+    }
+
+    /* MODAL DE SUCESSO, ERRO OU SALVANDO */
+    .popup-bg-save {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.8);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+      padding: 20px;
+    }
+    .popup-bg-save.active {
+      display: flex !important;
+    }
+    .popup-save {
+      width: 100%;
+      max-width: 400px;
+      background: var(--bg-card);
+      border: 1px solid rgba(243, 198, 35, 0.2);
+      border-radius: 30px;
+      padding: 36px;
+      text-align: center;
+      box-shadow: 0 30px 90px rgba(0,0,0,.8);
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .icon-check {
+      width: 64px;
+      height: 64px;
+      background: rgba(243, 198, 35, 0.1);
+      color: var(--accent-main);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+      margin: 0 auto 20px;
+      box-shadow: 0 10px 20px rgba(243, 198, 35, 0.15);
+      border: 1px solid rgba(243, 198, 35, 0.3);
+    }
+    .icon-error {
+      background: rgba(211, 47, 47, 0.1);
+      color: #ff4d4d;
+      border-color: rgba(211, 47, 47, 0.3);
+      box-shadow: 0 10px 20px rgba(211, 47, 47, 0.15);
+    }
+    .icon-saving {
+      width: 50px;
+      height: 50px;
+      background: transparent;
+      box-shadow: none;
+      border: 4px solid rgba(243, 198, 35, 0.2);
+      border-top-color: var(--accent-main);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      font-size: 0;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .popup-save h2 { font-size: 1.8rem; margin-bottom: 10px; letter-spacing: -1px; color: var(--text-main); }
+    .popup-save p { color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
+
+    /* RESTANTE DO PAINEL */
+    .admin { max-width: 1100px; margin: 0 auto; padding-bottom: 60px; }
+
+    .top {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 28px;
+      padding: 34px;
+      margin-bottom: 24px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.3);
+    }
+    .top h1 { font-size: 2.4rem; letter-spacing: -2px; margin-bottom: 8px; }
+    .top span { color: var(--accent-main); }
+    .top p { color: var(--text-muted); line-height: 1.6; }
+
+    .dica-ouro {
+      background: rgba(243, 198, 35, 0.08);
+      border: 1px solid rgba(243, 198, 35, 0.2);
+      border-radius: 16px;
+      padding: 18px 24px;
+      margin-bottom: 24px;
+      color: #ffd700;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      line-height: 1.5;
+    }
+
+    .box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 26px;
+      margin-bottom: 20px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.3);
+    }
+    .box h2 { font-size: 1.35rem; margin-bottom: 18px; color: var(--text-main); }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin: 16px 0 8px;
+      color: var(--accent-main);
+      font-size: 0.95rem;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 15px;
+      border: 1px solid var(--border-color);
+      outline: none;
+      font-size: 1rem;
+      background: var(--bg-input);
+      color: var(--text-main);
+      transition: all 0.3s ease;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(243, 198, 35, 0.1);
+    }
+
+    textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+    .item {
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 18px;
+      background: var(--bg-input);
+      position: relative;
+    }
+    .header-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;}
+    .header-item h3 { font-size: 1.1rem; color: #fff; }
+
+    .btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px 28px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent-main), var(--accent-dark));
+      color: #111;
+      font-weight: 900;
+      overflow: hidden;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 14px 34px rgba(243, 198, 35, 0.2);
+      transition: .3s ease;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 18px 46px rgba(243, 198, 35, 0.35);
+    }
+
+    .btn-dark {
+      background: #222;
+      color: #fff;
+      box-shadow: none;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-dark:hover { box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--accent-main);
+      border: 1px solid rgba(243, 198, 35, 0.4);
+      box-shadow: none;
+    }
+    .btn-outline:hover { background: rgba(243, 198, 35, 0.1); }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid rgba(255, 77, 77, 0.3);
+      background: rgba(255, 77, 77, 0.1);
+      color: #ff4d4d;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    .btn-small:hover { background: rgba(255, 77, 77, 0.2); }
+
+    .preview {
+      width: 100%;
+      max-height: 240px;
+      object-fit: cover;
+      border-radius: 16px;
+      margin-top: 12px;
+      display: none;
+      border: 1px solid var(--border-color);
+    }
+
+    .thumb-area { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+    .thumb-wrapper { position: relative; display: inline-block; }
+    .thumb-wrapper img {
+      width: 80px; height: 80px; object-fit: cover; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-remove-thumb {
+      position: absolute; top: -6px; right: -6px;
+      background: #ff4d4d; color: white; border: none; border-radius: 50%;
+      width: 22px; height: 22px; font-size: 11px; font-weight: 900;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: background 0.2s;
+    }
+    .btn-remove-thumb:hover { background: #d32f2f; }
+
+    /* Caixa interior contatos */
+    .contatos-inner-box {
+      margin-top: 15px;
+      padding: 15px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+    .contatos-inner-box h4 {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    @media(max-width:800px){
+      body{padding:18px}
+      .grid{grid-template-columns:1fr}
+      .top h1{font-size:2rem}
+    }
+
+    /* ===== LOGIN / PERMISSÕES ===== */
+    #telaLogin, #telaNegado {
+      position: fixed; inset: 0; z-index: 9000; display: none;
+      align-items: center; justify-content: center; padding: 20px;
+      background: var(--bg-body);
+    }
+    .login-box {
+      width: min(420px, 100%); text-align: center; background: var(--bg-card);
+      border: 1px solid var(--border-color); border-radius: 32px; padding: 40px 30px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    }
+    .login-box h2 { font-size: 1.5rem; margin-bottom: 8px; letter-spacing: -1px; }
+    .login-box h2 span { color: var(--accent-main); }
+    .login-box p { color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; font-size: .95rem; }
+    .login-erro { color: #ff6b6b; font-size: .9rem; margin-top: 16px; min-height: 1.2em; }
+    .user-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 20px; padding: 12px 18px; background: var(--bg-card);
+      border: 1px solid var(--border-color); border-radius: 16px; color: var(--text-muted); font-size: .9rem;
+    }
+    .user-bar strong { color: var(--text-main); }
+    .admins-lista { margin-top: 18px; display: grid; gap: 10px; }
+    .admin-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: var(--bg-input); border: 1px solid var(--border-color);
+      border-radius: 14px; padding: 12px 16px; word-break: break-all;
+    }
+    .admins-add { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+    .admins-add input { flex: 1; min-width: 220px; }
+    #areaAdmin { display: none; }
+  </style>
+</head>
+
+<body>
+  <!-- TELA DE LOGIN -->
+  <div id="telaLogin">
+    <div class="login-box">
+      <h2>Painel <span>Excellent Services</span></h2>
+      <p>Acesso restrito. Entre com uma conta Google autorizada.</p>
+      <button class="btn" id="btnGoogle" style="width:100%; color:#111;">Entrar com Google</button>
+      <div class="login-erro" id="loginErro"></div>
+    </div>
+  </div>
+
+  <!-- TELA DE ACESSO NEGADO -->
+  <div id="telaNegado">
+    <div class="login-box">
+      <h2>Acesso <span>negado</span></h2>
+      <p id="negadoMsg">Este e-mail não tem permissão para acessar o painel.</p>
+      <button class="btn" id="btnTentarOutra" style="width:100%; color:#111;">Entrar com outra conta</button>
+    </div>
+  </div>
+
+  <!-- TELA DE LOADING INICIAL -->
+  <div id="adminLoading">
+    <div class="loading-box-admin">
+      <div class="loading-logo">
+        <span>Excel</span>lent Services
+      </div>
+      <p class="loading-subtext">Sincronizando banco de dados...</p>
+      <div class="progress-area">
+        <div class="progress-bar"></div>
+      </div>
+      <div class="loading-percent" id="loadingPercentAdmin">0%</div>
+    </div>
+  </div>
+
+  <div class="admin" id="areaAdmin">
+    <div class="top">
+      <h1>Painel <span>Excellent Services</span></h1>
+      <p>Gerencie o conteúdo e imagens do seu portfólio. Tudo é salvo em tempo real no banco de dados.</p>
+    </div>
+
+    <div class="user-bar">
+      <span>Logado como <strong id="userEmail"></strong></span>
+      <button class="btn btn-dark" id="btnSair" style="padding:10px 20px;">Sair</button>
+    </div>
+
+    <!-- PERMISSÕES (somente admin principal) -->
+    <div class="box" id="boxPermissoes" style="display:none;">
+      <h2>Permissões de acesso</h2>
+      <p style="color: var(--text-muted); margin-bottom: 10px; line-height:1.6;">
+        Adicione os e-mails (conta Google) que também podem entrar e editar o portfólio.
+      </p>
+      <div class="admins-add">
+        <input id="novoAdminEmail" type="email" placeholder="email@gmail.com">
+        <button class="btn" style="color:#111;" onclick="adicionarAdmin()">Dar permissão</button>
+      </div>
+      <div class="admins-lista" id="adminsLista"></div>
+    </div>
+
+    <!-- INSTRUÇÃO DE PINTURA DE TEXTO -->
+    <div class="dica-ouro">
+      ✨ <strong>Dica Premium:</strong> Para deixar qualquer parte do texto dourada no site, basta colocar a palavra entre asteriscos nos campos abaixo. Exemplo: Se você digitar *Excel*lent, o "Excel" ficará dourado!
+    </div>
+
+    <div class="box">
+      <h2>Topo da página</h2>
+      <label>Frase pequena (Badge)</label>
+      <input id="badge" placeholder="Ex: Soluções em *Excel* e Sistemas">
+      
+      <label>Título principal</label>
+      <textarea id="heroTitulo" placeholder="Ex: Soluções modernas para empresas que querem *crescer*"></textarea>
+
+      <label>Texto principal</label>
+      <textarea id="heroTexto"></textarea>
+
+      <label>Imagem principal</label>
+      <input type="file" id="heroImagemInput" accept="image/*">
+      <img id="heroImagemPreview" class="preview">
+    </div>
+
+    <div class="box">
+      <h2>Serviços</h2>
+      <label>Título da seção</label>
+      <input id="servicosTitulo">
+      <label>Texto da seção</label>
+      <textarea id="servicosTexto"></textarea>
+
+      <div class="grid" id="servicosArea"></div>
+      <button class="btn btn-outline" style="margin-top: 20px;" onclick="adicionarServico()">+ Adicionar Serviço</button>
+    </div>
+
+    <div class="box">
+      <h2>Portfólio</h2>
+      <label>Título da seção</label>
+      <input id="portfolioTitulo">
+      <label>Texto da seção</label>
+      <textarea id="portfolioTexto"></textarea>
+
+      <div class="grid" id="portfolioArea"></div>
+      <button class="btn btn-outline" style="margin-top: 20px;" onclick="adicionarPortfolio()">+ Adicionar Projeto</button>
+    </div>
+
+    <div class="box">
+      <h2>Números de destaque</h2>
+      <div class="grid" id="statsArea"></div>
+    </div>
+
+    <div class="box">
+      <h2>Processo</h2>
+      <label>Título da seção</label>
+      <input id="processoTitulo">
+      <label>Texto da seção</label>
+      <textarea id="processoTexto"></textarea>
+
+      <div id="processoArea"></div>
+    </div>
+
+    <div class="box">
+      <h2>Sobre / Equipe</h2>
+      <label>Título da seção</label>
+      <input id="equipeTituloSecao" placeholder="Ex: A força da nossa *Equipe*">
+      <label>Texto da seção</label>
+      <textarea id="equipeTextoSecao"></textarea>
+
+      <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.95rem; margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--border-color);">
+        Adicione perfis e fotos da equipe.
+      </p>
+
+      <div class="grid" id="equipeArea"></div>
+      <button class="btn btn-outline" style="margin-top: 20px;" onclick="adicionarEquipe()">+ Adicionar Pessoa</button>
+    </div>
+
+    <div class="box">
+      <h2>Chamada final</h2>
+      <label>Título</label>
+      <textarea id="ctaTitulo"></textarea>
+      <label>Texto</label>
+      <textarea id="ctaTexto"></textarea>
+    </div>
+
+    <!-- NOVA SEÇÃO: POP-UPS DE WHATSAPP -->
+    <div class="box" style="border: 1px solid var(--accent-dark);">
+      <h2 style="color: var(--accent-main);">Pop-ups de WhatsApp (Contatos)</h2>
+      <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.95rem;">
+        Configure o menu de triagem de contatos. Crie departamentos e associe os consultores a eles.
+      </p>
+
+      <label>Título do 1º Pop-up (Categorias)</label>
+      <input id="contatosTitulo1" placeholder="Ex: Selecione as opções">
+      <label>Subtítulo do 1º Pop-up</label>
+      <input id="contatosSubtitulo1" placeholder="Ex: Escolha o departamento que deseja falar.">
+
+      <label>Título do 2º Pop-up (Representantes)</label>
+      <input id="contatosTitulo2" placeholder="Ex: Fale com um de nossos representantes">
+      <label>Subtítulo do 2º Pop-up</label>
+      <input id="contatosSubtitulo2" placeholder="Ex: Selecione um dos contatos abaixo.">
+
+      <div class="grid" id="categoriasContatoArea" style="margin-top: 25px;"></div>
+      <button class="btn btn-outline" style="margin-top: 20px;" onclick="adicionarCategoriaContato()">+ Adicionar Categoria</button>
+    </div>
+
+    <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+      <button class="btn" onclick="salvarSite()">Salvar alterações</button>
+      <button class="btn btn-dark" onclick="carregarSiteComLoading()">Recarregar dados originais</button>
+    </div>
+  </div>
+
+  <!-- POP-UP DE SALVO COM SUCESSO / LOADING -->
+  <div class="popup-bg-save" id="popupSave">
+    <div class="popup-save">
+      <div class="icon-saving" id="popupIcon"></div>
+      <h2 id="popupTitle">Salvando alterações...</h2>
+      <p id="popupMessage">Por favor, aguarde enquanto sincronizamos com o servidor.</p>
+      <button class="btn" id="popupBtn" style="width:100%; display:none; color: #111;" onclick="fecharPopupSave()">Entendi</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { firebaseConfig } from "/firebase-config.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const siteRef = ref(db, "excellentServices/site");
+
+    let dados = {};
+
+    function comprimirImagemParaBase64(file, maxWidth, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64Comprimido = canvas.toDataURL('image/webp', 0.7);
+          callback(base64Comprimido);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Salva na memória tudo que foi digitado antes da tela recarregar
+    window.atualizarDadosLocais = function() {
+      if(!document.getElementById("badge")) return;
+      dados.badge = document.getElementById("badge").value;
+      dados.heroTitulo = document.getElementById("heroTitulo").value;
+      dados.heroTexto = document.getElementById("heroTexto").value;
+      dados.servicosTitulo = document.getElementById("servicosTitulo").value;
+      dados.servicosTexto = document.getElementById("servicosTexto").value;
+
+      if(dados.servicos) {
+        dados.servicos = dados.servicos.map((item, i) => ({
+          icone: document.getElementById(`servicoIcone${i}`).value,
+          titulo: document.getElementById(`servicoTitulo${i}`).value,
+          texto: document.getElementById(`servicoTexto${i}`).value
+        }));
+      }
+      dados.portfolioTitulo = document.getElementById("portfolioTitulo").value;
+      dados.portfolioTexto = document.getElementById("portfolioTexto").value;
+
+      if(dados.portfolio) {
+        dados.portfolio = dados.portfolio.map((item, i) => ({
+          categoria: document.getElementById(`portfolioCategoria${i}`).value,
+          titulo: document.getElementById(`portfolioTitulo${i}`).value,
+          texto: document.getElementById(`portfolioTexto${i}`).value,
+          imagens: item.imagens || [],
+          ajuste: document.getElementById(`portfolioAjuste${i}`).value
+        }));
+      }
+      if(dados.stats) {
+        dados.stats = dados.stats.map((item, i) => ({
+          numero: document.getElementById(`statNumero${i}`).value,
+          texto: document.getElementById(`statTexto${i}`).value
+        }));
+      }
+      dados.processoTitulo = document.getElementById("processoTitulo").value;
+      dados.processoTexto = document.getElementById("processoTexto").value;
+
+      if(dados.processo) {
+        dados.processo = dados.processo.map((item, i) => ({
+          titulo: document.getElementById(`processoEtapaTitulo${i}`).value,
+          texto: document.getElementById(`processoEtapaTexto${i}`).value
+        }));
+      }
+
+      dados.equipeTitulo = document.getElementById("equipeTituloSecao").value;
+      dados.equipeTexto = document.getElementById("equipeTextoSecao").value;
+
+      if(dados.equipe) {
+        dados.equipe = dados.equipe.map((item, i) => ({
+          titulo: document.getElementById(`equipeTitulo${i}`).value,
+          subtitulo: document.getElementById(`equipeSubtitulo${i}`).value,
+          texto: document.getElementById(`equipeTexto${i}`).value,
+          imagem: item.imagem || ''
+        }));
+      }
+      dados.ctaTitulo = document.getElementById("ctaTitulo").value;
+      dados.ctaTexto = document.getElementById("ctaTexto").value;
+
+      // Salvando os contatos de WhatsApp
+      dados.contatosTitulo1 = document.getElementById("contatosTitulo1").value;
+      dados.contatosSubtitulo1 = document.getElementById("contatosSubtitulo1").value;
+      dados.contatosTitulo2 = document.getElementById("contatosTitulo2").value;
+      dados.contatosSubtitulo2 = document.getElementById("contatosSubtitulo2").value;
+
+      if (dados.categoriasContato) {
+        dados.categoriasContato = dados.categoriasContato.map((cat, i) => {
+          let novosContatos = [];
+          if (cat.contatos) {
+            novosContatos = cat.contatos.map((contato, j) => {
+              const rotuloInput = document.getElementById(`contatoRotulo${i}_${j}`);
+              const numInput = document.getElementById(`contatoNumero${i}_${j}`);
+              return {
+                rotulo: rotuloInput ? rotuloInput.value : contato.rotulo,
+                numero: numInput ? numInput.value : contato.numero
+              };
+            });
+          }
+          return {
+            categoria: document.getElementById(`catNome${i}`).value,
+            contatos: novosContatos
+          };
+        });
+      }
+    };
+
+    window.adicionarServico = function() { atualizarDadosLocais(); if(!dados.servicos) dados.servicos = []; dados.servicos.push({icone:"▣", titulo:"Novo Serviço", texto:""}); gerarCampos(); };
+    window.removerServico = function(index) { if(confirm("Tem certeza que deseja remover este serviço?")) { atualizarDadosLocais(); dados.servicos.splice(index, 1); gerarCampos(); } };
+    window.adicionarPortfolio = function() { atualizarDadosLocais(); if(!dados.portfolio) dados.portfolio = []; dados.portfolio.push({categoria:"Categoria", titulo:"Novo Projeto", texto:"", imagens: [], ajuste: "cover"}); gerarCampos(); };
+    window.removerPortfolio = function(index) { if(confirm("Tem certeza que deseja remover este projeto?")) { atualizarDadosLocais(); dados.portfolio.splice(index, 1); gerarCampos(); } };
+    window.removerImagemPortfolio = function(projetoIndex, imagemIndex) { atualizarDadosLocais(); dados.portfolio[projetoIndex].imagens.splice(imagemIndex, 1); gerarCampos(); };
+    window.adicionarEquipe = function() { atualizarDadosLocais(); if(!dados.equipe) dados.equipe = []; dados.equipe.push({titulo:"Sobre Alguém", subtitulo:"", texto:"", imagem: ""}); gerarCampos(); };
+    window.removerEquipe = function(index) { if(confirm("Tem certeza que deseja remover esta pessoa?")) { atualizarDadosLocais(); dados.equipe.splice(index, 1); gerarCampos(); } };
+
+    // Funções do WhatsApp
+    window.adicionarCategoriaContato = function() {
+      atualizarDadosLocais();
+      if(!dados.categoriasContato) dados.categoriasContato = [];
+      dados.categoriasContato.push({ categoria: "Nova Categoria", contatos: [] });
+      gerarCampos();
+    };
+    window.removerCategoriaContato = function(index) {
+      if(confirm("Tem certeza que deseja remover esta categoria de WhatsApp?")) {
+        atualizarDadosLocais();
+        dados.categoriasContato.splice(index, 1);
+        gerarCampos();
+      }
+    };
+    window.adicionarContato = function(catIndex) {
+      atualizarDadosLocais();
+      if(!dados.categoriasContato[catIndex].contatos) dados.categoriasContato[catIndex].contatos = [];
+      dados.categoriasContato[catIndex].contatos.push({ rotulo: "Nome: 15 99999-9999", numero: "5515999999999" });
+      gerarCampos();
+    };
+    window.removerContato = function(catIndex, contatoIndex) {
+      if(confirm("Tem certeza que deseja remover este contato?")) {
+        atualizarDadosLocais();
+        dados.categoriasContato[catIndex].contatos.splice(contatoIndex, 1);
+        gerarCampos();
+      }
+    };
+
+    window.gerarCampos = function() {
+      document.getElementById("badge").value = dados.badge || "";
+      document.getElementById("heroTitulo").value = dados.heroTitulo || "";
+      document.getElementById("heroTexto").value = dados.heroTexto || "";
+      document.getElementById("heroImagemPreview").src = dados.heroImagem || "";
+      document.getElementById("heroImagemPreview").style.display = dados.heroImagem ? "block" : "none";
+      document.getElementById("servicosTitulo").value = dados.servicosTitulo || "";
+      document.getElementById("servicosTexto").value = dados.servicosTexto || "";
+      document.getElementById("portfolioTitulo").value = dados.portfolioTitulo || "";
+      document.getElementById("portfolioTexto").value = dados.portfolioTexto || "";
+      document.getElementById("processoTitulo").value = dados.processoTitulo || "";
+      document.getElementById("processoTexto").value = dados.processoTexto || "";
+      document.getElementById("equipeTituloSecao").value = dados.equipeTitulo || "";
+      document.getElementById("equipeTextoSecao").value = dados.equipeTexto || "";
+      document.getElementById("ctaTitulo").value = dados.ctaTitulo || "";
+      document.getElementById("ctaTexto").value = dados.ctaTexto || "";
+
+      if(dados.servicos) {
+        document.getElementById("servicosArea").innerHTML = dados.servicos.map((item, i) => `
+          <div class="item">
+            <div class="header-item"><h3>Serviço ${i + 1}</h3><button class="btn-small" onclick="removerServico(${i})">Remover</button></div>
+            <label>Ícone</label><input id="servicoIcone${i}" value="${item.icone || ''}">
+            <label>Título</label><input id="servicoTitulo${i}" value="${item.titulo || ''}">
+            <label>Texto</label><textarea id="servicoTexto${i}">${item.texto || ''}</textarea>
+          </div>`).join("");
+      }
+      if(dados.portfolio) {
+        document.getElementById("portfolioArea").innerHTML = dados.portfolio.map((item, i) => {
+          const imagens = item.imagens || [item.imagem];
+          const thumbs = imagens.filter(img => img).map((img, imgIdx) => `<div class="thumb-wrapper"><img src="${img}"><button class="btn-remove-thumb" onclick="removerImagemPortfolio(${i}, ${imgIdx})" title="Remover imagem">×</button></div>`).join("");
+          const ajusteSelecionado = item.ajuste || 'cover';
+          return `<div class="item">
+            <div class="header-item"><h3>Projeto ${i + 1}</h3><button class="btn-small" onclick="removerPortfolio(${i})">Remover</button></div>
+            <label>Categoria</label><input id="portfolioCategoria${i}" value="${item.categoria || ''}">
+            <label>Título</label><input id="portfolioTitulo${i}" value="${item.titulo || ''}">
+            <label>Texto</label><textarea id="portfolioTexto${i}">${item.texto || ''}</textarea>
+            <label>Ajuste da Imagem</label>
+            <select id="portfolioAjuste${i}">
+              <option value="cover" ${ajusteSelecionado === 'cover' ? 'selected' : ''}>Preencher (Corta bordas)</option>
+              <option value="contain" ${ajusteSelecionado === 'contain' ? 'selected' : ''}>Enquadrar (Mostra inteira)</option>
+            </select>
+            <label>Adicionar Imagens</label><input type="file" multiple id="portfolioImagemInput${i}" accept="image/*">
+            <div class="thumb-area" id="portfolioImagemPreviewArea${i}">${thumbs}</div>
+          </div>`}).join("");
+      }
+      if(dados.stats) {
+        document.getElementById("statsArea").innerHTML = dados.stats.map((item, i) => `<div class="item"><h3>Destaque ${i + 1}</h3><label>Número</label><input id="statNumero${i}" value="${item.numero || ''}"><label>Texto</label><textarea id="statTexto${i}">${item.texto || ''}</textarea></div>`).join("");
+      }
+      if(dados.processo) {
+        document.getElementById("processoArea").innerHTML = dados.processo.map((item, i) => `<div class="item" style="margin-bottom:14px"><h3>Etapa ${i + 1}</h3><label>Título</label><input id="processoEtapaTitulo${i}" value="${item.titulo || ''}"><label>Texto</label><textarea id="processoEtapaTexto${i}">${item.texto || ''}</textarea></div>`).join("");
+      }
+      if(dados.equipe) {
+        document.getElementById("equipeArea").innerHTML = dados.equipe.map((item, i) => `<div class="item">
+            <div class="header-item"><h3>Pessoa ${i + 1}</h3><button class="btn-small" onclick="removerEquipe(${i})">Remover</button></div>
+            <label>Título (Ex: Sobre *Marcos* Valério)</label><input id="equipeTitulo${i}" value="${item.titulo || ''}">
+            <label>Função / Subtítulo</label><input id="equipeSubtitulo${i}" value="${item.subtitulo || ''}">
+            <label>Texto</label><textarea id="equipeTexto${i}">${item.texto || ''}</textarea>
+            <label>Foto da Pessoa</label><input type="file" id="equipeImagemInput${i}" accept="image/*">
+            <img id="equipeImagemPreview${i}" class="preview" src="${item.imagem || ''}" style="display: ${item.imagem ? 'block' : 'none'}">
+          </div>`).join("");
+      }
+
+      // WhatsApp Rendering
+      document.getElementById("contatosTitulo1").value = dados.contatosTitulo1 || "";
+      document.getElementById("contatosSubtitulo1").value = dados.contatosSubtitulo1 || "";
+      document.getElementById("contatosTitulo2").value = dados.contatosTitulo2 || "";
+      document.getElementById("contatosSubtitulo2").value = dados.contatosSubtitulo2 || "";
+
+      if(dados.categoriasContato) {
+        document.getElementById("categoriasContatoArea").innerHTML = dados.categoriasContato.map((cat, i) => {
+          
+          let contatosHtml = "";
+          if (cat.contatos && cat.contatos.length > 0) {
+            contatosHtml = cat.contatos.map((contato, j) => `
+              <div style="display: flex; gap: 10px; margin-top: 10px; align-items: flex-end;">
+                <div style="flex: 1;">
+                  <label style="font-size: 0.8rem; margin:0 0 4px 0;">Nome e visualização do botão</label>
+                  <input id="contatoRotulo${i}_${j}" value="${contato.rotulo || ''}">
+                </div>
+                <div style="flex: 1;">
+                  <label style="font-size: 0.8rem; margin:0 0 4px 0;">Número (Ex: 5511999999999)</label>
+                  <input id="contatoNumero${i}_${j}" value="${contato.numero || ''}" placeholder="5515999999999">
+                </div>
+                <button class="btn-small" style="height: 47px; margin-bottom: 0px;" onclick="removerContato(${i}, ${j})" title="Remover contato">X</button>
+              </div>
+            `).join("");
+          } else {
+            contatosHtml = "<p style='font-size: 0.85rem; color: #a0a0a0;'>Nenhum contato cadastrado.</p>";
+          }
+
+          return `
+          <div class="item" style="margin-bottom: 20px;">
+            <div class="header-item">
+              <h3>Categoria ${i + 1}</h3>
+              <button class="btn-small" onclick="removerCategoriaContato(${i})">Remover Categoria</button>
+            </div>
+            <label>Nome do Botão Inicial (Ex: Sites)</label>
+            <input id="catNome${i}" value="${cat.categoria || ''}">
+
+            <div class="contatos-inner-box">
+              <h4>Consultores / Contatos desta categoria:</h4>
+              <div id="contatosArea${i}">${contatosHtml}</div>
+              <button class="btn-outline" style="font-size: 0.85rem; padding: 8px 16px; margin-top: 15px;" onclick="adicionarContato(${i})">+ Adicionar Contato</button>
+            </div>
+          </div>
+          `;
+        }).join("");
+      }
+
+      configurarInputsImagem();
+    }
+
+    function configurarInputsImagem() {
+      const heroInput = document.getElementById("heroImagemInput");
+      if(heroInput) {
+        heroInput.addEventListener("change", function() {
+          if(this.files.length > 0) {
+            comprimirImagemParaBase64(this.files[0], 1000, function(base64) {
+              dados.heroImagem = base64; document.getElementById("heroImagemPreview").src = base64; document.getElementById("heroImagemPreview").style.display = "block";
+            });
+          }
+        });
+      }
+      if(dados.portfolio) {
+        dados.portfolio.forEach((item, i) => {
+          const input = document.getElementById(`portfolioImagemInput${i}`);
+          if(!input) return;
+          input.addEventListener("change", function() {
+            const files = this.files;
+            if(files.length > 0) {
+               let loaded = 0;
+               if (!dados.portfolio[i].imagens) dados.portfolio[i].imagens = [];
+               Array.from(files).forEach(file => {
+                 comprimirImagemParaBase64(file, 800, function(base64) {
+                   dados.portfolio[i].imagens.push(base64); loaded++;
+                   if (loaded === files.length) { atualizarDadosLocais(); gerarCampos(); }
+                 });
+               });
+            }
+          });
+        });
+      }
+      if(dados.equipe) {
+        dados.equipe.forEach((item, i) => {
+          const input = document.getElementById(`equipeImagemInput${i}`);
+          if(!input) return;
+          input.addEventListener("change", function() {
+            if(this.files.length > 0) {
+              comprimirImagemParaBase64(this.files[0], 700, function(base64) {
+                dados.equipe[i].imagem = base64;
+                const preview = document.getElementById(`equipeImagemPreview${i}`);
+                if(preview) { preview.src = base64; preview.style.display = "block"; }
+              });
+            }
+          });
+        });
+      }
+    }
+
+    window.carregarSite = async function() {
+      const snapshot = await get(siteRef);
+      if (snapshot.exists()) {
+        dados = snapshot.val();
+        if(dados.portfolio) { dados.portfolio.forEach(p => { if(!p.imagens) p.imagens = p.imagem ? [p.imagem] : []; if(!p.ajuste) p.ajuste = "cover"; }); }
+        if(!dados.equipe) dados.equipe = [];
+        
+        // Garante que os contatos de WhatsApp existam mesmo se o banco for antigo
+        if(!dados.categoriasContato) {
+          dados.categoriasContato = [
+            { categoria: "Sites", contatos: [ { rotulo: "Gledson: 15 99624-7188", numero: "5515996247188" }, { rotulo: "Marta: 15 99605-4322", numero: "5515996054322" } ] },
+            { categoria: "Sistemas", contatos: [ { rotulo: "Marcos: 11 93466-4498", numero: "5511934664498" } ] },
+            { categoria: "Outros", contatos: [ { rotulo: "Andressa: 15 99142-2218", numero: "5515991422218" } ] }
+          ];
+        }
+        if(!dados.contatosTitulo1) dados.contatosTitulo1 = "Selecione as opções";
+        if(!dados.contatosSubtitulo1) dados.contatosSubtitulo1 = "Escolha o departamento que deseja falar.";
+        if(!dados.contatosTitulo2) dados.contatosTitulo2 = "Fale com um de nossos representantes";
+        if(!dados.contatosSubtitulo2) dados.contatosSubtitulo2 = "Selecione um dos contatos abaixo.";
+
+      } else {
+        // Se ainda não existir no banco, cria a estrutura com os títulos
+        dados = { 
+          servicos: [], portfolio: [], stats: [], processo: [], equipeTitulo: "", equipeTexto: "", equipe: [],
+          contatosTitulo1: "Selecione as opções", contatosSubtitulo1: "Escolha o departamento que deseja falar.",
+          contatosTitulo2: "Fale com um de nossos representantes", contatosSubtitulo2: "Selecione um dos contatos abaixo.",
+          categoriasContato: [
+            { categoria: "Sites", contatos: [ { rotulo: "Gledson: 15 99624-7188", numero: "5515996247188" }, { rotulo: "Marta: 15 99605-4322", numero: "5515996054322" } ] },
+            { categoria: "Sistemas", contatos: [ { rotulo: "Marcos: 11 93466-4498", numero: "5511934664498" } ] },
+            { categoria: "Outros", contatos: [ { rotulo: "Andressa: 15 99142-2218", numero: "5515991422218" } ] }
+          ]
+        };
+      }
+      await resolverReferenciasImagens();
+      gerarCampos();
+    }
+
+    window.carregarSiteComLoading = async function() {
+      const adminLoading = document.getElementById("adminLoading");
+      const loadingPercent = document.getElementById("loadingPercentAdmin");
+      const progressBar = adminLoading.querySelector(".progress-bar");
+      
+      adminLoading.style.display = "flex";
+      setTimeout(() => adminLoading.style.opacity = "1", 10);
+      progressBar.style.animation = 'none'; progressBar.offsetHeight; progressBar.style.animation = 'progressFillAdmin 1s ease forwards';
+
+      let percentual = 0;
+      const contador = setInterval(() => {
+        percentual += 3;
+        if (percentual <= 100) loadingPercent.textContent = percentual + "%";
+        if (percentual >= 100) { clearInterval(contador); loadingPercent.textContent = "Concluído"; }
+      }, 30);
+
+      const tempoEspera = new Promise(resolve => setTimeout(resolve, 1000));
+      await Promise.all([carregarSite(), tempoEspera]);
+      adminLoading.style.opacity = "0";
+      setTimeout(() => { adminLoading.style.display = "none"; loadingPercent.textContent = "0%"; }, 500);
+    }
+
+    window.mostrarPopupSalvando = function() {
+      const popup = document.getElementById("popupSave");
+      document.getElementById("popupIcon").className = "icon-saving";
+      document.getElementById("popupIcon").textContent = "";
+      document.getElementById("popupTitle").textContent = "Salvando alterações...";
+      document.getElementById("popupMessage").textContent = "Aguarde enquanto as atualizações são sincronizadas.";
+      document.getElementById("popupBtn").style.display = "none";
+      popup.classList.add("active");
+    }
+
+    window.mostrarPopupResultado = function(sucesso, titulo, mensagem) {
+      const icon = document.getElementById("popupIcon");
+      if (sucesso) { icon.className = "icon-check"; icon.textContent = "✓"; } 
+      else { icon.className = "icon-check icon-error"; icon.textContent = "!"; }
+      document.getElementById("popupTitle").textContent = titulo;
+      document.getElementById("popupMessage").textContent = mensagem;
+      document.getElementById("popupBtn").style.display = "block";
+    }
+
+    window.fecharPopupSave = function() { document.getElementById("popupSave").classList.remove("active"); }
+
+    /* ===== IMAGENS SEPARADAS DO TEXTO (img:ID) ===== */
+    const urlParaId = new Map();   // dataURL -> id já enviado
+    const idsEnviados = new Set();
+
+    async function resolverUma(v) {
+      if (typeof v !== "string" || !v.startsWith("img:")) return v;
+      const id = v.slice(4);
+      try {
+        const snap = await get(ref(db, "excellentServices/imagens/" + id));
+        if (snap.exists()) {
+          const src = snap.val();
+          urlParaId.set(src, id); idsEnviados.add(id);
+          return src;
+        }
+      } catch (e) {}
+      return "";
+    }
+
+    async function resolverReferenciasImagens() {
+      const tarefas = [];
+      if (dados.heroImagem) tarefas.push(resolverUma(dados.heroImagem).then(v => dados.heroImagem = v));
+      (dados.portfolio || []).forEach(p => {
+        if (p.imagens) p.imagens.forEach((v, i) => tarefas.push(resolverUma(v).then(r => p.imagens[i] = r)));
+      });
+      (dados.equipe || []).forEach(e => { if (e.imagem) tarefas.push(resolverUma(e.imagem).then(r => e.imagem = r)); });
+      await Promise.all(tarefas);
+      if (dados.portfolio) dados.portfolio.forEach(p => { if (p.imagens) p.imagens = p.imagens.filter(Boolean); });
+    }
+
+    async function hashImagem(texto) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
+    }
+
+    async function enviarImagem(valor) {
+      if (typeof valor !== "string" || !valor.startsWith("data:")) return valor; // link externo fica como está
+      let id = urlParaId.get(valor);
+      if (!id) {
+        id = await hashImagem(valor);
+        await set(ref(db, "excellentServices/imagens/" + id), valor);
+        urlParaId.set(valor, id); idsEnviados.add(id);
+      }
+      return "img:" + id;
+    }
+
+    async function prepararParaSalvar() {
+      const c = JSON.parse(JSON.stringify(dados));
+      if (c.heroImagem) c.heroImagem = await enviarImagem(c.heroImagem);
+      for (const p of (c.portfolio || [])) {
+        if (p.imagens) { for (let i = 0; i < p.imagens.length; i++) p.imagens[i] = await enviarImagem(p.imagens[i]); }
+      }
+      for (const e of (c.equipe || [])) { if (e.imagem) e.imagem = await enviarImagem(e.imagem); }
+      return c;
+    }
+
+    async function limparImagensSemUso(salvo) {
+      try {
+        const usados = new Set(JSON.stringify(salvo).match(/img:[0-9a-f]{24}/g) || []);
+        const r = await fetch(firebaseConfig.databaseURL + "/excellentServices/imagens.json?shallow=true");
+        const todas = await r.json();
+        if (!todas) return;
+        for (const id of Object.keys(todas)) {
+          if (!usados.has("img:" + id)) await remove(ref(db, "excellentServices/imagens/" + id));
+        }
+      } catch (e) {}
+    }
+
+    window.salvarSite = async function() {
+      atualizarDadosLocais(); 
+      mostrarPopupSalvando(); 
+      try {
+        const paraSalvar = await prepararParaSalvar();
+        await set(siteRef, paraSalvar);
+        limparImagensSemUso(paraSalvar);
+        mostrarPopupResultado(true, "Salvo com sucesso!", "As informações foram atualizadas e já estão online no site.");
+      } catch (error) {
+        mostrarPopupResultado(false, "Erro ao salvar", "O Firebase rejeitou o salvamento. Erro: " + error.message);
+      }
+    }
+
+
+    /* ===== LOGIN E PERMISSÕES ===== */
+    const ADMIN_PRINCIPAL = "excellentservices.excel@gmail.com";
+    const chaveEmail = e => e.trim().toLowerCase().replace(/\./g, ",");
+    const $ = id => document.getElementById(id);
+    let usuarioAtual = null;
+
+    function mostrarSo(tela) {
+      $("telaLogin").style.display = tela === "login" ? "flex" : "none";
+      $("telaNegado").style.display = tela === "negado" ? "flex" : "none";
+      $("areaAdmin").style.display = tela === "admin" ? "block" : "none";
+      if (tela !== "admin") {
+        const l = $("adminLoading"); l.style.opacity = "0"; l.style.display = "none";
+      }
+    }
+
+    async function temPermissao(user) {
+      const email = (user.email || "").toLowerCase();
+      if (!user.emailVerified) return false;
+      if (email === ADMIN_PRINCIPAL) return true;
+      try {
+        const snap = await get(ref(db, "excellentServices/admins/" + chaveEmail(email)));
+        return snap.val() === true;
+      } catch (e) { return false; }
+    }
+
+    $("btnGoogle").onclick = async () => {
+      $("loginErro").textContent = "";
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (e) {
+        if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
+          signInWithRedirect(auth, provider);
+        } else if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") {
+          $("loginErro").textContent = "Não foi possível entrar (" + e.code + ").";
+        }
+      }
+    };
+    $("btnSair").onclick = () => signOut(auth);
+    $("btnTentarOutra").onclick = () => signOut(auth);
+
+    window.listarAdmins = async function() {
+      const lista = $("adminsLista");
+      lista.innerHTML = "";
+      try {
+        const snap = await get(ref(db, "excellentServices/admins"));
+        const chaves = snap.exists() ? Object.keys(snap.val()) : [];
+        if (!chaves.length) {
+          const vazio = document.createElement("div");
+          vazio.style.color = "var(--text-muted)";
+          vazio.textContent = "Nenhum e-mail adicional autorizado ainda.";
+          lista.appendChild(vazio);
+          return;
+        }
+        chaves.sort().forEach(k => {
+          const email = k.replace(/,/g, ".");
+          const item = document.createElement("div");
+          item.className = "admin-item";
+          const span = document.createElement("span");
+          span.textContent = email;
+          const btn = document.createElement("button");
+          btn.className = "btn-small";
+          btn.textContent = "Remover";
+          btn.onclick = () => removerAdmin(k, email);
+          item.append(span, btn);
+          lista.appendChild(item);
+        });
+      } catch (e) {
+        lista.textContent = "Erro ao carregar permissões: " + e.message;
+      }
+    };
+
+    window.adicionarAdmin = async function() {
+      const input = $("novoAdminEmail");
+      const email = input.value.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert("Digite um e-mail válido."); return; }
+      if (email === ADMIN_PRINCIPAL) { alert("Esse e-mail já é o administrador principal."); return; }
+      try {
+        await set(ref(db, "excellentServices/admins/" + chaveEmail(email)), true);
+        input.value = "";
+        listarAdmins();
+      } catch (e) { alert("Erro ao dar permissão: " + e.message); }
+    };
+
+    async function removerAdmin(chave, email) {
+      if (!confirm("Remover o acesso de " + email + "?")) return;
+      try {
+        await remove(ref(db, "excellentServices/admins/" + chave));
+        listarAdmins();
+      } catch (e) { alert("Erro ao remover: " + e.message); }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      usuarioAtual = user;
+      if (!user) { mostrarSo("login"); return; }
+      if (!(await temPermissao(user))) {
+        $("negadoMsg").textContent = "O e-mail " + user.email + " não tem permissão para acessar o painel.";
+        mostrarSo("negado");
+        return;
+      }
+      $("userEmail").textContent = user.email;
+      const principal = (user.email || "").toLowerCase() === ADMIN_PRINCIPAL;
+      $("boxPermissoes").style.display = principal ? "block" : "none";
+      mostrarSo("admin");
+      if (principal) listarAdmins();
+      carregarSiteComLoading();
+    });
+  </script>
+</body>
+</html>

@@ -3,1127 +3,1606 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel Excellent Services | Admin</title>
-  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#08070a">
+  <title>Excellent Services | Portfólio</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
-      --bg-body: #0a0a0a;
-      --bg-card: #141414;
-      --bg-input: #1a1a1a;
-      --text-main: #f0f0f0;
-      --text-muted: #a0a0a0;
-      --accent-main: #f3c623;
-      --accent-dark: #cda415;
-      --border-color: rgba(255, 255, 255, 0.08);
-      --border-focus: rgba(243, 198, 35, 0.5);
+      /* Paleta - Preto premium com detalhes em ouro */
+      --bg-body: #08070a;
+      --bg-surface: rgba(255,255,255,0.035);
+      --bg-surface-strong: rgba(255,255,255,0.055);
+      --bg-solid: #0d0b0e;
+      --bg-header: rgba(8,7,10,0.74);
+      --bg-popup: #0e0c10;
+
+      --text-main: #f4f2ec;
+      --text-muted: #96917f;
+      --text-dim: #6b6252;
+      --text-p: #b9b6ad;
+      --text-btn: #1c1509;
+      --text-nav: #c9c4b6;
+      --text-footer: #6b6656;
+
+      --accent-1: #f0cf7e;
+      --accent-2: #a9781f;
+      --accent-grad: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      --gold-shine: linear-gradient(100deg, #8a6116 0%, #e8c064 20%, #fff3cf 36%, #e8c064 52%, #a9781f 68%, #f0cf7e 84%, #8a6116 100%);
+      --accent-text: #e0b24a;
+      --accent-mono: #f2d896;
+
+      --badge-bg: rgba(201,151,63,0.12);
+      --badge-border: rgba(201,151,63,0.32);
+      --badge-text: #eccb84;
+
+      --border-color: rgba(255,255,255,0.09);
+      --border-strong: rgba(214,171,90,0.28);
+
+      --shadow-1: rgba(0,0,0,0.45);
+      --shadow-2: rgba(0,0,0,0.65);
+      --shadow-glow: rgba(180,138,40,0.22);
+      --shadow-glow-strong: rgba(180,138,40,0.38);
+
+      --icon-system-1: #4a3814;
+      --icon-app-1: #382a10;
+      --icon-app-2: #e8b750;
+      --icon-site-1: #443410;
+      --icon-site-2: #f0cf7e;
+      --icon-excel-1: #382a10;
+
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --radius-xl: 28px;
+
+      --ease: cubic-bezier(.16,1,.3,1);
+      --transition-base: .35s var(--ease);
+
+      --font-display: 'Space Grotesk', 'Inter', Arial, sans-serif;
+      --font-body: 'Inter', Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
     }
 
-    *{margin:0;padding:0;box-sizing:border-box;font-family:Inter,Arial,sans-serif}
-
+    *{margin:0;padding:0;box-sizing:border-box;font-family:var(--font-body)}
+    html{scroll-behavior:smooth}
     body{
-      background: var(--bg-body);
-      color: var(--text-main);
-      padding: 30px;
+      background:var(--bg-body);
+      color:var(--text-main);
+      overflow-x:hidden;
+      position:relative;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      pointer-events:none;
+      background:
+        radial-gradient(900px circle at 8% 0%, rgba(201,151,63,.10), transparent 55%),
+        radial-gradient(900px circle at 92% 28%, rgba(169,120,31,.09), transparent 55%),
+        radial-gradient(700px circle at 50% 100%, rgba(201,151,63,.06), transparent 55%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0px, rgba(255,255,255,.022) 1px, transparent 1px, transparent 56px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0px, rgba(255,255,255,.022) 1px, transparent 1px, transparent 56px);
     }
 
-    /* TELA DE LOADING DO PAINEL */
-    #adminLoading {
-      position: fixed;
-      inset: 0;
-      background: rgba(10, 10, 10, 0.9);
-      backdrop-filter: blur(8px);
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.5s ease;
-    }
-    .loading-box-admin {
-      width: min(380px, 100%);
-      text-align: center;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 32px;
-      padding: 38px 30px;
-      box-shadow: 0 30px 80px rgba(0,0,0,.6);
-    }
-    .loading-logo {
-      font-size: 1.7rem;
-      font-weight: 900;
-      letter-spacing: -1px;
-      margin-bottom: 8px;
-    }
-    .loading-logo span { color: var(--accent-main); }
-    .loading-subtext {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      margin-bottom: 24px;
-    }
-    .progress-area {
-      width: 100%;
-      height: 12px;
-      background: #222;
-      border-radius: 999px;
-      overflow: hidden;
-      position: relative;
-    }
-    .progress-bar {
-      width: 0%;
-      height: 100%;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent-main), var(--accent-dark));
-      animation: progressFillAdmin 1s ease forwards;
-    }
-    @keyframes progressFillAdmin {
-      from { width: 0%; }
-      to { width: 100%; }
-    }
-    .loading-percent {
-      margin-top: 14px;
-      color: var(--accent-main);
-      font-weight: 900;
-      font-size: .92rem;
+    body::after{
+      content:"";
+      position:fixed;
+      inset:-20% -20%;
+      z-index:-1;
+      pointer-events:none;
+      background:linear-gradient(100deg, transparent 44%, rgba(201,151,63,.05) 49%, rgba(169,120,31,.08) 50%, rgba(201,151,63,.05) 51%, transparent 56%);
+      opacity:0;
+      transform:translate3d(-30%,-25%,0);
+      animation:bgSweep 17s ease-in-out infinite;
     }
 
-    /* MODAL DE SUCESSO, ERRO OU SALVANDO */
-    .popup-bg-save {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.8);
-      backdrop-filter: blur(10px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 999999;
-      padding: 20px;
+    @keyframes bgSweep{
+      0%, 78%{opacity:0; transform:translate3d(-30%,-25%,0)}
+      84%{opacity:1}
+      90%{opacity:1; transform:translate3d(30%,25%,0)}
+      96%, 100%{opacity:0; transform:translate3d(30%,25%,0)}
     }
-    .popup-bg-save.active {
-      display: flex !important;
-    }
-    .popup-save {
-      width: 100%;
-      max-width: 400px;
-      background: var(--bg-card);
-      border: 1px solid rgba(243, 198, 35, 0.2);
-      border-radius: 30px;
-      padding: 36px;
-      text-align: center;
-      box-shadow: 0 30px 90px rgba(0,0,0,.8);
-      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    @keyframes popIn {
-      0% { transform: scale(0.8); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-    
-    .icon-check {
-      width: 64px;
-      height: 64px;
-      background: rgba(243, 198, 35, 0.1);
-      color: var(--accent-main);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      font-weight: bold;
-      margin: 0 auto 20px;
-      box-shadow: 0 10px 20px rgba(243, 198, 35, 0.15);
-      border: 1px solid rgba(243, 198, 35, 0.3);
-    }
-    .icon-error {
-      background: rgba(211, 47, 47, 0.1);
-      color: #ff4d4d;
-      border-color: rgba(211, 47, 47, 0.3);
-      box-shadow: 0 10px 20px rgba(211, 47, 47, 0.15);
-    }
-    .icon-saving {
-      width: 50px;
-      height: 50px;
-      background: transparent;
-      box-shadow: none;
-      border: 4px solid rgba(243, 198, 35, 0.2);
-      border-top-color: var(--accent-main);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      font-size: 0;
-      margin: 0 auto 20px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    a{text-decoration:none;color:inherit}
+    img{max-width:100%}
 
-    .popup-save h2 { font-size: 1.8rem; margin-bottom: 10px; letter-spacing: -1px; color: var(--text-main); }
-    .popup-save p { color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
-
-    /* RESTANTE DO PAINEL */
-    .admin { max-width: 1100px; margin: 0 auto; padding-bottom: 60px; }
-
-    .top {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 28px;
-      padding: 34px;
-      margin-bottom: 24px;
-      box-shadow: 0 16px 40px rgba(0,0,0,.3);
-    }
-    .top h1 { font-size: 2.4rem; letter-spacing: -2px; margin-bottom: 8px; }
-    .top span { color: var(--accent-main); }
-    .top p { color: var(--text-muted); line-height: 1.6; }
-
-    .dica-ouro {
-      background: rgba(243, 198, 35, 0.08);
-      border: 1px solid rgba(243, 198, 35, 0.2);
-      border-radius: 16px;
-      padding: 18px 24px;
-      margin-bottom: 24px;
-      color: #ffd700;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      line-height: 1.5;
+    a:focus-visible, button:focus-visible, .btn:focus-visible{
+      outline:2px solid var(--accent-1);
+      outline-offset:3px;
     }
 
-    .box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 24px;
-      padding: 26px;
-      margin-bottom: 20px;
-      box-shadow: 0 16px 40px rgba(0,0,0,.3);
-    }
-    .box h2 { font-size: 1.35rem; margin-bottom: 18px; color: var(--text-main); }
+    h1,h2,h3,.logo,.loading-mark{font-family:var(--font-display)}
+    .mono{font-family:var(--font-mono)}
 
-    label {
-      display: block;
-      font-weight: 700;
-      margin: 16px 0 8px;
-      color: var(--accent-main);
-      font-size: 0.95rem;
+    /* DESTAQUE DE TEXTO (gradiente) */
+    .highlight {
+      background:var(--gold-shine);
+      background-size:200% auto;
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:var(--accent-text);
+      -webkit-text-fill-color:transparent;
+      font-weight:700;
     }
 
-    input, textarea, select {
-      width: 100%;
-      padding: 14px 16px;
-      border-radius: 15px;
-      border: 1px solid var(--border-color);
-      outline: none;
-      font-size: 1rem;
-      background: var(--bg-input);
-      color: var(--text-main);
-      transition: all 0.3s ease;
-    }
-    input:focus, textarea:focus, select:focus {
-      border-color: var(--border-focus);
-      box-shadow: 0 0 0 3px rgba(243, 198, 35, 0.1);
+    /* ===== LOADING SCREEN ===== */
+    .loading-screen{
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      background:var(--bg-body);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      transition:opacity .6s var(--ease), visibility .6s var(--ease);
     }
 
-    textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
-
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-
-    .item {
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
-      padding: 18px;
-      background: var(--bg-input);
-      position: relative;
-    }
-    .header-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;}
-    .header-item h3 { font-size: 1.1rem; color: #fff; }
-
-    .btn {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 15px 28px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent-main), var(--accent-dark));
-      color: #111;
-      font-weight: 900;
-      overflow: hidden;
-      border: none;
-      cursor: pointer;
-      box-shadow: 0 14px 34px rgba(243, 198, 35, 0.2);
-      transition: .3s ease;
-      margin-top: 10px;
-    }
-    .btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 18px 46px rgba(243, 198, 35, 0.35);
+    .loading-screen::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(520px circle at 20% 20%, rgba(201,151,63,.14), transparent 60%),
+        radial-gradient(480px circle at 80% 80%, rgba(169,120,31,.12), transparent 60%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px, transparent 1px, transparent 46px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px, transparent 1px, transparent 46px);
+      pointer-events:none;
     }
 
-    .btn-dark {
-      background: #222;
-      color: #fff;
-      box-shadow: none;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .btn-dark:hover { box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-
-    .btn-outline {
-      background: transparent;
-      color: var(--accent-main);
-      border: 1px solid rgba(243, 198, 35, 0.4);
-      box-shadow: none;
-    }
-    .btn-outline:hover { background: rgba(243, 198, 35, 0.1); }
-
-    .btn-small {
-      padding: 6px 12px;
-      font-size: 0.85rem;
-      border-radius: 8px;
-      cursor: pointer;
-      border: 1px solid rgba(255, 77, 77, 0.3);
-      background: rgba(255, 77, 77, 0.1);
-      color: #ff4d4d;
-      font-weight: bold;
-      transition: 0.2s;
-    }
-    .btn-small:hover { background: rgba(255, 77, 77, 0.2); }
-
-    .preview {
-      width: 100%;
-      max-height: 240px;
-      object-fit: cover;
-      border-radius: 16px;
-      margin-top: 12px;
-      display: none;
-      border: 1px solid var(--border-color);
+    .loading-screen.hide{
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
     }
 
-    .thumb-area { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
-    .thumb-wrapper { position: relative; display: inline-block; }
-    .thumb-wrapper img {
-      width: 80px; height: 80px; object-fit: cover; border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-    .btn-remove-thumb {
-      position: absolute; top: -6px; right: -6px;
-      background: #ff4d4d; color: white; border: none; border-radius: 50%;
-      width: 22px; height: 22px; font-size: 11px; font-weight: 900;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: background 0.2s;
-    }
-    .btn-remove-thumb:hover { background: #d32f2f; }
-
-    /* Caixa interior contatos */
-    .contatos-inner-box {
-      margin-top: 15px;
-      padding: 15px;
-      background: rgba(0,0,0,0.3);
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-    }
-    .contatos-inner-box h4 {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      margin-bottom: 10px;
+    .loading-box{
+      position:relative;
+      width:min(420px,100%);
+      text-align:left;
+      background:var(--bg-solid);
+      border:1px solid var(--border-color);
+      border-radius:var(--radius-xl);
+      padding:36px 32px;
+      box-shadow:0 30px 80px var(--shadow-2);
     }
 
-    @media(max-width:800px){
-      body{padding:18px}
-      .grid{grid-template-columns:1fr}
-      .top h1{font-size:2rem}
+    .loading-mark{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:1.25rem;
+      font-weight:700;
+      letter-spacing:-.5px;
+      margin-bottom:14px;
     }
 
-    /* ===== LOGIN / PERMISSÕES ===== */
-    #telaLogin, #telaNegado {
-      position: fixed; inset: 0; z-index: 9000; display: none;
-      align-items: center; justify-content: center; padding: 20px;
-      background: var(--bg-body);
+    .loading-mark .dot{
+      width:9px;height:9px;border-radius:50%;
+      background:var(--accent-grad);
+      box-shadow:0 0 0 4px rgba(201,151,63,.15);
+      animation:pulse 1.8s ease-in-out infinite;
+      flex-shrink:0;
     }
-    .login-box {
-      width: min(420px, 100%); text-align: center; background: var(--bg-card);
-      border: 1px solid var(--border-color); border-radius: 32px; padding: 40px 30px;
-      box-shadow: 0 30px 80px rgba(0,0,0,.6);
+
+    .loading-mark-text{color:var(--text-main)}
+    .loading-mark-text span{color:var(--accent-text)}
+
+    .loading-text{
+      color:var(--text-muted);
+      line-height:1.6;
+      margin-bottom:28px;
+      font-size:.94rem;
     }
-    .login-box h2 { font-size: 1.5rem; margin-bottom: 8px; letter-spacing: -1px; }
-    .login-box h2 span { color: var(--accent-main); }
-    .login-box p { color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; font-size: .95rem; }
-    .login-erro { color: #ff6b6b; font-size: .9rem; margin-top: 16px; min-height: 1.2em; }
-    .user-bar {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-      margin-bottom: 20px; padding: 12px 18px; background: var(--bg-card);
-      border: 1px solid var(--border-color); border-radius: 16px; color: var(--text-muted); font-size: .9rem;
+
+    .progress-area{
+      width:100%;
+      height:6px;
+      background:rgba(255,255,255,.07);
+      border-radius:999px;
+      overflow:hidden;
+      position:relative;
     }
-    .user-bar strong { color: var(--text-main); }
-    .admins-lista { margin-top: 18px; display: grid; gap: 10px; }
-    .admin-item {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      background: var(--bg-input); border: 1px solid var(--border-color);
-      border-radius: 14px; padding: 12px 16px; word-break: break-all;
+
+    .progress-bar{
+      width:0%;
+      height:100%;
+      border-radius:999px;
+      background:var(--accent-grad);
+      position:relative;
+      overflow:hidden;
+      transition:width .25s linear;
     }
-    .admins-add { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
-    .admins-add input { flex: 1; min-width: 220px; }
-    #areaAdmin { display: none; }
+
+    .progress-bar::before{
+      content:"";
+      position:absolute;
+      top:-80%;
+      left:-35%;
+      width:35%;
+      height:260%;
+      background:rgba(255,255,255,.55);
+      transform:rotate(25deg);
+      animation:shine 1.8s ease infinite;
+    }
+
+    @keyframes shine{
+      from{left:-45%}
+      to{left:125%}
+    }
+
+    @keyframes pulse{
+      0%,100%{opacity:1;transform:scale(1)}
+      50%{opacity:.5;transform:scale(.8)}
+    }
+
+    .loading-meta{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:14px;
+      font-size:.8rem;
+    }
+
+    .loading-status{
+      color:var(--text-dim);
+      letter-spacing:.02em;
+    }
+    .loading-status::after{
+      content:"_";
+      animation:pulse 1s steps(2) infinite;
+      color:var(--accent-mono);
+    }
+
+    .loading-percent{
+      background:var(--gold-shine);
+      background-size:200% auto;
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:var(--accent-mono);
+      -webkit-text-fill-color:transparent;
+      font-weight:600;
+    }
+
+    /* FUNDO DA PÁGINA */
+    .page{
+      min-height:100vh;
+      opacity:0;
+      transition:opacity .7s var(--ease);
+    }
+
+    .page.ready{opacity:1}
+
+    header{
+      width:100%;
+      padding:18px 7%;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      position:sticky;
+      top:0;
+      z-index:50;
+      backdrop-filter:blur(18px);
+      background:var(--bg-header);
+      border-bottom:1px solid var(--border-color);
+    }
+
+    .logo{font-size:1.3rem;font-weight:700;letter-spacing:-.5px}
+    .logo span{color:var(--accent-text)}
+
+    nav{display:flex;gap:30px;font-size:.92rem;color:var(--text-nav)}
+    nav a{position:relative;padding-bottom:4px;transition:color var(--transition-base)}
+    nav a::after{
+      content:"";
+      position:absolute;left:0;bottom:0;width:0;height:1px;
+      background:var(--accent-grad);
+      transition:width var(--transition-base);
+    }
+    nav a:hover{color:var(--text-main)}
+    nav a:hover::after{width:100%}
+
+    .btn{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:13px 24px;
+      border-radius:999px;
+      background:var(--accent-grad);
+      color:var(--text-btn);
+      font-weight:650;
+      font-size:.94rem;
+      overflow:hidden;
+      border:none;
+      cursor:pointer;
+      box-shadow:0 14px 34px var(--shadow-glow);
+      transition:var(--transition-base);
+      white-space:nowrap
+    }
+
+    .btn::before{
+      content:"";
+      position:absolute;
+      top:-80%;
+      left:-35%;
+      width:35%;
+      height:260%;
+      background:rgba(255,255,255,.3);
+      transform:rotate(25deg);
+      transition:.6s
+    }
+
+    .btn:hover::before{left:125%}
+    .btn:hover{transform:translateY(-3px);box-shadow:0 18px 46px var(--shadow-glow-strong)}
+
+    .btn-outline{
+      background:var(--bg-surface);
+      color:var(--text-main);
+      border:1px solid var(--border-color);
+      box-shadow:none;
+      backdrop-filter:blur(10px);
+    }
+    .btn-outline:hover{border-color:var(--border-strong)}
+
+    .container{width:min(1180px,86%);margin:0 auto}
+
+    .hero{
+      position:relative;
+      padding:56px 0 72px;
+      display:grid;
+      grid-template-columns:1.08fr .92fr;
+      align-items:center;
+      gap:60px
+    }
+
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:-8% -5%;
+      z-index:0;
+      pointer-events:none;
+      background:
+        radial-gradient(560px circle at 12% 18%, rgba(201,151,63,.14), transparent 60%),
+        radial-gradient(480px circle at 88% 68%, rgba(169,120,31,.12), transparent 60%);
+      animation:auraFloat 16s ease-in-out infinite alternate;
+    }
+
+    @keyframes auraFloat{
+      from{transform:translate3d(0,0,0)}
+      to{transform:translate3d(-2%,2%,0)}
+    }
+
+    .hero > div{position:relative;z-index:1}
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:9px;
+      padding:9px 16px;
+      border-radius:999px;
+      background:var(--badge-bg);
+      border:1px solid var(--badge-border);
+      color:var(--badge-text);
+      font-size:.85rem;
+      margin-bottom:26px;
+      font-weight:600;
+      font-family:var(--font-mono);
+      letter-spacing:.01em;
+    }
+
+    .badge .dot{
+      width:7px;height:7px;border-radius:50%;
+      background:var(--accent-grad);
+      box-shadow:0 0 0 3px rgba(201,151,63,.18);
+      animation:pulse 1.8s ease-in-out infinite;
+      flex-shrink:0;
+    }
+
+    h1{
+      font-family:var(--font-display);
+      font-weight:600;
+      font-size:clamp(2.7rem,5vw,5rem);
+      line-height:1.04;
+      letter-spacing:-2px;
+      margin-bottom:26px
+    }
+
+    .hero p{
+      color:var(--text-p);
+      font-size:1.08rem;
+      line-height:1.75;
+      max-width:600px;
+      margin-bottom:34px
+    }
+
+    .hero-actions{display:flex;gap:14px;flex-wrap:wrap}
+
+    .hero-card-wrap{position:relative}
+
+    .hero-card-wrap::before{
+      content:"";
+      position:absolute;
+      inset:-18%;
+      z-index:0;
+      pointer-events:none;
+      background:radial-gradient(circle at center, rgba(201,151,63,.16), rgba(169,120,31,.08) 45%, transparent 70%);
+      filter:blur(38px);
+    }
+
+    .hero-card{
+      position:relative;
+      z-index:1;
+      aspect-ratio:1/1;
+      width:100%;
+      overflow:hidden;
+      -webkit-mask-image:radial-gradient(circle at center, #000 58%, transparent 88%);
+      mask-image:radial-gradient(circle at center, #000 58%, transparent 88%);
+    }
+
+    .hero-image{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block
+    }
+
+    section{padding:84px 0}
+
+    .section-title{max-width:700px;margin-bottom:42px}
+    .section-title h2{
+      font-weight:600;
+      font-size:clamp(1.9rem,3.2vw,3rem);
+      letter-spacing:-1.5px;
+      line-height:1.1;
+      margin-bottom:14px
+    }
+
+    .section-title p{color:var(--text-muted);line-height:1.75;font-size:1.01rem}
+
+    .services{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+      gap:16px
+    }
+
+    .service-card{
+      padding:28px;
+      border-radius:var(--radius-md);
+      background:var(--bg-surface);
+      border:1px solid var(--border-color);
+      min-height:245px;
+      transition:var(--transition-base);
+      backdrop-filter:blur(16px);
+    }
+
+    .service-card:hover{
+      transform:translateY(-6px);
+      border-color:var(--badge-border);
+      background:var(--bg-surface-strong);
+    }
+
+    .icon{
+      width:54px;
+      height:54px;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
+      margin-bottom:20px;
+      color:#fff;
+      border:none;
+      box-shadow:0 14px 30px rgba(0,0,0,.35);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .icon::before{
+      content:"";
+      position:absolute;
+      width:42px;
+      height:90px;
+      background:rgba(255,255,255,.16);
+      transform:rotate(28deg);
+      top:-24px;
+      left:-28px;
+    }
+
+    .icon svg{
+      width:30px;
+      height:30px;
+      display:block;
+      position:relative;
+      z-index:2;
+    }
+
+    .icon-system{background:linear-gradient(135deg,var(--icon-system-1),var(--accent-text))}
+    .icon-app{background:linear-gradient(135deg,var(--icon-app-1),var(--icon-app-2))}
+    .icon-site{background:linear-gradient(135deg,var(--icon-site-1),var(--icon-site-2))}
+    .icon-excel{background:linear-gradient(135deg,var(--icon-excel-1),var(--accent-text))}
+
+    .service-card h3{font-family:var(--font-display);font-weight:600;font-size:1.15rem;margin-bottom:10px}
+    .service-card p{color:var(--text-muted);line-height:1.65;font-size:.94rem}
+
+    .portfolio-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+      gap:20px
+    }
+
+    .project{
+      border-radius:var(--radius-lg);
+      overflow:hidden;
+      background:var(--bg-surface);
+      border:1px solid var(--border-color);
+      transition:var(--transition-base);
+      backdrop-filter:blur(16px);
+    }
+
+    .project:hover{
+      transform:translateY(-6px);
+      border-color:var(--badge-border);
+    }
+
+    .project-img{
+      width:100%;
+      height:245px;
+      display:block;
+      transition:opacity .3s ease;
+    }
+
+    .project-info{padding:24px}
+    .project-info small{color:var(--accent-mono);font-weight:600;font-family:var(--font-mono);letter-spacing:.03em;text-transform:uppercase;font-size:.72rem}
+    .project-info h3{font-family:var(--font-display);font-weight:600;margin:10px 0;font-size:1.28rem}
+    .project-info p{color:var(--text-muted);line-height:1.65;font-size:.96rem}
+
+    .stats-section{
+      padding-top:64px;
+      padding-bottom:84px;
+    }
+
+    .stats-head{max-width:760px;margin-bottom:30px}
+
+    .stats-head h2{
+      font-family:var(--font-display);
+      font-weight:600;
+      font-size:clamp(1.8rem,3vw,2.8rem);
+      letter-spacing:-1.5px;
+      line-height:1.1;
+      margin-bottom:14px;
+      color:var(--text-main);
+    }
+
+    .stats-head p{
+      color:var(--text-muted);
+      line-height:1.75;
+      font-size:1rem;
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:18px;
+    }
+
+    .stat{
+      position:relative;
+      overflow:hidden;
+      border-radius:var(--radius-lg);
+      padding:26px;
+      background:var(--bg-surface);
+      color:#fff;
+      border:1px solid var(--border-color);
+      min-height:210px;
+      transition:var(--transition-base);
+      backdrop-filter:blur(16px);
+    }
+
+    .stat::after{
+      content:"";
+      position:absolute;
+      top:0;left:0;
+      width:100%;height:2px;
+      background:var(--accent-grad);
+      opacity:.8;
+    }
+
+    .stat:hover{
+      transform:translateY(-6px);
+      border-color:var(--badge-border);
+      background:var(--bg-surface-strong);
+    }
+
+    .stat-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:24px;
+      position:relative;
+      z-index:2;
+    }
+
+    .stat-badge{
+      font-size:.72rem;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:.09em;
+      color:var(--text-dim);
+      font-family:var(--font-mono);
+    }
+
+    .stat-icon{
+      width:40px;
+      height:40px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      background:rgba(201,151,63,.1);
+      border:1px solid var(--badge-border);
+      color:var(--accent-text);
+      flex-shrink:0;
+    }
+
+    .stat-icon svg{width:18px;height:18px;display:block}
+
+    .stat h3{
+      font-family:var(--font-mono);
+      font-weight:700;
+      font-size:2.5rem;
+      background:var(--gold-shine);
+      background-size:200% auto;
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:var(--accent-mono);
+      -webkit-text-fill-color:transparent;
+      margin-bottom:14px;
+      letter-spacing:-1px;
+      line-height:1;
+      position:relative;
+      z-index:2;
+    }
+
+    .stat-line{
+      width:38px;
+      height:2px;
+      border-radius:999px;
+      background:var(--accent-grad);
+      margin-bottom:14px;
+      position:relative;
+      z-index:2;
+      opacity:.9;
+    }
+
+    .stat p{
+      color:var(--text-muted);
+      font-weight:500;
+      line-height:1.5;
+      font-size:.96rem;
+      position:relative;
+      z-index:2;
+      max-width:240px;
+    }
+
+    .process{
+      display:grid;
+      grid-template-columns:.95fr 1.05fr;
+      gap:52px;
+      align-items:center
+    }
+
+    .process-box{
+      border-radius:var(--radius-xl);
+      padding:38px;
+      background:var(--bg-surface);
+      border:1px solid var(--border-color);
+      backdrop-filter:blur(16px);
+    }
+
+    .step{
+      position:relative;
+      padding:20px 0 20px 26px;
+      border-bottom:1px solid var(--border-color)
+    }
+    .step::before{
+      content:"";
+      position:absolute;
+      left:0;top:26px;
+      width:8px;height:8px;
+      border-radius:50%;
+      background:var(--accent-grad);
+    }
+    .step::after{
+      content:"";
+      position:absolute;
+      left:3px;top:38px;bottom:-2px;
+      width:1px;
+      background:var(--border-color);
+    }
+
+    .step:first-child{padding-top:0}
+    .step:first-child::before{top:6px}
+    .step:first-child::after{top:18px}
+    .step:last-child{border-bottom:none;padding-bottom:0}
+    .step:last-child::after{display:none}
+    .step strong{
+      color:var(--accent-mono);
+      display:block;
+      margin-bottom:8px;
+      font-size:.96rem;
+      font-family:var(--font-mono);
+      font-weight:600;
+      letter-spacing:.01em;
+    }
+    .step p{color:var(--text-muted);line-height:1.65;font-size:.96rem}
+
+    /* SEÇÃO EQUIPE / SOBRE */
+    .equipe-list{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:26px;
+    }
+
+    .equipe-card{
+      display:flex;
+      flex-direction:column;
+      background:var(--bg-surface);
+      border:1px solid var(--border-color);
+      border-radius:var(--radius-lg);
+      padding:22px;
+      transition:var(--transition-base);
+      backdrop-filter:blur(16px);
+    }
+
+    .equipe-card:hover{
+      transform:translateY(-6px);
+      border-color:var(--badge-border);
+    }
+
+    .equipe-img-wrapper{
+      width:100%;
+      border-radius:var(--radius-md);
+      overflow:hidden;
+      height:370px;
+      position:relative;
+      margin-bottom:20px;
+    }
+
+    .equipe-img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      transition:transform .6s var(--ease);
+    }
+
+    .equipe-card:hover .equipe-img{transform:scale(1.05)}
+
+    .equipe-info{padding:0 8px 8px;text-align:center}
+
+    .equipe-info h2{
+      font-family:var(--font-display);
+      font-weight:600;
+      font-size:clamp(1.5rem, 2.2vw, 1.9rem);
+      letter-spacing:-.5px;
+      margin-bottom:6px;
+      color:var(--accent-text);
+      line-height:1.15;
+    }
+
+    .equipe-info h3{
+      font-size:1.02rem;
+      font-weight:600;
+      margin-bottom:14px;
+      color:var(--text-main);
+    }
+
+    .equipe-info p{
+      color:var(--text-muted);
+      line-height:1.7;
+      font-size:.98rem;
+    }
+
+    .cta{
+      position:relative;
+      overflow:hidden;
+      text-align:center;
+      border-radius:var(--radius-xl);
+      padding:70px 34px;
+      background:var(--bg-solid);
+      border:1px solid var(--border-color);
+      box-shadow:0 30px 80px var(--shadow-2)
+    }
+
+    .cta::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:radial-gradient(520px circle at 50% 0%, rgba(201,151,63,.14), transparent 65%);
+      pointer-events:none;
+    }
+
+    .cta h2{
+      position:relative;
+      font-weight:600;
+      font-size:clamp(1.9rem,3.4vw,3.4rem);
+      letter-spacing:-1.5px;
+      line-height:1.1;
+      margin-bottom:16px;
+      color:#fff
+    }
+
+    .cta p{
+      position:relative;
+      max-width:700px;
+      margin:0 auto 28px;
+      color:var(--text-p);
+      line-height:1.75
+    }
+
+    .cta .btn{position:relative}
+
+    footer{
+      padding:30px 7%;
+      display:flex;
+      justify-content:space-between;
+      gap:20px;
+      color:var(--text-footer);
+      border-top:1px solid var(--border-color);
+      flex-wrap:wrap;
+      font-size:.9rem;
+    }
+    footer .tag{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim)}
+
+    /* POP-UPS DE WHATSAPP */
+    .popup-bg{
+      position:fixed;
+      inset:0;
+      background:rgba(4,5,10,.68);
+      backdrop-filter:blur(10px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:999;
+      padding:20px;
+    }
+
+    .popup-bg.active{display:flex}
+
+    .popup{
+      width:100%;
+      max-width:440px;
+      background:var(--bg-popup);
+      border:1px solid var(--border-strong);
+      border-radius:var(--radius-lg);
+      padding:34px;
+      text-align:center;
+      position:relative;
+      box-shadow:0 30px 90px var(--shadow-2)
+    }
+
+    .popup h2{font-family:var(--font-display);font-weight:600;font-size:1.6rem;margin-bottom:10px;letter-spacing:-.5px;color:var(--text-main)}
+    .popup p{color:var(--text-muted);margin-bottom:22px;line-height:1.6;font-size:.95rem}
+    .popup-btn{width:100%;margin-top:10px}
+
+    .fechar{
+      position:absolute;
+      right:16px;
+      top:14px;
+      background:transparent;
+      color:var(--text-muted);
+      border:none;
+      font-size:28px;
+      cursor:pointer;
+      line-height:1;
+      transition:color var(--transition-base);
+    }
+    .fechar:hover{color:var(--text-main)}
+
+    .btn-voltar{
+      position:absolute;
+      left:16px;
+      top:14px;
+      background:transparent;
+      color:var(--text-muted);
+      border:none;
+      font-size:24px;
+      cursor:pointer;
+      line-height:1.1;
+      transition:color var(--transition-base);
+    }
+    .btn-voltar:hover{color:var(--accent-text)}
+
+    /* ANIMAÇÕES DE SURGIMENTO */
+    .reveal{opacity:0;transform:translateY(32px);transition:opacity .8s var(--ease), transform .8s var(--ease)}
+    .reveal.active{opacity:1;transform:translateY(0)}
+
+    .fade-in-up{opacity:0;transform:translateY(32px) scale(.98);transition:opacity .6s var(--ease), transform .6s var(--ease)}
+    .fade-in-up.active{opacity:1;transform:translateY(0) scale(1)}
+
+    .reveal.active .badge{animation:popUpCard .8s var(--ease) forwards;animation-delay:.1s;opacity:0}
+    .reveal.active h1{animation:popUpCard .8s var(--ease) forwards;animation-delay:.2s;opacity:0}
+    .reveal.active .hero p{animation:popUpCard .8s var(--ease) forwards;animation-delay:.3s;opacity:0}
+    .reveal.active .hero-actions{animation:popUpCard .8s var(--ease) forwards;animation-delay:.4s;opacity:0}
+    .reveal.active .hero-card-wrap{animation:popUpCard .8s var(--ease) forwards;animation-delay:.5s;opacity:0}
+    @keyframes popUpCard{0%{opacity:0;transform:translateY(24px) scale(.98)}100%{opacity:1;transform:translateY(0) scale(1)}}
+
+    /* RESPONSIVIDADE */
+    @media(max-width:1100px){ .services,.stats{grid-template-columns:repeat(2,1fr)} .hero{gap:40px} }
+    @media(max-width:980px){
+      nav{display:none} .hero,.process{grid-template-columns:1fr} .portfolio-grid{grid-template-columns:1fr 1fr} .hero-card-wrap{max-width:420px;margin:0 auto}
+      .equipe-list{grid-template-columns:repeat(2, 1fr)} .equipe-img-wrapper{min-height:280px;height:auto}
+    }
+    @media(max-width:620px){
+      .container{width:calc(100% - 40px)} header{padding:18px} .hero{padding-top:48px} h1{letter-spacing:-1px}
+      .services,.portfolio-grid,.stats{grid-template-columns:1fr} .hero-card-wrap{max-width:300px;margin:0 auto} .btn{width:100%} footer{text-align:center;justify-content:center}
+      .loading-box{padding:28px 22px} .stat{min-height:auto} .stat h3{font-size:2.2rem}
+      .equipe-list{grid-template-columns:1fr}
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *, *::before, *::after{
+        animation-duration:.001ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.001ms !important;
+        scroll-behavior:auto !important;
+      }
+    }
   </style>
 </head>
 
 <body>
-  <!-- TELA DE LOGIN -->
-  <div id="telaLogin">
-    <div class="login-box">
-      <h2>Painel <span>Excellent Services</span></h2>
-      <p>Acesso restrito. Entre com uma conta Google autorizada.</p>
-      <button class="btn" id="btnGoogle" style="width:100%; color:#111;">Entrar com Google</button>
-      <div class="login-erro" id="loginErro"></div>
-    </div>
-  </div>
-
-  <!-- TELA DE ACESSO NEGADO -->
-  <div id="telaNegado">
-    <div class="login-box">
-      <h2>Acesso <span>negado</span></h2>
-      <p id="negadoMsg">Este e-mail não tem permissão para acessar o painel.</p>
-      <button class="btn" id="btnTentarOutra" style="width:100%; color:#111;">Entrar com outra conta</button>
-    </div>
-  </div>
-
-  <!-- TELA DE LOADING INICIAL -->
-  <div id="adminLoading">
-    <div class="loading-box-admin">
-      <div class="loading-logo">
-        <span>Excel</span>lent Services
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-box">
+      <div class="loading-mark"><span class="dot"></span><span class="loading-mark-text"><span>Excel</span>lent Services</span></div>
+      <p class="loading-text">Preparando uma experiência personalizada para você.</p>
+      <div class="progress-area"><div class="progress-bar" id="loadingBar"></div></div>
+      <div class="loading-meta mono">
+        <span class="loading-status" id="loadingStatus">Inicializando</span>
+        <span class="loading-percent" id="loadingPercent">0%</span>
       </div>
-      <p class="loading-subtext">Sincronizando banco de dados...</p>
-      <div class="progress-area">
-        <div class="progress-bar"></div>
-      </div>
-      <div class="loading-percent" id="loadingPercentAdmin">0%</div>
     </div>
   </div>
 
-  <div class="admin" id="areaAdmin">
-    <div class="top">
-      <h1>Painel <span>Excellent Services</span></h1>
-      <p>Gerencie o conteúdo e imagens do seu portfólio. Tudo é salvo em tempo real no banco de dados.</p>
-    </div>
+  <div class="page" id="page">
+    <header>
+      <a href="#" class="logo"><span>Excel</span>lent Services</a>
+      <nav>
+        <a href="#servicos">Serviços</a>
+        <a href="#portfolio">Portfólio</a>
+        <a href="#processo">Processo</a>
+        <a href="#sobre">Equipe</a>
+        <a href="#contato">Contato</a>
+      </nav>
+      <button class="btn" onclick="abrirWhatsapp()">Solicitar projeto</button>
+    </header>
 
-    <div class="user-bar">
-      <span>Logado como <strong id="userEmail"></strong></span>
-      <button class="btn btn-dark" id="btnSair" style="padding:10px 20px;">Sair</button>
-    </div>
-
-    <!-- PERMISSÕES (somente admin principal) -->
-    <div class="box" id="boxPermissoes" style="display:none;">
-      <h2>Permissões de acesso</h2>
-      <p style="color: var(--text-muted); margin-bottom: 10px; line-height:1.6;">
-        Adicione os e-mails (conta Google) que também podem entrar e editar o portfólio.
-      </p>
-      <div class="admins-add">
-        <input id="novoAdminEmail" type="email" placeholder="email@gmail.com">
-        <button class="btn" style="color:#111;" onclick="adicionarAdmin()">Dar permissão</button>
+    <main>
+      <div class="container">
+        <section class="hero reveal">
+          <div>
+            <div class="badge"><span class="dot"></span><span id="badge"></span></div>
+            <h1 id="heroTitulo"></h1>
+            <p id="heroTexto"></p>
+            <div class="hero-actions">
+              <a href="#portfolio" class="btn">Ver portfólio</a>
+              <a href="#servicos" class="btn btn-outline">Conhecer serviços</a>
+            </div>
+          </div>
+          <div class="hero-card-wrap">
+            <div class="hero-card">
+              <img id="heroImagem" class="hero-image" src="" alt="Excellent Services">
+            </div>
+          </div>
+        </section>
       </div>
-      <div class="admins-lista" id="adminsLista"></div>
-    </div>
 
-    <!-- INSTRUÇÃO DE PINTURA DE TEXTO -->
-    <div class="dica-ouro">
-      ✨ <strong>Dica Premium:</strong> Para deixar qualquer parte do texto dourada no site, basta colocar a palavra entre asteriscos nos campos abaixo. Exemplo: Se você digitar *Excel*lent, o "Excel" ficará dourado!
-    </div>
+      <section id="servicos" style="padding-top: 0;">
+        <div class="container">
+          <div class="section-title reveal">
+            <h2 id="servicosTitulo"></h2>
+            <p id="servicosTexto"></p>
+          </div>
+          <div class="services" id="servicosCards"></div>
+        </div>
+      </section>
 
-    <div class="box">
-      <h2>Topo da página</h2>
-      <label>Frase pequena (Badge)</label>
-      <input id="badge" placeholder="Ex: Soluções em *Excel* e Sistemas">
-      
-      <label>Título principal</label>
-      <textarea id="heroTitulo" placeholder="Ex: Soluções modernas para empresas que querem *crescer*"></textarea>
+      <section id="portfolio">
+        <div class="container">
+          <div class="section-title reveal">
+            <h2 id="portfolioTitulo"></h2>
+            <p id="portfolioTexto"></p>
+          </div>
+          <div class="portfolio-grid" id="portfolioCards"></div>
+        </div>
+      </section>
 
-      <label>Texto principal</label>
-      <textarea id="heroTexto"></textarea>
+      <section class="stats-section">
+        <div class="container">
+          <div class="stats-head reveal">
+            <h2>Resultados que refletem nossa consistência.</h2>
+            <p>Unimos personalização, agilidade e suporte para entregar soluções que transmitem confiança, organização e profissionalismo.</p>
+          </div>
+          <div class="stats" id="statsCards"></div>
+        </div>
+      </section>
 
-      <label>Imagem principal</label>
-      <input type="file" id="heroImagemInput" accept="image/*">
-      <img id="heroImagemPreview" class="preview">
-    </div>
+      <section id="processo">
+        <div class="container">
+          <div class="process">
+            <div class="section-title reveal">
+              <h2 id="processoTitulo"></h2>
+              <p id="processoTexto"></p>
+            </div>
+            <div class="process-box reveal" id="processoCards"></div>
+          </div>
+        </div>
+      </section>
 
-    <div class="box">
-      <h2>Serviços</h2>
-      <label>Título da seção</label>
-      <input id="servicosTitulo">
-      <label>Texto da seção</label>
-      <textarea id="servicosTexto"></textarea>
+      <section id="sobre" style="padding-top: 20px;">
+        <div class="container">
+          <div class="section-title reveal">
+            <h2 id="equipeTituloSecao"></h2>
+            <p id="equipeTextoSecao"></p>
+          </div>
+          <div class="equipe-list" id="equipeCards"></div>
+        </div>
+      </section>
 
-      <div class="grid" id="servicosArea"></div>
-      <button class="btn btn-outline" style="margin-top: 20px;" onclick="adicionarServico()">+ Adicionar Serviço</button>
-    </div>
+      <section id="contato" class="reveal">
+        <div class="container">
+          <div class="cta">
+            <h2 id="ctaTitulo"></h2>
+            <p id="ctaTexto"></p>
+            <button class="btn" onclick="abrirWhatsapp()">Solicitar projeto agora</button>
+          </div>
+        </div>
+      </section>
+    </main>
 
-    <div class="box">
-      <h2>Portfólio</h2>
-      <label>Título da seção</label>
-      <input id="portfolioTitulo">
-      <label>Texto da seção</label>
-      <textarea id="portfolioTexto"></textarea>
+    <footer class="reveal">
+      <p>© 2026 Excellent Services. Todos os direitos reservados.</p>
+      <p class="tag">Sistemas • Apps • Sites • Sistemas em Excel</p>
+    </footer>
+  </div>
 
-      <div class="grid" id="portfolioArea"></div>
-      <button class="btn btn-outline" style="margin-top: 20px;" onclick="adicionarPortfolio()">+ Adicionar Projeto</button>
-    </div>
-
-    <div class="box">
-      <h2>Números de destaque</h2>
-      <div class="grid" id="statsArea"></div>
-    </div>
-
-    <div class="box">
-      <h2>Processo</h2>
-      <label>Título da seção</label>
-      <input id="processoTitulo">
-      <label>Texto da seção</label>
-      <textarea id="processoTexto"></textarea>
-
-      <div id="processoArea"></div>
-    </div>
-
-    <div class="box">
-      <h2>Sobre / Equipe</h2>
-      <label>Título da seção</label>
-      <input id="equipeTituloSecao" placeholder="Ex: A força da nossa *Equipe*">
-      <label>Texto da seção</label>
-      <textarea id="equipeTextoSecao"></textarea>
-
-      <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.95rem; margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--border-color);">
-        Adicione perfis e fotos da equipe.
-      </p>
-
-      <div class="grid" id="equipeArea"></div>
-      <button class="btn btn-outline" style="margin-top: 20px;" onclick="adicionarEquipe()">+ Adicionar Pessoa</button>
-    </div>
-
-    <div class="box">
-      <h2>Chamada final</h2>
-      <label>Título</label>
-      <textarea id="ctaTitulo"></textarea>
-      <label>Texto</label>
-      <textarea id="ctaTexto"></textarea>
-    </div>
-
-    <!-- NOVA SEÇÃO: POP-UPS DE WHATSAPP -->
-    <div class="box" style="border: 1px solid var(--accent-dark);">
-      <h2 style="color: var(--accent-main);">Pop-ups de WhatsApp (Contatos)</h2>
-      <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.95rem;">
-        Configure o menu de triagem de contatos. Crie departamentos e associe os consultores a eles.
-      </p>
-
-      <label>Título do 1º Pop-up (Categorias)</label>
-      <input id="contatosTitulo1" placeholder="Ex: Selecione as opções">
-      <label>Subtítulo do 1º Pop-up</label>
-      <input id="contatosSubtitulo1" placeholder="Ex: Escolha o departamento que deseja falar.">
-
-      <label>Título do 2º Pop-up (Representantes)</label>
-      <input id="contatosTitulo2" placeholder="Ex: Fale com um de nossos representantes">
-      <label>Subtítulo do 2º Pop-up</label>
-      <input id="contatosSubtitulo2" placeholder="Ex: Selecione um dos contatos abaixo.">
-
-      <div class="grid" id="categoriasContatoArea" style="margin-top: 25px;"></div>
-      <button class="btn btn-outline" style="margin-top: 20px;" onclick="adicionarCategoriaContato()">+ Adicionar Categoria</button>
-    </div>
-
-    <div style="display: flex; gap: 14px; flex-wrap: wrap;">
-      <button class="btn" onclick="salvarSite()">Salvar alterações</button>
-      <button class="btn btn-dark" onclick="carregarSiteComLoading()">Recarregar dados originais</button>
+  <!-- POP-UP 1: CATEGORIAS DE WHATSAPP -->
+  <div class="popup-bg" id="popupCategorias">
+    <div class="popup">
+      <button class="fechar" onclick="fecharPopupCategorias()">×</button>
+      <h2 id="popupCategoriasTitulo">Selecione as opções</h2>
+      <p id="popupCategoriasSubtitulo">Escolha o departamento que deseja falar.</p>
+      <div id="categoriasBtnsArea"></div>
     </div>
   </div>
 
-  <!-- POP-UP DE SALVO COM SUCESSO / LOADING -->
-  <div class="popup-bg-save" id="popupSave">
-    <div class="popup-save">
-      <div class="icon-saving" id="popupIcon"></div>
-      <h2 id="popupTitle">Salvando alterações...</h2>
-      <p id="popupMessage">Por favor, aguarde enquanto sincronizamos com o servidor.</p>
-      <button class="btn" id="popupBtn" style="width:100%; display:none; color: #111;" onclick="fecharPopupSave()">Entendi</button>
+  <!-- POP-UP 2: CONTATOS DA CATEGORIA SELECIONADA -->
+  <div class="popup-bg" id="popupContatos">
+    <div class="popup">
+      <button class="fechar" onclick="fecharPopupContatos()">×</button>
+      <button class="btn-voltar" onclick="voltarParaCategorias()">←</button>
+      <h2 id="popupContatosTitulo">Fale com um de nossos representantes</h2>
+      <p id="popupContatosSubtitulo">Selecione um dos contatos abaixo.</p>
+      <div id="contatosBtnsArea"></div>
     </div>
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { firebaseConfig } from "/firebase-config.js";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
-    const siteRef = ref(db, "excellentServices/site");
-
-    let dados = {};
-
-    function comprimirImagemParaBase64(file, maxWidth, callback) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          const base64Comprimido = canvas.toDataURL('image/webp', 0.7);
-          callback(base64Comprimido);
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+    // O site só LÊ dados públicos: usa requisições HTTP simples (sem carregar o SDK do Firebase)
+    const BASE_DB = firebaseConfig.databaseURL + "/excellentServices";
+    const SITE_DB = BASE_DB + "/site";
+    async function lerJson(url) {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
     }
 
-    // Salva na memória tudo que foi digitado antes da tela recarregar
-    window.atualizarDadosLocais = function() {
-      if(!document.getElementById("badge")) return;
-      dados.badge = document.getElementById("badge").value;
-      dados.heroTitulo = document.getElementById("heroTitulo").value;
-      dados.heroTexto = document.getElementById("heroTexto").value;
-      dados.servicosTitulo = document.getElementById("servicosTitulo").value;
-      dados.servicosTexto = document.getElementById("servicosTexto").value;
+    const dadosPadrao = {
+      badge: "Sistemas, Apps, Sites e Sistemas em Excel personalizados",
+      heroTitulo: "Soluções digitais modernas para empresas que querem *crescer*.",
+      heroTexto: "A Excellent Services desenvolve soluções personalizadas para empresas: sistemas, apps, sites, páginas profissionais e sistemas em Excel. Já ajudamos diversas empresas pelo mundo a organizar processos, melhorar sua presença digital e trabalhar com mais profissionalismo.",
+      heroImagem: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=900&q=80",
 
-      if(dados.servicos) {
-        dados.servicos = dados.servicos.map((item, i) => ({
-          icone: document.getElementById(`servicoIcone${i}`).value,
-          titulo: document.getElementById(`servicoTitulo${i}`).value,
-          texto: document.getElementById(`servicoTexto${i}`).value
-        }));
-      }
-      dados.portfolioTitulo = document.getElementById("portfolioTitulo").value;
-      dados.portfolioTexto = document.getElementById("portfolioTexto").value;
+      servicosTitulo: "Soluções completas e personalizadas.",
+      servicosTexto: "Desenvolvemos projetos sob medida para cada negócio, unindo design, tecnologia, organização e praticidade.",
+      servicos: [
+        {titulo:"Sistemas personalizados",texto:"Sistemas sob medida para gestão de clientes, vendas, financeiro, estoque, projetos, equipes, relatórios e processos internos."},
+        {titulo:"Apps personalizados",texto:"Aplicativos modernos para digitalizar processos, melhorar o atendimento e facilitar o acesso de clientes e equipes."},
+        {titulo:"Sites profissionais",texto:"Sites institucionais, páginas de vendas e landing pages modernas, responsivas, estratégicas e com aparência premium."},
+        {titulo:"Sistemas em Excel",texto:"Soluções em Excel com dashboards, automações, macros, controles inteligentes, relatórios e gestão visual personalizada."}
+      ],
 
-      if(dados.portfolio) {
-        dados.portfolio = dados.portfolio.map((item, i) => ({
-          categoria: document.getElementById(`portfolioCategoria${i}`).value,
-          titulo: document.getElementById(`portfolioTitulo${i}`).value,
-          texto: document.getElementById(`portfolioTexto${i}`).value,
-          imagens: item.imagens || [],
-          ajuste: document.getElementById(`portfolioAjuste${i}`).value
-        }));
-      }
-      if(dados.stats) {
-        dados.stats = dados.stats.map((item, i) => ({
-          numero: document.getElementById(`statNumero${i}`).value,
-          texto: document.getElementById(`statTexto${i}`).value
-        }));
-      }
-      dados.processoTitulo = document.getElementById("processoTitulo").value;
-      dados.processoTexto = document.getElementById("processoTexto").value;
+      portfolioTitulo: "Projetos desenvolvidos com foco em *resultado*.",
+      portfolioTexto: "Criamos interfaces modernas, funcionais e profissionais para empresas que desejam mais controle, presença digital e eficiência.",
+      portfolio: [
+        {categoria:"Sistema empresarial",titulo:"Gestão financeira premium",texto:"Interface limpa para acompanhar receitas, despesas, indicadores, clientes, relatórios e evolução do negócio.",imagens:["https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80"],ajuste: "cover"},
+        {categoria:"Dashboard personalizado",titulo:"Controle operacional",texto:"Plataforma para organizar vendas, tarefas, equipe, estoque, financeiro e relatórios em um só lugar.",imagens:["https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80"],ajuste: "cover"},
+        {categoria:"Site profissional",titulo:"Landing page de alta conversão",texto:"Design estratégico, moderno e responsivo para apresentar ofertas, serviços e empresas com mais autoridade.",imagens:["https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80"],ajuste: "cover"}
+      ],
 
-      if(dados.processo) {
-        dados.processo = dados.processo.map((item, i) => ({
-          titulo: document.getElementById(`processoEtapaTitulo${i}`).value,
-          texto: document.getElementById(`processoEtapaTexto${i}`).value
-        }));
-      }
+      stats: [
+        {numero:"+50",texto:"Projetos digitais desenvolvidos"},
+        {numero:"Global",texto:"Empresas atendidas em diferentes regiões do mundo"},
+        {numero:"100%",texto:"Soluções personalizadas"},
+        {numero:"7-30d",texto:"Suporte após a entrega, conforme complexidade"}
+      ],
 
-      dados.equipeTitulo = document.getElementById("equipeTituloSecao").value;
-      dados.equipeTexto = document.getElementById("equipeTextoSecao").value;
+      processoTitulo: "Processo simples, direto e profissional.",
+      processoTexto: "Da primeira conversa até a entrega final, cada etapa é pensada para transformar sua necessidade em uma solução clara, bonita e funcional.",
+      processo: [
+        {titulo:"01 — Diagnóstico",texto:"Entendemos o problema, objetivo, público, operação e recursos necessários para o projeto."},
+        {titulo:"02 — Estruturação",texto:"Organizamos a ideia em telas, fluxos, funcionalidades, identidade visual e experiência do usuário."},
+        {titulo:"03 — Desenvolvimento",texto:"Criamos o projeto com foco em design, usabilidade, velocidade, segurança e profissionalismo."},
+        {titulo:"04 — Entrega e suporte",texto:"Você recebe a solução pronta para usar, com suporte de 7 a 30 dias após a entrega, dependendo da complexidade do projeto."}
+      ],
 
-      if(dados.equipe) {
-        dados.equipe = dados.equipe.map((item, i) => ({
-          titulo: document.getElementById(`equipeTitulo${i}`).value,
-          subtitulo: document.getElementById(`equipeSubtitulo${i}`).value,
-          texto: document.getElementById(`equipeTexto${i}`).value,
-          imagem: item.imagem || ''
-        }));
-      }
-      dados.ctaTitulo = document.getElementById("ctaTitulo").value;
-      dados.ctaTexto = document.getElementById("ctaTexto").value;
+      equipeTitulo: "A força da nossa *Equipe*",
+      equipeTexto: "Conheça os profissionais que transformam suas ideias em soluções de altíssimo nível.",
+      equipe: [
+        {titulo: "Sobre Marcos Valério",subtitulo: "Fundador & Especialista",texto: "Fundador e especialista em soluções em Excel e sistemas.",imagem: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=80"}
+      ],
 
-      // Salvando os contatos de WhatsApp
-      dados.contatosTitulo1 = document.getElementById("contatosTitulo1").value;
-      dados.contatosSubtitulo1 = document.getElementById("contatosSubtitulo1").value;
-      dados.contatosTitulo2 = document.getElementById("contatosTitulo2").value;
-      dados.contatosSubtitulo2 = document.getElementById("contatosSubtitulo2").value;
+      ctaTitulo: "Vamos transformar sua ideia em uma solução *profissional*?",
+      ctaTexto: "Solicite um orçamento para sistema, app, site, sistema em Excel, dashboard, automação ou página personalizada.",
 
-      if (dados.categoriasContato) {
-        dados.categoriasContato = dados.categoriasContato.map((cat, i) => {
-          let novosContatos = [];
-          if (cat.contatos) {
-            novosContatos = cat.contatos.map((contato, j) => {
-              const rotuloInput = document.getElementById(`contatoRotulo${i}_${j}`);
-              const numInput = document.getElementById(`contatoNumero${i}_${j}`);
-              return {
-                rotulo: rotuloInput ? rotuloInput.value : contato.rotulo,
-                numero: numInput ? numInput.value : contato.numero
-              };
-            });
-          }
-          return {
-            categoria: document.getElementById(`catNome${i}`).value,
-            contatos: novosContatos
-          };
-        });
-      }
-    };
-
-    window.adicionarServico = function() { atualizarDadosLocais(); if(!dados.servicos) dados.servicos = []; dados.servicos.push({icone:"▣", titulo:"Novo Serviço", texto:""}); gerarCampos(); };
-    window.removerServico = function(index) { if(confirm("Tem certeza que deseja remover este serviço?")) { atualizarDadosLocais(); dados.servicos.splice(index, 1); gerarCampos(); } };
-    window.adicionarPortfolio = function() { atualizarDadosLocais(); if(!dados.portfolio) dados.portfolio = []; dados.portfolio.push({categoria:"Categoria", titulo:"Novo Projeto", texto:"", imagens: [], ajuste: "cover"}); gerarCampos(); };
-    window.removerPortfolio = function(index) { if(confirm("Tem certeza que deseja remover este projeto?")) { atualizarDadosLocais(); dados.portfolio.splice(index, 1); gerarCampos(); } };
-    window.removerImagemPortfolio = function(projetoIndex, imagemIndex) { atualizarDadosLocais(); dados.portfolio[projetoIndex].imagens.splice(imagemIndex, 1); gerarCampos(); };
-    window.adicionarEquipe = function() { atualizarDadosLocais(); if(!dados.equipe) dados.equipe = []; dados.equipe.push({titulo:"Sobre Alguém", subtitulo:"", texto:"", imagem: ""}); gerarCampos(); };
-    window.removerEquipe = function(index) { if(confirm("Tem certeza que deseja remover esta pessoa?")) { atualizarDadosLocais(); dados.equipe.splice(index, 1); gerarCampos(); } };
-
-    // Funções do WhatsApp
-    window.adicionarCategoriaContato = function() {
-      atualizarDadosLocais();
-      if(!dados.categoriasContato) dados.categoriasContato = [];
-      dados.categoriasContato.push({ categoria: "Nova Categoria", contatos: [] });
-      gerarCampos();
-    };
-    window.removerCategoriaContato = function(index) {
-      if(confirm("Tem certeza que deseja remover esta categoria de WhatsApp?")) {
-        atualizarDadosLocais();
-        dados.categoriasContato.splice(index, 1);
-        gerarCampos();
-      }
-    };
-    window.adicionarContato = function(catIndex) {
-      atualizarDadosLocais();
-      if(!dados.categoriasContato[catIndex].contatos) dados.categoriasContato[catIndex].contatos = [];
-      dados.categoriasContato[catIndex].contatos.push({ rotulo: "Nome: 15 99999-9999", numero: "5515999999999" });
-      gerarCampos();
-    };
-    window.removerContato = function(catIndex, contatoIndex) {
-      if(confirm("Tem certeza que deseja remover este contato?")) {
-        atualizarDadosLocais();
-        dados.categoriasContato[catIndex].contatos.splice(contatoIndex, 1);
-        gerarCampos();
-      }
-    };
-
-    window.gerarCampos = function() {
-      document.getElementById("badge").value = dados.badge || "";
-      document.getElementById("heroTitulo").value = dados.heroTitulo || "";
-      document.getElementById("heroTexto").value = dados.heroTexto || "";
-      document.getElementById("heroImagemPreview").src = dados.heroImagem || "";
-      document.getElementById("heroImagemPreview").style.display = dados.heroImagem ? "block" : "none";
-      document.getElementById("servicosTitulo").value = dados.servicosTitulo || "";
-      document.getElementById("servicosTexto").value = dados.servicosTexto || "";
-      document.getElementById("portfolioTitulo").value = dados.portfolioTitulo || "";
-      document.getElementById("portfolioTexto").value = dados.portfolioTexto || "";
-      document.getElementById("processoTitulo").value = dados.processoTitulo || "";
-      document.getElementById("processoTexto").value = dados.processoTexto || "";
-      document.getElementById("equipeTituloSecao").value = dados.equipeTitulo || "";
-      document.getElementById("equipeTextoSecao").value = dados.equipeTexto || "";
-      document.getElementById("ctaTitulo").value = dados.ctaTitulo || "";
-      document.getElementById("ctaTexto").value = dados.ctaTexto || "";
-
-      if(dados.servicos) {
-        document.getElementById("servicosArea").innerHTML = dados.servicos.map((item, i) => `
-          <div class="item">
-            <div class="header-item"><h3>Serviço ${i + 1}</h3><button class="btn-small" onclick="removerServico(${i})">Remover</button></div>
-            <label>Ícone</label><input id="servicoIcone${i}" value="${item.icone || ''}">
-            <label>Título</label><input id="servicoTitulo${i}" value="${item.titulo || ''}">
-            <label>Texto</label><textarea id="servicoTexto${i}">${item.texto || ''}</textarea>
-          </div>`).join("");
-      }
-      if(dados.portfolio) {
-        document.getElementById("portfolioArea").innerHTML = dados.portfolio.map((item, i) => {
-          const imagens = item.imagens || [item.imagem];
-          const thumbs = imagens.filter(img => img).map((img, imgIdx) => `<div class="thumb-wrapper"><img src="${img}"><button class="btn-remove-thumb" onclick="removerImagemPortfolio(${i}, ${imgIdx})" title="Remover imagem">×</button></div>`).join("");
-          const ajusteSelecionado = item.ajuste || 'cover';
-          return `<div class="item">
-            <div class="header-item"><h3>Projeto ${i + 1}</h3><button class="btn-small" onclick="removerPortfolio(${i})">Remover</button></div>
-            <label>Categoria</label><input id="portfolioCategoria${i}" value="${item.categoria || ''}">
-            <label>Título</label><input id="portfolioTitulo${i}" value="${item.titulo || ''}">
-            <label>Texto</label><textarea id="portfolioTexto${i}">${item.texto || ''}</textarea>
-            <label>Ajuste da Imagem</label>
-            <select id="portfolioAjuste${i}">
-              <option value="cover" ${ajusteSelecionado === 'cover' ? 'selected' : ''}>Preencher (Corta bordas)</option>
-              <option value="contain" ${ajusteSelecionado === 'contain' ? 'selected' : ''}>Enquadrar (Mostra inteira)</option>
-            </select>
-            <label>Adicionar Imagens</label><input type="file" multiple id="portfolioImagemInput${i}" accept="image/*">
-            <div class="thumb-area" id="portfolioImagemPreviewArea${i}">${thumbs}</div>
-          </div>`}).join("");
-      }
-      if(dados.stats) {
-        document.getElementById("statsArea").innerHTML = dados.stats.map((item, i) => `<div class="item"><h3>Destaque ${i + 1}</h3><label>Número</label><input id="statNumero${i}" value="${item.numero || ''}"><label>Texto</label><textarea id="statTexto${i}">${item.texto || ''}</textarea></div>`).join("");
-      }
-      if(dados.processo) {
-        document.getElementById("processoArea").innerHTML = dados.processo.map((item, i) => `<div class="item" style="margin-bottom:14px"><h3>Etapa ${i + 1}</h3><label>Título</label><input id="processoEtapaTitulo${i}" value="${item.titulo || ''}"><label>Texto</label><textarea id="processoEtapaTexto${i}">${item.texto || ''}</textarea></div>`).join("");
-      }
-      if(dados.equipe) {
-        document.getElementById("equipeArea").innerHTML = dados.equipe.map((item, i) => `<div class="item">
-            <div class="header-item"><h3>Pessoa ${i + 1}</h3><button class="btn-small" onclick="removerEquipe(${i})">Remover</button></div>
-            <label>Título (Ex: Sobre *Marcos* Valério)</label><input id="equipeTitulo${i}" value="${item.titulo || ''}">
-            <label>Função / Subtítulo</label><input id="equipeSubtitulo${i}" value="${item.subtitulo || ''}">
-            <label>Texto</label><textarea id="equipeTexto${i}">${item.texto || ''}</textarea>
-            <label>Foto da Pessoa</label><input type="file" id="equipeImagemInput${i}" accept="image/*">
-            <img id="equipeImagemPreview${i}" class="preview" src="${item.imagem || ''}" style="display: ${item.imagem ? 'block' : 'none'}">
-          </div>`).join("");
-      }
-
-      // WhatsApp Rendering
-      document.getElementById("contatosTitulo1").value = dados.contatosTitulo1 || "";
-      document.getElementById("contatosSubtitulo1").value = dados.contatosSubtitulo1 || "";
-      document.getElementById("contatosTitulo2").value = dados.contatosTitulo2 || "";
-      document.getElementById("contatosSubtitulo2").value = dados.contatosSubtitulo2 || "";
-
-      if(dados.categoriasContato) {
-        document.getElementById("categoriasContatoArea").innerHTML = dados.categoriasContato.map((cat, i) => {
-          
-          let contatosHtml = "";
-          if (cat.contatos && cat.contatos.length > 0) {
-            contatosHtml = cat.contatos.map((contato, j) => `
-              <div style="display: flex; gap: 10px; margin-top: 10px; align-items: flex-end;">
-                <div style="flex: 1;">
-                  <label style="font-size: 0.8rem; margin:0 0 4px 0;">Nome e visualização do botão</label>
-                  <input id="contatoRotulo${i}_${j}" value="${contato.rotulo || ''}">
-                </div>
-                <div style="flex: 1;">
-                  <label style="font-size: 0.8rem; margin:0 0 4px 0;">Número (Ex: 5511999999999)</label>
-                  <input id="contatoNumero${i}_${j}" value="${contato.numero || ''}" placeholder="5515999999999">
-                </div>
-                <button class="btn-small" style="height: 47px; margin-bottom: 0px;" onclick="removerContato(${i}, ${j})" title="Remover contato">X</button>
-              </div>
-            `).join("");
-          } else {
-            contatosHtml = "<p style='font-size: 0.85rem; color: #a0a0a0;'>Nenhum contato cadastrado.</p>";
-          }
-
-          return `
-          <div class="item" style="margin-bottom: 20px;">
-            <div class="header-item">
-              <h3>Categoria ${i + 1}</h3>
-              <button class="btn-small" onclick="removerCategoriaContato(${i})">Remover Categoria</button>
-            </div>
-            <label>Nome do Botão Inicial (Ex: Sites)</label>
-            <input id="catNome${i}" value="${cat.categoria || ''}">
-
-            <div class="contatos-inner-box">
-              <h4>Consultores / Contatos desta categoria:</h4>
-              <div id="contatosArea${i}">${contatosHtml}</div>
-              <button class="btn-outline" style="font-size: 0.85rem; padding: 8px 16px; margin-top: 15px;" onclick="adicionarContato(${i})">+ Adicionar Contato</button>
-            </div>
-          </div>
-          `;
-        }).join("");
-      }
-
-      configurarInputsImagem();
-    }
-
-    function configurarInputsImagem() {
-      const heroInput = document.getElementById("heroImagemInput");
-      if(heroInput) {
-        heroInput.addEventListener("change", function() {
-          if(this.files.length > 0) {
-            comprimirImagemParaBase64(this.files[0], 1000, function(base64) {
-              dados.heroImagem = base64; document.getElementById("heroImagemPreview").src = base64; document.getElementById("heroImagemPreview").style.display = "block";
-            });
-          }
-        });
-      }
-      if(dados.portfolio) {
-        dados.portfolio.forEach((item, i) => {
-          const input = document.getElementById(`portfolioImagemInput${i}`);
-          if(!input) return;
-          input.addEventListener("change", function() {
-            const files = this.files;
-            if(files.length > 0) {
-               let loaded = 0;
-               if (!dados.portfolio[i].imagens) dados.portfolio[i].imagens = [];
-               Array.from(files).forEach(file => {
-                 comprimirImagemParaBase64(file, 800, function(base64) {
-                   dados.portfolio[i].imagens.push(base64); loaded++;
-                   if (loaded === files.length) { atualizarDadosLocais(); gerarCampos(); }
-                 });
-               });
-            }
-          });
-        });
-      }
-      if(dados.equipe) {
-        dados.equipe.forEach((item, i) => {
-          const input = document.getElementById(`equipeImagemInput${i}`);
-          if(!input) return;
-          input.addEventListener("change", function() {
-            if(this.files.length > 0) {
-              comprimirImagemParaBase64(this.files[0], 700, function(base64) {
-                dados.equipe[i].imagem = base64;
-                const preview = document.getElementById(`equipeImagemPreview${i}`);
-                if(preview) { preview.src = base64; preview.style.display = "block"; }
-              });
-            }
-          });
-        });
-      }
-    }
-
-    window.carregarSite = async function() {
-      const snapshot = await get(siteRef);
-      if (snapshot.exists()) {
-        dados = snapshot.val();
-        if(dados.portfolio) { dados.portfolio.forEach(p => { if(!p.imagens) p.imagens = p.imagem ? [p.imagem] : []; if(!p.ajuste) p.ajuste = "cover"; }); }
-        if(!dados.equipe) dados.equipe = [];
-        
-        // Garante que os contatos de WhatsApp existam mesmo se o banco for antigo
-        if(!dados.categoriasContato) {
-          dados.categoriasContato = [
-            { categoria: "Sites", contatos: [ { rotulo: "Gledson: 15 99624-7188", numero: "5515996247188" }, { rotulo: "Marta: 15 99605-4322", numero: "5515996054322" } ] },
-            { categoria: "Sistemas", contatos: [ { rotulo: "Marcos: 11 93466-4498", numero: "5511934664498" } ] },
-            { categoria: "Outros", contatos: [ { rotulo: "Andressa: 15 99142-2218", numero: "5515991422218" } ] }
-          ];
-        }
-        if(!dados.contatosTitulo1) dados.contatosTitulo1 = "Selecione as opções";
-        if(!dados.contatosSubtitulo1) dados.contatosSubtitulo1 = "Escolha o departamento que deseja falar.";
-        if(!dados.contatosTitulo2) dados.contatosTitulo2 = "Fale com um de nossos representantes";
-        if(!dados.contatosSubtitulo2) dados.contatosSubtitulo2 = "Selecione um dos contatos abaixo.";
-
-      } else {
-        // Se ainda não existir no banco, cria a estrutura com os títulos
-        dados = { 
-          servicos: [], portfolio: [], stats: [], processo: [], equipeTitulo: "", equipeTexto: "", equipe: [],
-          contatosTitulo1: "Selecione as opções", contatosSubtitulo1: "Escolha o departamento que deseja falar.",
-          contatosTitulo2: "Fale com um de nossos representantes", contatosSubtitulo2: "Selecione um dos contatos abaixo.",
-          categoriasContato: [
-            { categoria: "Sites", contatos: [ { rotulo: "Gledson: 15 99624-7188", numero: "5515996247188" }, { rotulo: "Marta: 15 99605-4322", numero: "5515996054322" } ] },
-            { categoria: "Sistemas", contatos: [ { rotulo: "Marcos: 11 93466-4498", numero: "5511934664498" } ] },
-            { categoria: "Outros", contatos: [ { rotulo: "Andressa: 15 99142-2218", numero: "5515991422218" } ] }
+      contatosTitulo1: "Selecione as opções",
+      contatosSubtitulo1: "Escolha o departamento que deseja falar.",
+      contatosTitulo2: "Fale com um de nossos representantes",
+      contatosSubtitulo2: "Selecione um dos contatos abaixo.",
+      categoriasContato: [
+        {
+          categoria: "Sites",
+          contatos: [
+            { numero: "5515996247188", rotulo: "Gledson: 15 99624-7188" },
+            { numero: "5515996054322", rotulo: "Marta: 15 99605-4322" }
           ]
-        };
-      }
-      await resolverReferenciasImagens();
-      gerarCampos();
-    }
-
-    window.carregarSiteComLoading = async function() {
-      const adminLoading = document.getElementById("adminLoading");
-      const loadingPercent = document.getElementById("loadingPercentAdmin");
-      const progressBar = adminLoading.querySelector(".progress-bar");
-      
-      adminLoading.style.display = "flex";
-      setTimeout(() => adminLoading.style.opacity = "1", 10);
-      progressBar.style.animation = 'none'; progressBar.offsetHeight; progressBar.style.animation = 'progressFillAdmin 1s ease forwards';
-
-      let percentual = 0;
-      const contador = setInterval(() => {
-        percentual += 3;
-        if (percentual <= 100) loadingPercent.textContent = percentual + "%";
-        if (percentual >= 100) { clearInterval(contador); loadingPercent.textContent = "Concluído"; }
-      }, 30);
-
-      const tempoEspera = new Promise(resolve => setTimeout(resolve, 1000));
-      await Promise.all([carregarSite(), tempoEspera]);
-      adminLoading.style.opacity = "0";
-      setTimeout(() => { adminLoading.style.display = "none"; loadingPercent.textContent = "0%"; }, 500);
-    }
-
-    window.mostrarPopupSalvando = function() {
-      const popup = document.getElementById("popupSave");
-      document.getElementById("popupIcon").className = "icon-saving";
-      document.getElementById("popupIcon").textContent = "";
-      document.getElementById("popupTitle").textContent = "Salvando alterações...";
-      document.getElementById("popupMessage").textContent = "Aguarde enquanto as atualizações são sincronizadas.";
-      document.getElementById("popupBtn").style.display = "none";
-      popup.classList.add("active");
-    }
-
-    window.mostrarPopupResultado = function(sucesso, titulo, mensagem) {
-      const icon = document.getElementById("popupIcon");
-      if (sucesso) { icon.className = "icon-check"; icon.textContent = "✓"; } 
-      else { icon.className = "icon-check icon-error"; icon.textContent = "!"; }
-      document.getElementById("popupTitle").textContent = titulo;
-      document.getElementById("popupMessage").textContent = mensagem;
-      document.getElementById("popupBtn").style.display = "block";
-    }
-
-    window.fecharPopupSave = function() { document.getElementById("popupSave").classList.remove("active"); }
-
-    /* ===== IMAGENS SEPARADAS DO TEXTO (img:ID) ===== */
-    const urlParaId = new Map();   // dataURL -> id já enviado
-    const idsEnviados = new Set();
-
-    async function resolverUma(v) {
-      if (typeof v !== "string" || !v.startsWith("img:")) return v;
-      const id = v.slice(4);
-      try {
-        const snap = await get(ref(db, "excellentServices/imagens/" + id));
-        if (snap.exists()) {
-          const src = snap.val();
-          urlParaId.set(src, id); idsEnviados.add(id);
-          return src;
+        },
+        {
+          categoria: "Sistemas",
+          contatos: [
+            { numero: "5511934664498", rotulo: "Marcos: 11 93466-4498" }
+          ]
+        },
+        {
+          categoria: "Outros",
+          contatos: [
+            { numero: "5515991422218", rotulo: "Andressa: 15 99142-2218" }
+          ]
         }
-      } catch (e) {}
-      return "";
+      ]
+    };
+
+    /* ===== PROGRESSO REAL DE CARREGAMENTO ===== */
+    const elLoadingBar = document.getElementById("loadingBar");
+    const elLoadingPercent = document.getElementById("loadingPercent");
+    const elLoadingStatus = document.getElementById("loadingStatus");
+
+    let progressoAlvo = 0;
+    let progressoAtual = 0;
+    let carregamentoConcluido = false;
+
+    function definirProgresso(alvo, statusTexto) {
+      if (alvo > progressoAlvo) progressoAlvo = Math.min(alvo, 100);
+      if (statusTexto) elLoadingStatus.textContent = statusTexto;
     }
 
-    async function resolverReferenciasImagens() {
-      const tarefas = [];
-      if (dados.heroImagem) tarefas.push(resolverUma(dados.heroImagem).then(v => dados.heroImagem = v));
-      (dados.portfolio || []).forEach(p => {
-        if (p.imagens) p.imagens.forEach((v, i) => tarefas.push(resolverUma(v).then(r => p.imagens[i] = r)));
+    function animarProgresso() {
+      const diff = progressoAlvo - progressoAtual;
+      progressoAtual += diff * 0.14;
+      if (Math.abs(diff) < 0.12) progressoAtual = progressoAlvo;
+
+      const exibido = Math.min(100, Math.max(0, Math.round(progressoAtual)));
+      elLoadingBar.style.width = exibido + "%";
+      elLoadingPercent.textContent = exibido + "%";
+
+      if (!carregamentoConcluido || progressoAtual < progressoAlvo) {
+        requestAnimationFrame(animarProgresso);
+      }
+    }
+    requestAnimationFrame(animarProgresso);
+    definirProgresso(5, "Inicializando");
+
+    definirProgresso(12, "Conectando ao servidor");
+
+    /* ===== IMAGENS CARREGADAS SOB DEMANDA (img:ID) ===== */
+    const PLACEHOLDER_IMG = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    const imagensPendentes = new Set();
+
+    function refParaPlaceholder(v) {
+      if (typeof v === "string" && v.startsWith("img:")) {
+        const id = v.slice(4);
+        imagensPendentes.add(id);
+        return PLACEHOLDER_IMG + "#" + id;
+      }
+      return v;
+    }
+
+    function prepararImagens(d) {
+      const c = JSON.parse(JSON.stringify(d));
+      c.heroImagem = refParaPlaceholder(c.heroImagem);
+      (c.portfolio || []).forEach(p => {
+        if (p.imagens) p.imagens = p.imagens.map(refParaPlaceholder);
+        if (p.imagem) p.imagem = refParaPlaceholder(p.imagem);
       });
-      (dados.equipe || []).forEach(e => { if (e.imagem) tarefas.push(resolverUma(e.imagem).then(r => e.imagem = r)); });
-      await Promise.all(tarefas);
-      if (dados.portfolio) dados.portfolio.forEach(p => { if (p.imagens) p.imagens = p.imagens.filter(Boolean); });
-    }
-
-    async function hashImagem(texto) {
-      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
-      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
-    }
-
-    async function enviarImagem(valor) {
-      if (typeof valor !== "string" || !valor.startsWith("data:")) return valor; // link externo fica como está
-      let id = urlParaId.get(valor);
-      if (!id) {
-        id = await hashImagem(valor);
-        await set(ref(db, "excellentServices/imagens/" + id), valor);
-        urlParaId.set(valor, id); idsEnviados.add(id);
-      }
-      return "img:" + id;
-    }
-
-    async function prepararParaSalvar() {
-      const c = JSON.parse(JSON.stringify(dados));
-      if (c.heroImagem) c.heroImagem = await enviarImagem(c.heroImagem);
-      for (const p of (c.portfolio || [])) {
-        if (p.imagens) { for (let i = 0; i < p.imagens.length; i++) p.imagens[i] = await enviarImagem(p.imagens[i]); }
-      }
-      for (const e of (c.equipe || [])) { if (e.imagem) e.imagem = await enviarImagem(e.imagem); }
+      (c.equipe || []).forEach(e => { if (e.imagem) e.imagem = refParaPlaceholder(e.imagem); });
       return c;
     }
 
-    async function limparImagensSemUso(salvo) {
+    function aplicarImagem(id, src) {
+      document.querySelectorAll("img").forEach(img => {
+        const atual = img.getAttribute("src") || "";
+        if (atual.endsWith("#" + id)) img.src = src;
+      });
+    }
+
+    function carregarImagensPendentes() {
+      imagensPendentes.forEach(async (id) => {
+        imagensPendentes.delete(id);
+        const chave = "excellentImg_" + id;
+        try {
+          const guardada = localStorage.getItem(chave);
+          if (guardada) { aplicarImagem(id, guardada); return; }
+        } catch (e) {}
+        try {
+          const src = await lerJson(BASE_DB + "/imagens/" + id + ".json");
+          if (src) {
+            aplicarImagem(id, src);
+            try { localStorage.setItem(chave, src); } catch (e) {}
+          }
+        } catch (e) {}
+      });
+    }
+
+    /* Carregamento em duas fases:
+       1) textos leves -> a página abre
+       2) imagens/portfólio/equipe chegam em segundo plano e aparecem na tela */
+    const PESADOS = ["heroImagem", "portfolio", "equipe"];
+
+    async function carregarPesados(chaves) {
+      if (chaves.heroImagem) {
+        lerJson(SITE_DB + "/heroImagem.json").then(v => {
+          renderHero(prepararImagens({ heroImagem: v }));
+          carregarImagensPendentes();
+        }).catch(() => {});
+      }
+
+      const lista = async (chave, aplicar) => {
+        if (!chaves[chave]) return;
+        try {
+          const indices = Object.keys(await lerJson(SITE_DB + "/" + chave + ".json?shallow=true") || {})
+            .sort((x, y) => Number(x) - Number(y));
+          const itens = [];
+          await Promise.all(indices.map(async (i) => {
+            try { itens[i] = await lerJson(SITE_DB + "/" + chave + "/" + i + ".json"); } catch (e) {}
+            aplicar(itens.filter(Boolean));
+          }));
+        } catch (e) {}
+      };
+
+      lista("portfolio", itens => {
+        renderPortfolio(prepararImagens({ portfolio: itens }));
+        carregarImagensPendentes();
+        observarElementos();
+      });
+      lista("equipe", itens => {
+        renderEquipe(prepararImagens({ equipe: itens }));
+        carregarImagensPendentes();
+        observarElementos();
+      });
+    }
+
+    const dadosFirebase = (async () => {
+      let leve = null, chaves = null;
       try {
-        const usados = new Set(JSON.stringify(salvo).match(/img:[0-9a-f]{24}/g) || []);
-        const r = await fetch(firebaseConfig.databaseURL + "/excellentServices/imagens.json?shallow=true");
-        const todas = await r.json();
-        if (!todas) return;
-        for (const id of Object.keys(todas)) {
-          if (!usados.has("img:" + id)) await remove(ref(db, "excellentServices/imagens/" + id));
+        chaves = await lerJson(SITE_DB + ".json?shallow=true");
+        if (chaves) {
+          definirProgresso(35, "Sincronizando conteúdo");
+          const nomes = Object.keys(chaves).filter(k => !PESADOS.includes(k));
+          const valores = await Promise.all(nomes.map(k => lerJson(SITE_DB + "/" + k + ".json")));
+          leve = {};
+          nomes.forEach((k, i) => { leve[k] = valores[i]; });
         }
-      } catch (e) {}
-    }
-
-    window.salvarSite = async function() {
-      atualizarDadosLocais(); 
-      mostrarPopupSalvando(); 
-      try {
-        const paraSalvar = await prepararParaSalvar();
-        await set(siteRef, paraSalvar);
-        limparImagensSemUso(paraSalvar);
-        mostrarPopupResultado(true, "Salvo com sucesso!", "As informações foram atualizadas e já estão online no site.");
-      } catch (error) {
-        mostrarPopupResultado(false, "Erro ao salvar", "O Firebase rejeitou o salvamento. Erro: " + error.message);
-      }
-    }
-
-
-    /* ===== LOGIN E PERMISSÕES ===== */
-    const ADMIN_PRINCIPAL = "excellentservices.excel@gmail.com";
-    const chaveEmail = e => e.trim().toLowerCase().replace(/\./g, ",");
-    const $ = id => document.getElementById(id);
-    let usuarioAtual = null;
-
-    function mostrarSo(tela) {
-      $("telaLogin").style.display = tela === "login" ? "flex" : "none";
-      $("telaNegado").style.display = tela === "negado" ? "flex" : "none";
-      $("areaAdmin").style.display = tela === "admin" ? "block" : "none";
-      if (tela !== "admin") {
-        const l = $("adminLoading"); l.style.opacity = "0"; l.style.display = "none";
-      }
-    }
-
-    async function temPermissao(user) {
-      const email = (user.email || "").toLowerCase();
-      if (!user.emailVerified) return false;
-      if (email === ADMIN_PRINCIPAL) return true;
-      try {
-        const snap = await get(ref(db, "excellentServices/admins/" + chaveEmail(email)));
-        return snap.val() === true;
-      } catch (e) { return false; }
-    }
-
-    $("btnGoogle").onclick = async () => {
-      $("loginErro").textContent = "";
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      try {
-        await signInWithPopup(auth, provider);
       } catch (e) {
-        if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
-          signInWithRedirect(auth, provider);
-        } else if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") {
-          $("loginErro").textContent = "Não foi possível entrar (" + e.code + ").";
-        }
+        leve = null;
+        definirProgresso(35, "Usando conteúdo padrão");
       }
-    };
-    $("btnSair").onclick = () => signOut(auth);
-    $("btnTentarOutra").onclick = () => signOut(auth);
 
-    window.listarAdmins = async function() {
-      const lista = $("adminsLista");
-      lista.innerHTML = "";
-      try {
-        const snap = await get(ref(db, "excellentServices/admins"));
-        const chaves = snap.exists() ? Object.keys(snap.val()) : [];
-        if (!chaves.length) {
-          const vazio = document.createElement("div");
-          vazio.style.color = "var(--text-muted)";
-          vazio.textContent = "Nenhum e-mail adicional autorizado ainda.";
-          lista.appendChild(vazio);
-          return;
-        }
-        chaves.sort().forEach(k => {
-          const email = k.replace(/,/g, ".");
-          const item = document.createElement("div");
-          item.className = "admin-item";
-          const span = document.createElement("span");
-          span.textContent = email;
-          const btn = document.createElement("button");
-          btn.className = "btn-small";
-          btn.textContent = "Remover";
-          btn.onclick = () => removerAdmin(k, email);
-          item.append(span, btn);
-          lista.appendChild(item);
-        });
-      } catch (e) {
-        lista.textContent = "Erro ao carregar permissões: " + e.message;
-      }
-    };
+      if (!leve) { await carregarDados(dadosPadrao); return; }
 
-    window.adicionarAdmin = async function() {
-      const input = $("novoAdminEmail");
-      const email = input.value.trim().toLowerCase();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert("Digite um e-mail válido."); return; }
-      if (email === ADMIN_PRINCIPAL) { alert("Esse e-mail já é o administrador principal."); return; }
-      try {
-        await set(ref(db, "excellentServices/admins/" + chaveEmail(email)), true);
-        input.value = "";
-        listarAdmins();
-      } catch (e) { alert("Erro ao dar permissão: " + e.message); }
-    };
+      const base = completarDados({
+        ...leve,
+        heroImagem: chaves.heroImagem ? "" : dadosPadrao.heroImagem,
+        portfolio: chaves.portfolio ? [] : dadosPadrao.portfolio,
+        equipe: chaves.equipe ? [] : dadosPadrao.equipe
+      });
+      await carregarDados(prepararImagens(base));
+      carregarImagensPendentes();
+      carregarPesados(chaves);
+    })();
 
-    async function removerAdmin(chave, email) {
-      if (!confirm("Remover o acesso de " + email + "?")) return;
-      try {
-        await remove(ref(db, "excellentServices/admins/" + chave));
-        listarAdmins();
-      } catch (e) { alert("Erro ao remover: " + e.message); }
-    }
-
-    onAuthStateChanged(auth, async (user) => {
-      usuarioAtual = user;
-      if (!user) { mostrarSo("login"); return; }
-      if (!(await temPermissao(user))) {
-        $("negadoMsg").textContent = "O e-mail " + user.email + " não tem permissão para acessar o painel.";
-        mostrarSo("negado");
-        return;
-      }
-      $("userEmail").textContent = user.email;
-      const principal = (user.email || "").toLowerCase() === ADMIN_PRINCIPAL;
-      $("boxPermissoes").style.display = principal ? "block" : "none";
-      mostrarSo("admin");
-      if (principal) listarAdmins();
-      carregarSiteComLoading();
+    dadosFirebase.then(() => {
+      definirProgresso(100, "Concluído");
+      carregamentoConcluido = true;
+      setTimeout(abrirPagina, 350);
     });
+
+    function completarDados(dados) {
+      return {
+        ...dadosPadrao,
+        ...dados,
+        servicos: dados.servicos || dadosPadrao.servicos,
+        portfolio: dados.portfolio || dadosPadrao.portfolio,
+        stats: dados.stats || dadosPadrao.stats,
+        processo: dados.processo || dadosPadrao.processo,
+        equipeTitulo: dados.equipeTitulo || dadosPadrao.equipeTitulo,
+        equipeTexto: dados.equipeTexto || dadosPadrao.equipeTexto,
+        equipe: dados.equipe || dadosPadrao.equipe || [],
+        contatosTitulo1: dados.contatosTitulo1 || dadosPadrao.contatosTitulo1,
+        contatosSubtitulo1: dados.contatosSubtitulo1 || dadosPadrao.contatosSubtitulo1,
+        contatosTitulo2: dados.contatosTitulo2 || dadosPadrao.contatosTitulo2,
+        contatosSubtitulo2: dados.contatosSubtitulo2 || dadosPadrao.contatosSubtitulo2,
+        categoriasContato: dados.categoriasContato || dadosPadrao.categoriasContato
+      };
+    }
+
+    function preCarregarImagem(src) {
+      return new Promise(resolve => {
+        if (!src) { resolve(); return; }
+        const img = new Image(); img.onload = resolve; img.onerror = resolve; img.src = src;
+      });
+    }
+
+    // Lê os asteriscos e aplica o destaque em degradê
+    function formatarTextoMarkdown(texto) {
+      if (!texto) return "";
+      let formatado = texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      formatado = formatado.replace(/\n/g, "<br>");
+      formatado = formatado.replace(/\*(.*?)\*/g, '<span class="highlight">$1</span>');
+      return formatado;
+    }
+
+    function renderHero(dados) {
+      document.getElementById("heroImagem").src = dados.heroImagem || "";
+    }
+
+    let intervalosCarrossel = [];
+    function renderPortfolio(dados) {
+      intervalosCarrossel.forEach(clearInterval);
+      intervalosCarrossel = [];
+      document.getElementById("portfolioCards").innerHTML = dados.portfolio.map(item => {
+        const imagensArray = item.imagens || [item.imagem];
+        const ajusteCSS = item.ajuste || 'cover';
+        const trackHtml = imagensArray.filter(img => img).map(img => `<img src="${img}" style="width: 100%; height: 100%; object-fit: ${ajusteCSS}; flex-shrink: 0;" alt="${item.titulo}">`).join("");
+
+        return `
+        <div class="project fade-in-up">
+          <div class="carousel-container" style="overflow: hidden; width: 100%; height: 245px; position: relative;">
+            <div class="carousel-track" data-count="${imagensArray.length}" data-idx="0" style="display: flex; height: 100%; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);">
+              ${trackHtml}
+            </div>
+          </div>
+          <div class="project-info">
+            <small>${formatarTextoMarkdown(item.categoria)}</small>
+            <h3>${formatarTextoMarkdown(item.titulo)}</h3>
+            <p>${formatarTextoMarkdown(item.texto)}</p>
+          </div>
+        </div>
+      `}).join("");
+
+      document.querySelectorAll('.carousel-track').forEach(track => {
+        const count = parseInt(track.dataset.count);
+        if (count > 1) {
+          intervalosCarrossel.push(setInterval(() => {
+            let idx = parseInt(track.dataset.idx);
+            idx = (idx + 1) % count;
+            track.dataset.idx = idx;
+            track.style.transform = `translateX(-${idx * 100}%)`;
+          }, 2000));
+        }
+      });
+    }
+
+    function renderEquipe(dados) {
+      if (dados.equipe && dados.equipe.length > 0) {
+        document.getElementById("equipeCards").innerHTML = dados.equipe.map(item => `
+          <div class="equipe-card fade-in-up">
+            <div class="equipe-img-wrapper">
+              <img class="equipe-img" src="${item.imagem}" alt="${item.titulo}">
+            </div>
+            <div class="equipe-info">
+              <h2>${formatarTextoMarkdown(item.titulo)}</h2>
+              ${item.subtitulo ? `<h3>${formatarTextoMarkdown(item.subtitulo)}</h3>` : ''}
+              <p>${formatarTextoMarkdown(item.texto)}</p>
+            </div>
+          </div>
+        `).join("");
+      }
+    }
+
+    async function carregarDados(dados) {
+      document.getElementById("badge").innerHTML = formatarTextoMarkdown(dados.badge);
+      document.getElementById("heroTitulo").innerHTML = formatarTextoMarkdown(dados.heroTitulo);
+      document.getElementById("heroTexto").innerHTML = formatarTextoMarkdown(dados.heroTexto);
+      renderHero(dados);
+
+      document.getElementById("servicosTitulo").innerHTML = formatarTextoMarkdown(dados.servicosTitulo);
+      document.getElementById("servicosTexto").innerHTML = formatarTextoMarkdown(dados.servicosTexto);
+
+      document.getElementById("servicosCards").innerHTML = dados.servicos.map((item) => `
+        <div class="service-card fade-in-up">
+          ${iconeServico(item.titulo)}
+          <h3>${formatarTextoMarkdown(item.titulo)}</h3>
+          <p>${formatarTextoMarkdown(item.texto)}</p>
+        </div>
+      `).join("");
+
+      document.getElementById("portfolioTitulo").innerHTML = formatarTextoMarkdown(dados.portfolioTitulo);
+      document.getElementById("portfolioTexto").innerHTML = formatarTextoMarkdown(dados.portfolioTexto);
+
+      definirProgresso(45, "Montando página");
+
+      renderPortfolio(dados);
+
+      document.getElementById("statsCards").innerHTML = dados.stats.map((item, index) => `
+        <div class="stat fade-in-up">
+          <div class="stat-top">
+            <span class="stat-badge mono">${rotuloStat(index)}</span>
+            <div class="stat-icon">${iconeStat(index)}</div>
+          </div>
+          <h3 data-val="${item.numero}">${formatarTextoMarkdown(item.numero)}</h3>
+          <div class="stat-line"></div>
+          <p>${formatarTextoMarkdown(item.texto)}</p>
+        </div>
+      `).join("");
+
+      document.getElementById("processoTitulo").innerHTML = formatarTextoMarkdown(dados.processoTitulo);
+      document.getElementById("processoTexto").innerHTML = formatarTextoMarkdown(dados.processoTexto);
+
+      document.getElementById("processoCards").innerHTML = dados.processo.map(item => `
+        <div class="step fade-in-up">
+          <strong>${formatarTextoMarkdown(item.titulo)}</strong>
+          <p>${formatarTextoMarkdown(item.texto)}</p>
+        </div>
+      `).join("");
+
+      // Equipe
+      document.getElementById("equipeTituloSecao").innerHTML = formatarTextoMarkdown(dados.equipeTitulo);
+      document.getElementById("equipeTextoSecao").innerHTML = formatarTextoMarkdown(dados.equipeTexto);
+
+      renderEquipe(dados);
+
+      document.getElementById("ctaTitulo").innerHTML = formatarTextoMarkdown(dados.ctaTitulo);
+      document.getElementById("ctaTexto").innerHTML = formatarTextoMarkdown(dados.ctaTexto);
+
+      // POP-UP CONTATOS
+      document.getElementById("popupCategoriasTitulo").innerHTML = formatarTextoMarkdown(dados.contatosTitulo1);
+      document.getElementById("popupCategoriasSubtitulo").innerHTML = formatarTextoMarkdown(dados.contatosSubtitulo1);
+      document.getElementById("popupContatosTitulo").innerHTML = formatarTextoMarkdown(dados.contatosTitulo2);
+      document.getElementById("popupContatosSubtitulo").innerHTML = formatarTextoMarkdown(dados.contatosSubtitulo2);
+
+      if (dados.categoriasContato && dados.categoriasContato.length > 0) {
+        window.categoriasContatoGlobais = dados.categoriasContato;
+        document.getElementById("categoriasBtnsArea").innerHTML = dados.categoriasContato.map((cat, i) => `
+          <button class="btn popup-btn" onclick="abrirCategoriaContato(${i})">${formatarTextoMarkdown(cat.categoria)}</button>
+        `).join("");
+      } else {
+        document.getElementById("categoriasBtnsArea").innerHTML = "<p>Nenhuma opção cadastrada.</p>";
+      }
+
+      definirProgresso(97, "Renderizando");
+      observarElementos();
+    }
+
+    function iconeServico(titulo) {
+      const texto = (titulo || "").toLowerCase();
+      if (texto.includes("excel")) return `<div class="icon icon-excel"><svg viewBox="0 0 64 64" fill="none"><rect x="16" y="10" width="34" height="44" rx="5" fill="rgba(255,255,255,.24)"/><rect x="22" y="16" width="22" height="6" rx="1.5" fill="rgba(255,255,255,.62)"/><rect x="22" y="27" width="8" height="6" rx="1.5" fill="rgba(255,255,255,.55)"/><rect x="34" y="27" width="10" height="6" rx="1.5" fill="rgba(255,255,255,.55)"/><rect x="22" y="37" width="8" height="6" rx="1.5" fill="rgba(255,255,255,.55)"/><rect x="34" y="37" width="10" height="6" rx="1.5" fill="rgba(255,255,255,.55)"/><rect x="8" y="20" width="24" height="24" rx="5" fill="#ffffff"/><path d="M15 27L25 37M25 27L15 37" stroke="var(--icon-excel-1)" stroke-width="4" stroke-linecap="round"/></svg></div>`;
+      if (texto.includes("app")) return `<div class="icon icon-app"><svg viewBox="0 0 64 64" fill="none"><rect x="19" y="7" width="26" height="50" rx="8" fill="rgba(255,255,255,.26)"/><rect x="22" y="11" width="20" height="42" rx="6" fill="rgba(255,255,255,.20)"/><rect x="26" y="18" width="12" height="12" rx="4" fill="#ffffff"/><path d="M29 24H35" stroke="var(--icon-app-1)" stroke-width="3" stroke-linecap="round"/><path d="M32 21V27" stroke="var(--icon-app-1)" stroke-width="3" stroke-linecap="round"/><rect x="26" y="35" width="12" height="3.8" rx="1.9" fill="rgba(255,255,255,.72)"/><rect x="27.5" y="42" width="9" height="3.8" rx="1.9" fill="rgba(255,255,255,.55)"/><circle cx="32" cy="50" r="2.2" fill="#ffffff"/></svg></div>`;
+      if (texto.includes("site") || texto.includes("web")) return `<div class="icon icon-site"><svg viewBox="0 0 64 64" fill="none"><rect x="8" y="13" width="48" height="38" rx="7" fill="rgba(255,255,255,.24)"/><rect x="12" y="18" width="40" height="29" rx="5" fill="rgba(255,255,255,.16)"/><path d="M12 25H52" stroke="rgba(255,255,255,.75)" stroke-width="3"/><circle cx="18" cy="21.5" r="2" fill="#ffffff"/><circle cx="25" cy="21.5" r="2" fill="rgba(255,255,255,.70)"/><circle cx="32" cy="21.5" r="2" fill="rgba(255,255,255,.50)"/><rect x="18" y="31" width="28" height="5" rx="2.5" fill="#ffffff"/><rect x="18" y="40" width="17" height="4.5" rx="2.25" fill="rgba(255,255,255,.68)"/></svg></div>`;
+      return `<div class="icon icon-system"><svg viewBox="0 0 64 64" fill="none"><rect x="10" y="10" width="44" height="18" rx="6" fill="rgba(255,255,255,.24)"/><rect x="15" y="15" width="34" height="8" rx="3" fill="rgba(255,255,255,.18)"/><circle cx="20" cy="19" r="2.4" fill="#ffffff"/><rect x="27" y="17" width="17" height="4" rx="2" fill="rgba(255,255,255,.70)"/><rect x="10" y="36" width="44" height="18" rx="6" fill="rgba(255,255,255,.24)"/><rect x="15" y="41" width="34" height="8" rx="3" fill="rgba(255,255,255,.18)"/><circle cx="20" cy="45" r="2.4" fill="#ffffff"/><rect x="27" y="43" width="17" height="4" rx="2" fill="rgba(255,255,255,.70)"/><path d="M32 28V36" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/></svg></div>`;
+    }
+
+    function rotuloStat(index) { return ["Projetos", "Presença", "Personalização", "Suporte"][index] || "Destaque"; }
+    function iconeStat(index) {
+      const icones = [
+        `<svg viewBox="0 0 24 24" fill="none"><path d="M5 19h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 16V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 16V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17 16v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+        `<svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 100 18 9 9 0 000-18z" stroke="currentColor" stroke-width="2"/><path d="M3 12h18" stroke="currentColor" stroke-width="2"/><path d="M12 3c2.5 2.4 4 5.6 4 9s-1.5 6.6-4 9c-2.5-2.4-4-5.6-4-9s1.5-6.6 4-9z" stroke="currentColor" stroke-width="2"/></svg>`,
+        `<svg viewBox="0 0 24 24" fill="none"><path d="M9.5 12l1.7 1.7L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        `<svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 11-2.34-5.66" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+      ];
+      return icones[index] || icones[0];
+    }
+
+    function abrirPagina() {
+      document.getElementById("page").classList.add("ready");
+      document.getElementById("loadingScreen").classList.add("hide");
+    }
+
+    /* FUNÇÕES DOS POP-UPS DE WHATSAPP */
+    window.abrirWhatsapp = function() {
+      document.getElementById("popupCategorias").classList.add("active");
+    }
+    window.fecharPopupCategorias = function() {
+      document.getElementById("popupCategorias").classList.remove("active");
+    }
+    window.fecharPopupContatos = function() {
+      document.getElementById("popupContatos").classList.remove("active");
+    }
+    window.voltarParaCategorias = function() {
+      fecharPopupContatos();
+      abrirWhatsapp();
+    }
+    window.abrirCategoriaContato = function(index) {
+      fecharPopupCategorias();
+      const categoria = window.categoriasContatoGlobais[index];
+
+      if (categoria && categoria.contatos && categoria.contatos.length > 0) {
+         document.getElementById("contatosBtnsArea").innerHTML = categoria.contatos.map(contato => {
+            const numeroLimpo = contato.numero.replace(/\D/g, '');
+            return `<a class="btn popup-btn" target="_blank" href="https://wa.me/${numeroLimpo}">${formatarTextoMarkdown(contato.rotulo)}</a>`;
+         }).join("");
+      } else {
+         document.getElementById("contatosBtnsArea").innerHTML = "<p style='margin-top: 15px;'>Nenhum representante cadastrado para esta opção.</p>";
+      }
+
+      document.getElementById("popupContatos").classList.add("active");
+    }
+
+    document.getElementById("popupCategorias").addEventListener("click", function(e) { if (e.target === this) fecharPopupCategorias(); });
+    document.getElementById("popupContatos").addEventListener("click", function(e) { if (e.target === this) fecharPopupContatos(); });
+
+    /* OBSERVAÇÃO DE SCROLL (Animações de Entrada) */
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("active");
+
+          if(entry.target.classList.contains('stat') && !entry.target.dataset.animated) {
+            entry.target.dataset.animated = "true";
+            animarNumeros(entry.target);
+          }
+        }
+      });
+    }, { threshold: 0.15 });
+
+    function observarElementos() {
+      document.querySelectorAll('.reveal, .fade-in-up').forEach(el => observer.observe(el));
+    }
+
+    /* ANIMAÇÃO DE NÚMEROS (Count-Up) */
+    function animarNumeros(card) {
+      const title = card.querySelector('h3');
+      if(!title) return;
+
+      const textoOriginal = title.getAttribute('data-val');
+      if(!textoOriginal) return;
+
+      const match = textoOriginal.match(/^([^\d]*)(\d+)(.*)$/);
+      if(match) {
+        const prefixo = match[1];
+        const numeroAlvo = parseInt(match[2], 10);
+        const sufixo = match[3];
+        let numeroAtual = 0;
+
+        const duracao = 1500;
+        const frameRate = 30;
+        const incremento = Math.max(1, Math.ceil(numeroAlvo / (duracao / frameRate)));
+
+        title.innerHTML = formatarTextoMarkdown(prefixo + "0" + sufixo);
+
+        const timer = setInterval(() => {
+          numeroAtual += incremento;
+          if(numeroAtual >= numeroAlvo) {
+            numeroAtual = numeroAlvo;
+            clearInterval(timer);
+          }
+          title.innerHTML = formatarTextoMarkdown(prefixo + numeroAtual + sufixo);
+        }, frameRate);
+      }
+    }
   </script>
 </body>
 </html>
