@@ -207,7 +207,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   const mkSprite = (color, op) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, color, transparent: true, depthWrite: false, opacity: op, fog: true })); s.frustumCulled = false; scene.add(s); return s; };
   const mist = Array.from({ length: mobile ? 8 : 16 }, (_, i) => { const s = mkSprite(0x4a5260, .2); const sz = 40 + rand() * 50; s.scale.set(sz, sz * .35, 1);
     s.position.set((rand() - .5) * 120, 2 + rand() * 4, -20 - rand() * 70); return { s, v: (rand() - .5) * .8, sz }; });
-  const puffs = Array.from({ length: mobile ? 40 : 80 }, () => { const s = mkSprite(0x3c3f46, 0); s.visible = false; return { s, life: 0, dur: 1, v: new THREE.Vector3(), sz: 1, op: .4, grow: 2.2 }; });
+  const puffs = Array.from({ length: mobile ? 50 : 110 }, () => { const s = mkSprite(0x3c3f46, 0); s.visible = false; return { s, life: 0, dur: 1, v: new THREE.Vector3(), sz: 1, op: .4, grow: 2.2 }; });
   function puff(x, y, z, n, spread, up, size, color = 0x3c3f46, op = .3, grow = 2.2, dur = 1) {
     if (reduce) return;
     for (let i = 0; i < n; i++) {
@@ -266,8 +266,13 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   let lo = 0, hi = 1.25; for (let i = 0; i < 18; i++) { const mid = (lo + hi) / 2; if (tipAt(mid)[0] * S > .55) lo = mid; else hi = mid; }
   const BITE_HEAD = hi, REACH = tipAt(hi)[1] * S;
 
-  const P = { phase: 0, walk: 0, jaw: JAW_CLOSED, headYaw: 0, headPitch: 0, spine: 0, tailYaw: 0, tailWave: .05, breath: 0, legA: .6 };
-  const T = { walk: 0, jaw: JAW_CLOSED, headYaw: 0, headPitch: 0, spine: 0 };
+  const LIE_SPINE = .12, LIE_DROP = 1.3;                      // deitado: quadril desce, cabeça apoiada no chão
+  const lieTip = (head) => rig.apply({ phase: 0, walk: 0, breath: 0, spine: LIE_SPINE, headPitch: head, jaw: JAW_CLOSED }).pos[tipI * 3 + 1];
+  let l2 = 0, h2 = 1.25; for (let i = 0; i < 18; i++) { const mid = (l2 + h2) / 2; if ((lieTip(mid) - LIE_DROP) * S > .3) l2 = mid; else h2 = mid; }
+  const LIE_HEAD = h2;
+  const R = { phase: 0, walk: 0, jaw: 0, headYaw: 0, headPitch: 0, spine: 0, tailYaw: 0, tailWave: 0, breath: 0, legA: .6 };
+  const P = { eye: 1, lie: 0, phase: 0, walk: 0, jaw: JAW_CLOSED, headYaw: 0, headPitch: 0, spine: 0, tailYaw: 0, tailWave: .05, breath: 0, legA: .6 };
+  const T = { eye: 1, lie: 0, walk: 0, jaw: JAW_CLOSED, headYaw: 0, headPitch: 0, spine: 0 };
 
   /* ---------- entrada (cursor) ---------- */
   const ptr = { x: .5, y: .5, active: false, last: -9, touch: false };
@@ -298,19 +303,49 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     return { yaw: Math.atan2(dx, dz), pitch: -Math.atan2(dy, Math.hypot(dx, dz)) + .08 };
   }
 
-  const ZMIN = -19, ZMAX = -7;
+  const ZMIN = -19, ZMAX = -7, ZCH = -8.5, HOME_Z = -13, T0 = performance.now() / 1000;
+  let nextAtk = T0 + 7;
+  const fogStep = (side) => {                       // neblina subindo sobre o pé que pisa
+    tmp.set(side * .95, .1, .25); dino.root.localToWorld(tmp);
+    puff(tmp.x, tmp.y + .25, tmp.z, 3, 1.4, .55, 3.6, 0x7a828e, .38, 2.8, 2.3);
+    puff(tmp.x, tmp.y + .1, tmp.z, 2, 1.6, 1.3, 2.6);
+  };
+  const fogBurst = () => { for (const sd of [-1, 1]) { tmp.set(sd * 1.2, .1, .5); dino.root.localToWorld(tmp); puff(tmp.x, tmp.y + .3, tmp.z, 5, 3, .6, 4.5, 0x7a828e, .35, 2.6, 2.6); } };
+
   function think(dt, t, info) {
+    const now = performance.now() / 1000;
     dino.x = damp(dino.x, lerp(0, 3.5, ss(.75, 1.5, innerWidth / innerHeight)), 3, dt);   // centraliza em telas estreitas
-    // cabeça + olhos seguem o cursor (só a cabeça; o corpo nunca gira)
     let ly, lp;
     if (info.look) { const la = lookAngles(info.look); ly = la.yaw; lp = la.pitch; }
     else { AI.scanT += dt; ly = Math.sin(AI.scanT * .5) * .5 + Math.sin(AI.scanT * 1.3) * .1; lp = .02 + Math.sin(AI.scanT * .8) * .06; }
-    AI.biteCd -= dt;
-    // ataque: cursor muito perto da cabeça
-    if (AI.state !== "bite" && AI.biteCd <= 0 && ptr.active) {
+    dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.turn = 0;
+    T.eye = 1; T.lie = 0; T.spine = 0; T.jaw = JAW_CLOSED + Math.sin(t * 1.6) * .015;
+    T.headYaw = clamp(ly, -.9, .9); T.headPitch = clamp(lp, -.5, .85);
+    const st = AI.state, idle = now - Math.max(ptr.last, T0);
+    let dir = 0, spd = 1.7;
+
+    /* ---- dormir: deitar, fechar os olhos, acordar ---- */
+    if (st === "lie" || st === "sleep" || st === "wake") {
+      dino.speed = damp(dino.speed, 0, 8, dt); T.walk = 0;
+      if (st === "lie") { T.lie = 1; T.eye = P.lie > .75 ? 0 : 1; if (P.lie > .985) { AI.state = "sleep"; AI.sleepT = 0; } }
+      else if (st === "sleep") { T.lie = 1; T.eye = 0; AI.sleepT += dt; if (AI.sleepT > 1 && ptr.last > AI.lieStart) { AI.state = "wake"; AI.wakeT = 0; } }
+      else { AI.wakeT += dt; T.eye = 1; T.lie = AI.wakeT > .9 ? 0 : 1; if (AI.wakeT > .9 && P.lie < .02) { AI.state = "track"; nextAtk = now + 4 + Math.random() * 4; } }
+      return { ly, lp };
+    }
+    if (st === "track" && idle > 5 && Math.abs(dino.speed) < .3) { AI.state = "lie"; AI.lieStart = now; fogBurst(); return { ly, lp }; }
+
+    /* ---- ataque (só às vezes): corre em direção à câmera e morde ---- */
+    if (st === "track" && ptr.active && now > nextAtk) {
       tmp.copy(headW).project(camera);
       const dx = (tmp.x - (ptr.x * 2 - 1)) * camera.aspect, dy = tmp.y + (ptr.y * 2 - 1);
-      if (Math.hypot(dx, dy) < .3 && tmp.z < 1) { AI.state = "bite"; AI.biteT = 0; AI.struck = false; }
+      if (Math.hypot(dx, dy) < .3 && tmp.z < 1) {
+        if (Math.random() < .6) { AI.state = "charge"; AI.chargeT = 0; AI.struck = false; }
+        else nextAtk = now + 4 + Math.random() * 4;
+      }
+    }
+    if (AI.state === "charge") {
+      AI.chargeT += dt; spd = 5.5; dir = 1; T.spine = .1; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, .35);
+      if (AI.chargeT > 1.1 || dino.z >= ZCH) { AI.state = "bite"; AI.biteT = 0; AI.struck = false; }
     }
     if (AI.state === "bite") {
       AI.biteT += dt; const b = AI.biteT, hy = clamp(ly, -.9, .9), hp = clamp(lp, -.3, .7);
@@ -318,27 +353,27 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       if (b < .35) { const k = ss(0, .35, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
       else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, .3, k); T.headPitch = lerp(-.2, hp + .15, k); T.jaw = JAW_OPEN; }
       else if (b < .68) { const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = .3; T.headPitch = hp + .15;
-        if (!AI.struck && b > .65) { AI.struck = true; AI.shake = 1; } }
+        if (!AI.struck && b > .65) { AI.struck = true; AI.shake = 1; fogBurst(); } }
       else if (b < 1.4) { const k = ss(.68, 1.4, b); T.spine = lerp(.3, 0, k); T.headPitch = lerp(hp + .15, clamp(lp, -.5, .85), k) + Math.sin(b * 16) * .06 * (1 - k); T.jaw = JAW_CLOSED; T.headYaw = hy + Math.sin(b * 13) * .25 * (1 - k); }
-      else { AI.state = "track"; AI.biteCd = 1.2; }
-      dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.turn = 0;
+      else { AI.state = dino.z < HOME_Z - 1 ? "track" : "back"; AI.backT = 0; nextAtk = now + 6 + Math.random() * 6; }
+      dino.z = clamp(dino.z + dino.speed * dt, ZMIN, ZMAX);
       return { ly, lp };
     }
-    // sempre de frente para a câmera
-    dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.turn = 0;
-    // só anda se o cursor estiver bem embaixo (vem) ou bem em cima (recua)
-    let dir = 0;
-    if (ptr.active) { if (ptr.y > .85) dir = 1; else if (ptr.y < .15) dir = -1; }
-    if ((dir > 0 && dino.z >= ZMAX - .05) || (dir < 0 && dino.z <= ZMIN + .05)) dir = 0;
-    dino.speed = damp(dino.speed, dir * 1.7, 2.2, dt);
+    if (AI.state === "back") {                         // volta devagar para o lugar de origem
+      AI.backT += dt; dir = -1; spd = 2.2;
+      if (dino.z <= HOME_Z + .2 || AI.backT > 5) AI.state = "track";
+    } else if (AI.state === "track") {                 // anda só se o cursor estiver bem embaixo (vem) ou bem em cima (recua)
+      if (ptr.active) { if (ptr.y > .85) dir = 1; else if (ptr.y < .15) dir = -1; }
+    }
+    const zmax = AI.state === "charge" ? Math.max(ZCH, dino.z) : ZMAX;
+    if ((dir > 0 && dino.z >= zmax - .05) || (dir < 0 && dino.z <= ZMIN + .05)) dir = 0;
+    dino.speed = damp(dino.speed, dir * spd, AI.state === "charge" ? 4 : 2.2, dt);
     T.walk = Math.min(1, Math.abs(dino.speed) / 1.0);
-    T.headYaw = clamp(ly, -.9, .9); T.headPitch = clamp(lp, -.5, .85); T.jaw = JAW_CLOSED + Math.sin(t * 1.6) * .015; T.spine = 0;
-    dino.z = clamp(dino.z + dino.speed * dt, ZMIN, ZMAX);
-    const dph = clamp(dino.speed / .488, -8, 8) * dt, before = Math.floor(P.phase / Math.PI); P.phase += dph;
-    if (P.walk > .3 && Math.floor(P.phase / Math.PI) !== before) {            // pisada: poeira + tremor
-      stepSide = -stepSide;
-      puff(dino.x + stepSide * .6 * S, heightAt(dino.x, dino.z) + .1, dino.z, 3, 1.6, 1.3, 2.8);
-      AI.shake = Math.max(AI.shake, .15 * P.walk);
+    dino.z = clamp(dino.z + dino.speed * dt, ZMIN, zmax);
+    const dph = clamp(dino.speed / .488, -14, 14) * dt, before = Math.floor(P.phase / Math.PI); P.phase += dph;
+    if (P.walk > .3 && Math.floor(P.phase / Math.PI) !== before) {            // pisada: neblina + poeira + tremor
+      stepSide = -stepSide; fogStep(stepSide);
+      AI.shake = Math.max(AI.shake, (AI.state === "charge" ? .35 : .15) * P.walk);
     }
     return { ly, lp };
   }
@@ -355,28 +390,34 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     P.walk = damp(P.walk, T.walk, 5, dt); P.jaw = damp(P.jaw, T.jaw, bite ? 24 : 7, dt);
     P.headYaw = damp(P.headYaw, T.headYaw, bite ? 12 : 5.5, dt); P.headPitch = damp(P.headPitch, T.headPitch, bite ? 16 : 5.5, dt);
     P.spine = damp(P.spine, T.spine, bite ? 14 : 5, dt);
+    { const lr = (T.lie > P.lie ? .38 : .55) * dt; P.lie += clamp(T.lie - P.lie, -lr, lr); }
+    P.eye = damp(P.eye, T.eye, T.eye > P.eye ? 5 : 1.6, dt);
+    const e = ss(0, 1, P.lie);
     P.tailYaw = damp(P.tailYaw, Math.sin(P.phase * .5) * .08 * P.walk, 4, dt);
     P.tailWave = .04 + .16 * P.walk; P.breath = Math.sin(t * 1.5) * .5 + .5;
+    R.phase = P.phase; R.walk = P.walk * (1 - e); R.jaw = P.jaw; R.headYaw = lerp(P.headYaw, .35, e); R.headPitch = lerp(P.headPitch, LIE_HEAD, e);
+    R.spine = P.spine + LIE_SPINE * e; R.tailYaw = P.tailYaw; R.tailWave = P.tailWave * (1 - e); R.breath = P.breath * (1 + e * 2); R.legA = P.legA;
     skinAcc += dt; let out = lastOut;
-    if (!out || qLevel < 2 || skinAcc >= 1 / 30) { skinAcc = 0; out = lastOut = rig.apply(P); posA.array.set(out.pos); norA.array.set(out.nor); posA.needsUpdate = true; norA.needsUpdate = true; }
+    if (!out || qLevel < 2 || skinAcc >= 1 / 30) { skinAcc = 0; out = lastOut = rig.apply(R); posA.array.set(out.pos); norA.array.set(out.nor); posA.needsUpdate = true; norA.needsUpdate = true; }
 
     const gy = heightAt(dino.x, dino.z), bobY = Math.abs(Math.sin(P.phase)) * .07 * P.walk;
-    dino.root.position.set(dino.x, gy + bobY, dino.z);
+    dino.root.position.set(dino.x, gy + bobY - LIE_DROP * S * e, dino.z);
     dino.root.rotation.set(0, dino.yaw, Math.sin(P.phase) * .03 * P.walk, "YXZ");
     dino.root.updateMatrixWorld(true);
 
     // olhos: giram para o alvo, limitados pela anatomia
     const target = info.ground ? tmp.copy(info.ground).setY(.5) : (info.look || null);
     for (const e of eyes) {
-      const pp = rig.point(e.c[0], e.c[1], e.c[2], P); e.m.position.set(pp[0], pp[1], pp[2]);
-      const ax = rig.point(e.c[0] + e.n.x, e.c[1] + e.n.y, e.c[2] + e.n.z, P); g0.set(ax[0] - pp[0], ax[1] - pp[1], ax[2] - pp[2]).normalize();
+      const pp = rig.point(e.c[0], e.c[1], e.c[2], R); e.m.position.set(pp[0], pp[1], pp[2]);
+      const ax = rig.point(e.c[0] + e.n.x, e.c[1] + e.n.y, e.c[2] + e.n.z, R); g0.set(ax[0] - pp[0], ax[1] - pp[1], ax[2] - pp[2]).normalize();
       if (target) { eyeW.copy(e.m.position); dino.root.localToWorld(eyeW); const w = dino.root.worldToLocal(e.tgt.copy(target)); gaze.copy(w).sub(e.m.position).normalize(); }
       else gaze.copy(g0).add(tmp.set(Math.sin(t * .7) * .3, Math.sin(t * 1.1) * .1, 0)).normalize();
       q1.setFromUnitVectors(g0, gaze); const ang = 2 * Math.acos(clamp(q1.w, -1, 1)), lim = .75;
       if (ang > lim) { q2.identity().slerp(q1, lim / ang); gaze.copy(g0).applyQuaternion(q2); }
       e.look.lerp(gaze, 1 - Math.exp(-16 * dt)).normalize();
-      e.m.quaternion.setFromUnitVectors(zAx, e.look);
+      e.m.quaternion.setFromUnitVectors(zAx, e.look); e.m.scale.set(1, Math.max(.06, P.eye), 1);
     }
+    eyeMat.color.setScalar(.12 + .88 * P.eye);
 
     key.position.set(dino.x + KEY.x * 90, KEY.y * 90, dino.z + KEY.z * 90); key.target.position.set(dino.x, 0, dino.z); key.target.updateMatrixWorld();
 
