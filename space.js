@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { createSurface } from "/surface.js";
 
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const mobile = innerWidth < 760;
@@ -121,8 +122,11 @@ const atmos = (r, color, { thick = 1.035, power = 3, gain = 1.1, haze = .5 } = {
   return g;
 };
 const tag = document.body; tag.dataset.space = "loading";
+/* Superfície da Terra (T-Rex). Se falhar, o site segue direto no espaço. */
+let surf = null;
+const surfReady = createSurface(renderer, { mobile, reduce }).then(s => { surf = s; }).catch(e => console.warn("Superfície não carregada:", e));
 
-Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/jupiter.glb")]).then(([t, l, j]) => {
+Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/jupiter.glb"), surfReady]).then(([t, l, j]) => {
   // Terra
   const earth = holder(t.scene, 2.2); world.earth = earth; scene.add(earth);
   t.scene.traverse(o => {
@@ -228,8 +232,15 @@ const secs = [".hero", "#servicos", "#portfolio", ".stats-section", "#processo",
 const hud = document.createElement("div"); hud.className = "hud";
 hud.innerHTML = `<div class="hud-track"><i></i></div>`; document.body.append(hud);
 const hudBar = hud.querySelector("i");
+const shade = document.createElement("div"); shade.className = "surface-shade"; document.body.append(shade);
+const hint = document.createElement("div"); hint.className = "surface-hint";
+hint.innerHTML = `<b>${matchMedia("(pointer:coarse)").matches ? "Toque e arraste" : "Mova o cursor"}</b> — o T-Rex te segue. Pare e veja o que acontece.<span>role para deixar a Terra ↓</span>`; document.body.append(hint);
 let tT = 0, tS = 0, lastY = scrollY, vel = 0, mx = 0, my = 0, sx2 = 0, sy2 = 0;
-addEventListener("pointermove", e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; });
+const ENTRY_P = V(0, .5, 2.8), ENTRY_L = V(0, -.18, 1.15);   // câmera rasante sobre a Terra (ponto de encontro com a superfície)
+const bb = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+addEventListener("pointermove", e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; if (surf) { surf.setPointer(e.clientX, e.clientY, e.pointerType !== "mouse"); surf.noteMove(); } });
+addEventListener("pointerdown", e => { if (surf) { surf.setPointer(e.clientX, e.clientY, e.pointerType !== "mouse"); surf.noteMove(); } });
+document.documentElement.addEventListener("pointerleave", () => surf && surf.leave());
 
 function target() {
   const els = secs.map(s => document.querySelector(s)).filter(Boolean); if (!els.length) return 0;
@@ -248,6 +259,9 @@ function frame() {
   const u = Math.min(1, Math.max(0, tS / (secs.length - 1)));
   vel += ((scrollY - lastY) / Math.max(dt, .001) / 2500 - vel) * .1; lastY = scrollY;
   camera.position.copy(camPath.getPoint(u)); look.copy(lookPath.getPoint(u));
+  // subida: superfície (a=0) → atmosfera → espaço (a=1). Sem superfície, começa direto no espaço.
+  const a = surf ? Math.min(1, tS / .8) : 1, sa = surf ? surf.alpha(a) : 0;
+  if (a < 1) { const b = bb(.4, 1, a); camera.position.lerp(ENTRY_P, 1 - b); look.lerp(ENTRY_L, 1 - b); }
   // no celular, a Terra sobe para ficar atrás do título em vez de ao lado
   if (innerWidth < 900) { look.x = look.x * .4; look.y += (1 - u * 6 > 0 ? -1.6 * (1 - u * 6) : 0); }
   sx2 += (mx - sx2) * .04; sy2 += (my - sy2) * .04;
@@ -273,10 +287,16 @@ function frame() {
   });
   updateMeteors(dt);
   hudBar.style.transform = `scaleY(${u})`;
-  renderer.render(scene, camera);
+  if (surf) {
+    surf.update(dt, t, a); surf.render(a, t, dt);
+    shade.style.opacity = sa; hint.style.opacity = Math.max(0, 1 - a * 5) * (hint.dataset.gone ? 0 : 1);
+    if (t > 14 && !hint.dataset.gone && a < .02) hint.dataset.gone = "1";
+  }
+  if (sa < 1) renderer.render(scene, camera); else renderer.clear();
+  if (sa > 0) surf.composite();
   requestAnimationFrame(frame);
 }
 addEventListener("resize", () => {
-  renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); if (surf) surf.resize();
 });
 requestAnimationFrame(frame);
