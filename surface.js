@@ -217,12 +217,6 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   }
 
   /* ---------- marcador do cursor no chão ---------- */
-  const marker = new THREE.Group();
-  const ringM = new THREE.MeshBasicMaterial({ color: 0xd8dde8, transparent: true, opacity: 0, depthWrite: false, depthTest: false, fog: false, toneMapped: false });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(.55, .62, 48), ringM);
-  const dotM = ringM.clone(); const dot = new THREE.Mesh(new THREE.CircleGeometry(.11, 24), dotM);
-  marker.add(ring, dot); marker.renderOrder = 50; ring.renderOrder = dot.renderOrder = 50; marker.frustumCulled = false; scene.add(marker);
-
   /* ---------- T-Rex ---------- */
   const dino = { root: new THREE.Group(), x: 3.5, z: -13, yaw: 0, speed: 0, turn: 0 };
   dino.root.scale.setScalar(S); scene.add(dino.root);
@@ -308,6 +302,25 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     let ly, lp;
     if (info.look) { const la = lookAngles(info.look); ly = la.yaw; lp = la.pitch; }
     else { AI.scanT += dt; ly = Math.sin(AI.scanT * .5) * .5 + Math.sin(AI.scanT * 1.3) * .1; lp = .02 + Math.sin(AI.scanT * .8) * .06; }
+    AI.biteCd -= dt;
+    // ataque: cursor muito perto da cabeça
+    if (AI.state !== "bite" && AI.biteCd <= 0 && ptr.active) {
+      tmp.copy(headW).project(camera);
+      const dx = (tmp.x - (ptr.x * 2 - 1)) * camera.aspect, dy = tmp.y + (ptr.y * 2 - 1);
+      if (Math.hypot(dx, dy) < .3 && tmp.z < 1) { AI.state = "bite"; AI.biteT = 0; AI.struck = false; }
+    }
+    if (AI.state === "bite") {
+      AI.biteT += dt; const b = AI.biteT, hy = clamp(ly, -.9, .9), hp = clamp(lp, -.3, .7);
+      dino.speed = damp(dino.speed, 0, 7, dt); T.walk = 0; T.headYaw = hy;
+      if (b < .35) { const k = ss(0, .35, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
+      else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, .3, k); T.headPitch = lerp(-.2, hp + .15, k); T.jaw = JAW_OPEN; }
+      else if (b < .68) { const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = .3; T.headPitch = hp + .15;
+        if (!AI.struck && b > .65) { AI.struck = true; AI.shake = 1; } }
+      else if (b < 1.4) { const k = ss(.68, 1.4, b); T.spine = lerp(.3, 0, k); T.headPitch = lerp(hp + .15, clamp(lp, -.5, .85), k) + Math.sin(b * 16) * .06 * (1 - k); T.jaw = JAW_CLOSED; T.headYaw = hy + Math.sin(b * 13) * .25 * (1 - k); }
+      else { AI.state = "track"; AI.biteCd = 1.2; }
+      dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.turn = 0;
+      return { ly, lp };
+    }
     // sempre de frente para a câmera
     dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.turn = 0;
     // só anda se o cursor estiver bem embaixo (vem) ou bem em cima (recua)
@@ -400,11 +413,6 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     quadMat.uniforms.veil.value = Math.max(0, 1 - Math.abs(alt - 850) / 170) * .8;
     quadMat.uniforms.alpha.value = alphaOf(a);
     quadMat.uniforms.vig.value = lerp(1.8, .2, a);
-    if (ptr.active) {
-      ndc.set(ptr.x * 2 - 1, -(ptr.y * 2 - 1)); ray.setFromCamera(ndc, camera); ray.ray.at(12, marker.position); marker.quaternion.copy(camera.quaternion);
-      marker.scale.setScalar(1 + Math.sin(t * 4) * .05);
-    }
-    ringM.opacity = damp(ringM.opacity, ptr.active ? .8 * (1 - ss(0, .06, a)) : 0, 9, dt); dotM.opacity = ringM.opacity;
     renderer.setRenderTarget(rt); renderer.clear(); renderer.render(scene, camera); renderer.setRenderTarget(null);
   }
   function composite() { const ac = renderer.autoClear; renderer.autoClear = false; renderer.render(qScene, qCam); renderer.autoClear = ac; }
