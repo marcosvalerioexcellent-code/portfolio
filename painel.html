@@ -430,6 +430,25 @@
     .admins-add { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
     .admins-add input { flex: 1; min-width: 220px; }
     #areaAdmin { display: none; }
+
+    /* ===== STATUS DO SALVAMENTO AUTOMÁTICO ===== */
+    #statusSalvo {
+      position: fixed; right: 20px; bottom: 20px; z-index: 800;
+      display: none; align-items: center; gap: 10px;
+      padding: 12px 18px; border-radius: 999px; font-size: .88rem; font-weight: 600;
+      background: var(--bg-solid); border: 1px solid var(--border-color);
+      color: var(--text-muted); box-shadow: 0 14px 40px var(--shadow-2);
+      backdrop-filter: blur(12px); cursor: default; transition: border-color .3s, color .3s;
+    }
+    #statusSalvo .st-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent-main); flex-shrink: 0; }
+    #statusSalvo.salvando .st-dot { animation: pulse 1s ease-in-out infinite; }
+    #statusSalvo.pendente { color: var(--accent-1); border-color: var(--badge-border); }
+    #statusSalvo.salvando { color: var(--accent-1); border-color: var(--badge-border); }
+    #statusSalvo.ok { color: #6fe39a; border-color: rgba(111,227,154,.35); }
+    #statusSalvo.ok .st-dot { background: #6fe39a; }
+    #statusSalvo.erro { color: #ff6b6b; border-color: rgba(255,107,107,.4); cursor: pointer; }
+    #statusSalvo.erro .st-dot { background: #ff6b6b; }
+    @media (max-width: 620px) { #statusSalvo { right: 12px; left: 12px; bottom: 12px; justify-content: center; } }
   </style>
 </head>
 
@@ -486,6 +505,7 @@
   </div>
 
   <div class="admin" id="areaAdmin">
+    <div id="statusSalvo"><span class="st-dot"></span><span id="statusSalvoTexto"></span></div>
     <div class="top">
       <h1>Painel <span>Excellent Services</span></h1>
       <p>Gerencie o conteúdo e imagens do seu portfólio. Tudo é salvo em tempo real no banco de dados.</p>
@@ -514,7 +534,7 @@
       <h2>Importar do projeto antigo</h2>
       <p style="color: var(--text-muted); margin-bottom: 14px; line-height:1.6;">
         Traz textos e imagens que você já tinha cadastrado no Firebase antigo (planilhasimple) para este painel.
-        Depois de importar, confira e clique em <strong>Salvar alterações</strong> para publicar.
+        Os dados importados já são salvos automaticamente.
       </p>
       <button class="btn" id="btnImportar" style="color: var(--text-btn);" onclick="importarDoAntigo()">Importar dados do projeto antigo</button>
     </div>
@@ -668,6 +688,7 @@
           ctx.drawImage(img, 0, 0, width, height);
           const base64Comprimido = canvas.toDataURL('image/webp', 0.7);
           callback(base64Comprimido);
+          agendarAutosave();
         };
         img.src = e.target.result;
       };
@@ -1044,11 +1065,15 @@
     }
 
     window.carregarSite = async function() {
+      autosaveAtivo = false;
+      clearTimeout(autoTimer);
       const snapshot = await get(siteRef);
       dados = snapshot.exists() ? snapshot.val() : {};
       normalizarDados();
       await resolverReferenciasImagens();
       gerarCampos();
+      temPendencia = false;
+      autosaveAtivo = true;
     }
 
     window.carregarSiteComLoading = async function() {
@@ -1161,15 +1186,96 @@
       } catch (e) {}
     }
 
-    window.salvarSite = async function() {
-      atualizarDadosLocais(); 
-      mostrarPopupSalvando(); 
+    /* ===== SALVAMENTO AUTOMÁTICO ===== */
+    let autosaveAtivo = false;
+    let autoTimer = null;
+    let filaSalvar = Promise.resolve();
+    let salvandoAgora = 0;
+    let temPendencia = false;
+    let ultimasImagensUsadas = "";
+
+    function statusSalvamento(tipo, texto) {
+      const el = document.getElementById("statusSalvo");
+      if (!el) return;
+      el.className = tipo;
+      el.style.display = "flex";
+      document.getElementById("statusSalvoTexto").textContent = texto;
+    }
+
+    async function salvarCore() {
+      atualizarDadosLocais();
+      const paraSalvar = await prepararParaSalvar();
+      await set(siteRef, paraSalvar);
+      const usadas = JSON.stringify(paraSalvar).match(/img:[0-9a-f]{24}/g) || [];
+      const chaveUsadas = usadas.sort().join(",");
+      if (chaveUsadas !== ultimasImagensUsadas) {
+        await limparImagensSemUso(paraSalvar);
+        ultimasImagensUsadas = chaveUsadas;
+      }
+    }
+
+    // Todas as gravações passam por uma fila: nunca duas ao mesmo tempo
+    function salvarEmFila() {
+      salvandoAgora++;
+      const p = filaSalvar.then(salvarCore);
+      filaSalvar = p.catch(() => {}).then(() => { salvandoAgora--; });
+      return p;
+    }
+
+    function agendarAutosave() {
+      if (!autosaveAtivo) return;
+      temPendencia = true;
+      statusSalvamento("pendente", "Alterações pendentes…");
+      clearTimeout(autoTimer);
+      autoTimer = setTimeout(executarAutosave, 1200);
+    }
+
+    async function executarAutosave() {
+      statusSalvamento("salvando", "Salvando…");
+      temPendencia = false;
       try {
-        const paraSalvar = await prepararParaSalvar();
-        await set(siteRef, paraSalvar);
-        limparImagensSemUso(paraSalvar);
+        await salvarEmFila();
+        if (!temPendencia) statusSalvamento("ok", "Salvo ✓ já está no site");
+      } catch (e) {
+        temPendencia = true;
+        statusSalvamento("erro", "Erro ao salvar — toque para tentar de novo");
+        console.error("Erro no salvamento automático:", e);
+      }
+    }
+
+    document.getElementById("statusSalvo").addEventListener("click", () => {
+      if (document.getElementById("statusSalvo").classList.contains("erro")) executarAutosave();
+    });
+
+    // Qualquer digitação ou escolha nos campos do painel agenda o salvamento
+    function aoEditar(e) {
+      if (!e.target.closest("#areaAdmin")) return;
+      if (e.target.closest("#boxPermissoes, #boxImportar, #statusSalvo")) return;
+      agendarAutosave();
+    }
+    document.addEventListener("input", aoEditar);
+    document.addEventListener("change", aoEditar);
+
+    // Adicionar/remover itens e trocar imagens recriam os campos: salva depois disso também
+    const gerarCamposOriginal = window.gerarCampos;
+    window.gerarCampos = function() { gerarCamposOriginal(); agendarAutosave(); };
+
+    window.addEventListener("beforeunload", (e) => {
+      if (temPendencia || salvandoAgora > 0) { e.preventDefault(); e.returnValue = ""; }
+    });
+
+    // Botão "Salvar alterações": salva na hora e mostra o aviso
+    window.salvarSite = async function() {
+      clearTimeout(autoTimer);
+      mostrarPopupSalvando();
+      try {
+        temPendencia = false;
+        await salvarEmFila();
+        statusSalvamento("ok", "Salvo ✓ já está no site");
         mostrarPopupResultado(true, "Salvo com sucesso!", "As informações foram atualizadas e já estão online no site.");
       } catch (error) {
+        temPendencia = true;
+        statusSalvamento("erro", "Erro ao salvar — toque para tentar de novo");
         mostrarPopupResultado(false, "Erro ao salvar", "O Firebase rejeitou o salvamento. Erro: " + error.message);
       }
     }
@@ -1218,7 +1324,7 @@
     $("btnTentarOutra").onclick = () => signOut(auth);
 
     window.importarDoAntigo = async function() {
-      if (!confirm("Isso substitui, na tela, o conteúdo atual pelo do projeto antigo. Nada é publicado até você clicar em Salvar alterações. Continuar?")) return;
+      if (!confirm("Isso substitui o conteúdo atual pelo do projeto antigo e já salva no site automaticamente. Continuar?")) return;
       const btn = $("btnImportar");
       btn.disabled = true; btn.textContent = "Importando...";
       try {
@@ -1229,7 +1335,7 @@
         dados = antigo;
         normalizarDados();
         gerarCampos();
-        alert("Importado! Confira os campos e clique em Salvar alterações para publicar.");
+        alert("Importado! Os dados estão sendo salvos automaticamente.");
       } catch (e) {
         alert("Não foi possível importar: " + e.message);
       } finally {
