@@ -85,8 +85,10 @@ export async function createSurface(renderer, { mobile = false, reduce = false }
   const S = 1.7;                                                  // escala do T-Rex (~13 m)
   const U = { time: { value: 0 } };
 
+  let qLevel = 0;
+  const msaa = () => qLevel >= 3 ? 0 : (qLevel >= 1 || mobile ? 2 : 4);
   const size = new THREE.Vector2();
-  const makeRT = () => { renderer.getDrawingBufferSize(size); return new THREE.WebGLRenderTarget(Math.max(2, size.x), Math.max(2, size.y), { type: THREE.HalfFloatType, samples: mobile ? 2 : 4 }); };
+  const makeRT = () => { renderer.getDrawingBufferSize(size); return new THREE.WebGLRenderTarget(Math.max(2, size.x), Math.max(2, size.y), { type: THREE.HalfFloatType, samples: msaa() }); };
   let rt = makeRT();
 
   /* ---------- céu, reflexos e luzes ---------- */
@@ -272,7 +274,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   function setPointer(cx, cy, touch) { ptr.x = cx / innerWidth; ptr.y = cy / innerHeight; ptr.active = true; ptr.touch = !!touch; }
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), hit = new THREE.Vector3(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   const CAM0 = new THREE.Vector3(0, 3, 8), PITCH0 = -.14;
-  const surfacePose = () => { camera.position.copy(CAM0); camera.rotation.set(PITCH0, 0, 0, "YXZ"); camera.fov = 42; camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); camera.updateMatrixWorld(); };
+  const surfacePose = () => { camera.position.copy(CAM0); camera.rotation.set(PITCH0, 0, 0, "YXZ"); camera.aspect = innerWidth / innerHeight; camera.fov = 42 + Math.max(0, 1 - camera.aspect) * 12; camera.updateProjectionMatrix(); camera.updateMatrixWorld(); };
   surfacePose();
   const headW = new THREE.Vector3(), lookT = new THREE.Vector3(), tmp = new THREE.Vector3();
 
@@ -298,6 +300,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
 
   const ZMIN = -19, ZMAX = -7;
   function think(dt, t, info) {
+    dino.x = damp(dino.x, lerp(0, 3.5, ss(.75, 1.5, innerWidth / innerHeight)), 3, dt);   // centraliza em telas estreitas
     // cabeça + olhos seguem o cursor (só a cabeça; o corpo nunca gira)
     let ly, lp;
     if (info.look) { const la = lookAngles(info.look); ly = la.yaw; lp = la.pitch; }
@@ -342,6 +345,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
 
   /* ---------- atualização por quadro ---------- */
   const tipW = new THREE.Vector3(), eyeW = new THREE.Vector3(), q1 = new THREE.Quaternion(), q2 = new THREE.Quaternion(), zAx = new THREE.Vector3(0, 0, 1), gaze = new THREE.Vector3(), g0 = new THREE.Vector3();
+  let skinAcc = 0, lastOut = null;
   function update(dt, t, a) {
     U.time.value = t;
     if (a >= .97) return;
@@ -353,8 +357,8 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     P.spine = damp(P.spine, T.spine, bite ? 14 : 5, dt);
     P.tailYaw = damp(P.tailYaw, Math.sin(P.phase * .5) * .08 * P.walk, 4, dt);
     P.tailWave = .04 + .16 * P.walk; P.breath = Math.sin(t * 1.5) * .5 + .5;
-    const out = rig.apply(P);
-    posA.array.set(out.pos); norA.array.set(out.nor); posA.needsUpdate = true; norA.needsUpdate = true;
+    skinAcc += dt; let out = lastOut;
+    if (!out || qLevel < 2 || skinAcc >= 1 / 30) { skinAcc = 0; out = lastOut = rig.apply(P); posA.array.set(out.pos); norA.array.set(out.nor); posA.needsUpdate = true; norA.needsUpdate = true; }
 
     const gy = heightAt(dino.x, dino.z), bobY = Math.abs(Math.sin(P.phase)) * .07 * P.walk;
     dino.root.position.set(dino.x, gy + bobY, dino.z);
@@ -404,7 +408,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     shk = damp(shk, AI.shake * (reduce ? 0 : 1), 10, dt); AI.shake = Math.max(0, AI.shake - dt * 1.6);
     camera.position.set(CAM0.x + sx * .9 * par + (Math.random() - .5) * shk * .12, alt - sy * .35 * par + (Math.random() - .5) * shk * .12, CAM0.z);
     camera.rotation.set(pitch - sy * .015 * par, -sx * .03 * par, 0, "YXZ");
-    camera.fov = 42 + 16 * ss(.2, .8, a); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    camera.aspect = innerWidth / innerHeight; camera.fov = 42 + Math.max(0, 1 - camera.aspect) * 12 + 16 * ss(.2, .8, a); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
     sky.position.copy(camera.position);
     skyU.alt.value = ss(500, 3300, alt);
     scene.fog.density = .03 / (1 + alt * .03);
@@ -418,8 +422,19 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   function composite() { const ac = renderer.autoClear; renderer.autoClear = false; renderer.render(qScene, qCam); renderer.autoClear = ac; }
   function resize() { rt.dispose(); rt = makeRT(); quadMat.uniforms.tex.value = rt.texture; camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
 
+  /* qualidade adaptativa: 0 = máximo ... 3 = mínimo (chamado pelo medidor de FPS em space.js) */
+  function setQuality(l) {
+    if (l === qLevel) return;
+    const prev = msaa(); qLevel = l;
+    const sm = l >= 1 || mobile ? 1024 : 2048;
+    if (key.shadow.mapSize.x !== sm) { key.shadow.mapSize.set(sm, sm); if (key.shadow.map) { key.shadow.map.dispose(); key.shadow.map = null; } }
+    key.castShadow = l < 3;
+    mist.forEach((m, i) => { m.s.visible = l < 2 || i % 2 === 0; }); motes.visible = l < 3;
+    if (msaa() !== prev) resize();
+  }
+
   return {
-    update, render, composite, resize, setPointer, leave() { ptr.active = false; }, alpha: alphaOf,
+    setQuality, update, render, composite, resize, setPointer, leave() { ptr.active = false; }, alpha: alphaOf,
     noteMove() { ptr.last = performance.now() / 1000; }
   };
 }

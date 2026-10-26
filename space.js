@@ -11,7 +11,14 @@ document.body.prepend(canvas);
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" }); }
 catch (e) { canvas.remove(); throw e; }
-renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 2));
+/* ---------- desempenho adaptativo ----------
+   Mede o tempo real dos quadros e ajusta sozinho resolução, sombras, MSAA e skinning.
+   Passos (resolução, nível): vão do máximo ao mínimo; sobe de novo só se houver folga. */
+const weak = mobile || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
+const BASE_DPR = Math.min(devicePixelRatio, weak ? 1.5 : 2);
+const STEPS = [[1, 0], [.85, 0], [.75, 1], [.65, 1], [.6, 2], [.5, 2], [.4, 3]];
+let qi = weak ? 1 : 0, qBad = new Set(), qSince = 0, qBuf = [], qOk = 0;
+renderer.setPixelRatio(BASE_DPR * STEPS[qi][0]);
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -124,7 +131,7 @@ const atmos = (r, color, { thick = 1.035, power = 3, gain = 1.1, haze = .5 } = {
 const tag = document.body; tag.dataset.space = "loading";
 /* Superfície da Terra (T-Rex). Se falhar, o site segue direto no espaço. */
 let surf = null;
-const surfReady = createSurface(renderer, { mobile, reduce }).then(s => { surf = s; }).catch(e => console.warn("Superfície não carregada:", e));
+const surfReady = createSurface(renderer, { mobile, reduce }).then(s => { surf = s; s.setQuality(STEPS[qi][1]); }).catch(e => console.warn("Superfície não carregada:", e));
 
 Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/jupiter.glb"), surfReady]).then(([t, l, j]) => {
   // Terra
@@ -251,10 +258,24 @@ function target() {
   return cs.length - 1;
 }
 
-const clock = new THREE.Clock(); let moonA = 1.2;
+const clock = new THREE.Clock(); let moonA = 1.2, lastRaw = performance.now();
+function applyQuality() {
+  const [res, lvl] = STEPS[qi]; qSince = performance.now(); qBuf.length = 0; qOk = 0;
+  renderer.setPixelRatio(BASE_DPR * res); renderer.setSize(innerWidth, innerHeight);
+  if (surf) { surf.setQuality(lvl); surf.resize(); }
+}
+function governor(raw) {
+  if (raw > 250 || document.hidden) return;                       // ignora picos (carregamento, troca de aba)
+  qBuf.push(raw); if (qBuf.length < 40 || performance.now() - qSince < 1500) { if (qBuf.length > 40) qBuf.shift(); return; }
+  const avg = qBuf.reduce((x, y) => x + y, 0) / qBuf.length; qBuf.length = 0;
+  if (avg > 20 && qi < STEPS.length - 1) { qBad.add(qi); qi++; applyQuality(); }   // abaixo de ~50 fps: simplifica
+  else if (avg < 18 && qi > 0 && !qBad.has(qi - 1) && ++qOk >= 6) { qi--; applyQuality(); }  // ~10 s folgado: tenta subir
+  else if (avg >= 18) qOk = 0;
+}
 const look = new THREE.Vector3(), tmpV = new THREE.Vector3(), sv = new THREE.Vector3();
 function frame() {
-  const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime, spd = reduce ? 0 : 1;
+  const nowRaw = performance.now(); governor(nowRaw - lastRaw); lastRaw = nowRaw;
+  const dt = Math.min(clock.getDelta(), .1), t = clock.elapsedTime, spd = reduce ? 0 : 1;
   tT = target(); tS += (tT - tS) * Math.min(1, dt * 3.2);
   const u = Math.min(1, Math.max(0, tS / (secs.length - 1)));
   vel += ((scrollY - lastY) / Math.max(dt, .001) / 2500 - vel) * .1; lastY = scrollY;
@@ -297,7 +318,9 @@ function frame() {
   if (sa > 0) surf.composite();
   requestAnimationFrame(frame);
 }
+let rsT = 0;
 addEventListener("resize", () => {
-  renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); if (surf) surf.resize();
+  clearTimeout(rsT);
+  rsT = setTimeout(() => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); if (surf) surf.resize(); }, 120);
 });
 requestAnimationFrame(frame);
