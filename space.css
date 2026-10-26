@@ -38,8 +38,7 @@ section{padding:15vh 0}
 /* HUD de navegação */
 .hud{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:row-reverse;
   align-items:center;gap:14px;pointer-events:none;font-family:var(--font-mono);font-size:.72rem;color:var(--accent-mono)}
-.hud-name{writing-mode:vertical-rl;letter-spacing:.14em;text-shadow:0 0 12px rgba(0,0,0,.9);opacity:.85;transition:opacity .4s}
 .hud-track{width:2px;height:min(36vh,300px);background:rgba(255,255,255,.14);border-radius:2px;overflow:hidden}
 .hud-track i{display:block;width:100%;height:100%;background:var(--accent-grad);transform-origin:top;transform:scaleY(0);
   box-shadow:0 0 10px var(--accent-1)}
-@media(max-width:980px){.hud{right:8px}.hud-name{display:none}.hero-card-wrap{display:none}}
+@media(max-width:980px){.hud{right:8px}.hero-card-wrap{display:none}}
