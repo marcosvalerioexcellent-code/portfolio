@@ -234,8 +234,8 @@ hud.innerHTML = `<div class="hud-track"><i></i></div>`; document.body.append(hud
 const hudBar = hud.querySelector("i");
 const shade = document.createElement("div"); shade.className = "surface-shade"; document.body.append(shade);
 const hint = document.createElement("div"); hint.className = "surface-hint";
-hint.innerHTML = `<b>${matchMedia("(pointer:coarse)").matches ? "Toque e arraste" : "Mova o cursor"}</b> — o T-Rex te segue. Pare e veja o que acontece.<span>role para deixar a Terra ↓</span>`; document.body.append(hint);
-let tT = 0, tS = 0, lastY = scrollY, vel = 0, mx = 0, my = 0, sx2 = 0, sy2 = 0;
+hint.innerHTML = `<b>${matchMedia("(pointer:coarse)").matches ? "Toque e arraste" : "Mova o cursor"}</b> — o T-Rex te segue com a cabeça e os olhos. Pare e ele tenta te comer.<span>role para deixar a Terra ↓</span>`; document.body.append(hint);
+let aS = 0, tT = 0, tS = 0, lastY = scrollY, vel = 0, mx = 0, my = 0, sx2 = 0, sy2 = 0;
 const ENTRY_P = V(0, .5, 2.8), ENTRY_L = V(0, -.18, 1.15);   // câmera rasante sobre a Terra (ponto de encontro com a superfície)
 const bb = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 addEventListener("pointermove", e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; if (surf) { surf.setPointer(e.clientX, e.clientY, e.pointerType !== "mouse"); surf.noteMove(); } });
@@ -260,7 +260,8 @@ function frame() {
   vel += ((scrollY - lastY) / Math.max(dt, .001) / 2500 - vel) * .1; lastY = scrollY;
   camera.position.copy(camPath.getPoint(u)); look.copy(lookPath.getPoint(u));
   // subida: superfície (a=0) → atmosfera → espaço (a=1). Sem superfície, começa direto no espaço.
-  const a = surf ? Math.min(1, tS / .8) : 1, sa = surf ? surf.alpha(a) : 0;
+  const aT = surf ? Math.min(1, scrollY / (innerHeight * .12)) : 1; aS += (aT - aS) * Math.min(1, dt * 2.8); if (Math.abs(aT - aS) < .002) aS = aT;
+  const a = aS, sa = surf ? surf.alpha(a) : 0;
   if (a < 1) { const b = bb(.4, 1, a); camera.position.lerp(ENTRY_P, 1 - b); look.lerp(ENTRY_L, 1 - b); }
   // no celular, a Terra sobe para ficar atrás do título em vez de ao lado
   if (innerWidth < 900) { look.x = look.x * .4; look.y += (1 - u * 6 > 0 ? -1.6 * (1 - u * 6) : 0); }

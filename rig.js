@@ -18,15 +18,18 @@ export function createRig(rest /* Float32Array xyz */, restN /* Float32Array xyz
   const n = rest.length / 3;
   const W = { jaw: new Float32Array(n), head: new Float32Array(n), spine: new Float32Array(n), leg: new Float32Array(n),
               sideL: new Float32Array(n), tail: new Float32Array(n), chest: new Float32Array(n) };
+  const wAt = (x, y, z) => ({
+    head: Math.max(ss(1.0, 2.5, z) * ss(2.15, 2.75, y), ss(2.4, 2.8, z)),
+    jaw: ss(0.05, -0.05, y - jawLineY(z)) * ss(2.25, 2.85, z),
+    spine: ss(1.55, 2.25, y),
+    leg: ss(1.95, 1.35, y) * ss(-1.4, -0.9, z) * ss(1.7, 1.2, z),
+    sideL: ss(0.15, -0.15, x),
+    tail: ss(-0.6, -3.8, z),
+    chest: ss(0.2, 0.8, z) * ss(1.5, 1.9, -z + 3.4) * ss(1.7, 2.0, y) * ss(3.1, 2.7, y),
+  });
   for (let i = 0; i < n; i++) {
-    const x = rest[i * 3], y = rest[i * 3 + 1], z = rest[i * 3 + 2];
-    W.head[i] = Math.max(ss(1.0, 2.5, z) * ss(2.15, 2.75, y), ss(2.4, 2.8, z));
-    W.jaw[i] = ss(0.05, -0.05, y - jawLineY(z)) * ss(2.25, 2.85, z);
-    W.spine[i] = ss(1.55, 2.25, y);
-    W.leg[i] = ss(1.95, 1.35, y) * ss(-1.4, -0.9, z) * ss(1.7, 1.2, z);
-    W.sideL[i] = ss(0.15, -0.15, x);
-    W.tail[i] = ss(-0.6, -3.8, z);
-    W.chest[i] = ss(0.2, 0.8, z) * ss(1.5, 1.9, z * -1 + 3.4) * ss(1.7, 2.0, y) * ss(3.1, 2.7, y);
+    const w = wAt(rest[i * 3], rest[i * 3 + 1], rest[i * 3 + 2]);
+    for (const k in W) W[k][i] = w[k];
   }
   const out = new Float32Array(rest.length), outN = new Float32Array(restN.length);
 
@@ -50,14 +53,13 @@ export function createRig(rest /* Float32Array xyz */, restN /* Float32Array xyz
   function apply(p) {
     out.set(rest); outN.set(restN);
     const A = (p.legA ?? 0.42) * p.walk, lift = 0.38 * p.walk;
-    const pa = [0, 0, 0];
     for (let i = 0; i < n; i++) {
       const o = i * 3;
       // 0) respiração (empurra o peito para fora da normal)
       const bw = W.chest[i] * p.breath * 0.02;
       if (bw) { out[o] += restN[o] * bw; out[o + 1] += restN[o + 1] * bw; out[o + 2] += restN[o + 2] * bw; }
       // 1) mandíbula
-      let w = W.jaw[i] * W.head[i] > 0 ? W.jaw[i] : W.jaw[i];
+      let w = W.jaw[i];
       if (w > 0.001 && p.jaw) { rot(out, o, 0, p.jaw * w, PIV.jaw); rotN(outN, o, 0, p.jaw * w); }
       // 2) cabeça / pescoço
       w = W.head[i];
@@ -87,5 +89,13 @@ export function createRig(rest /* Float32Array xyz */, restN /* Float32Array xyz
     }
     return { pos: out, nor: outN };
   }
-  return { apply, W };
+  /* transforma um ponto qualquer do modelo em repouso (olhos, narinas...) com a mesma pose */
+  function point(x, y, z, p) {
+    const v = [x, y, z], w = wAt(x, y, z);
+    if (w.jaw > .001 && p.jaw) rot(v, 0, 0, p.jaw * w.jaw, PIV.jaw);
+    if (w.head > .001) { if (p.headPitch) rot(v, 0, 0, p.headPitch * w.head, PIV.neck); if (p.headYaw) rot(v, 0, 1, p.headYaw * w.head, PIV.neck); }
+    if (w.spine > .001 && p.spine) rot(v, 0, 0, p.spine * w.spine, PIV.hip);
+    return v;
+  }
+  return { apply, point, W };
 }
