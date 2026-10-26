@@ -1,0 +1,45 @@
+/* ===== Tema Espacial — sobrepõe o estilo base do index.html ===== */
+:root{
+  --bg-body:#000;
+  --bg-surface:rgba(8,9,16,.52);
+  --bg-surface-strong:rgba(14,15,26,.68);
+  --bg-solid:rgba(7,8,14,.72);
+  --bg-header:rgba(2,3,8,.45);
+}
+body{background:#000}
+body::before,body::after{display:none}
+#space{position:fixed;inset:0;width:100%;height:100%;z-index:-1;display:block;
+  opacity:0;transition:opacity 2.2s ease .3s}
+body:not([data-space="loading"]) #space{opacity:1}
+
+/* vidro: tudo que é conteúdo flutua sobre o espaço */
+.service-card,.project,.stat,.process-box,.equipe-card,.cta,.popup{
+  backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);
+  box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07)}
+.section-title h2,.stats-head h2,h1{text-shadow:0 2px 30px rgba(0,0,0,.85)}
+.section-title p,.stats-head p,.hero p{text-shadow:0 1px 14px rgba(0,0,0,.95)}
+header{border-bottom-color:rgba(255,255,255,.06)}
+.loading-screen{background:#000}
+.loading-screen::before{background:radial-gradient(520px circle at 50% 40%,rgba(120,150,255,.12),transparent 65%)}
+
+/* mais respiro entre seções: é nesse vazio que o planeta aparece */
+section{padding:15vh 0}
+.hero{min-height:calc(100vh - 70px);grid-template-columns:minmax(0,640px);align-content:center;padding:0}
+.hero::before{display:none}
+.hero-card-wrap::before{display:none}
+
+/* a imagem do hero vira o "patch da missão" */
+.hero .hero-card-wrap{position:absolute;right:0;bottom:7vh;width:clamp(96px,11vw,150px)}
+.hero-card{-webkit-mask-image:none;mask-image:none;border-radius:50%;
+  border:2px solid rgba(240,207,126,.6);
+  box-shadow:0 0 0 6px rgba(240,207,126,.08),0 0 40px rgba(240,207,126,.25);animation:patch 9s ease-in-out infinite}
+@keyframes patch{50%{transform:translateY(-10px) rotate(3deg)}}
+
+/* HUD de navegação */
+.hud{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:row-reverse;
+  align-items:center;gap:14px;pointer-events:none;font-family:var(--font-mono);font-size:.72rem;color:var(--accent-mono)}
+.hud-name{writing-mode:vertical-rl;letter-spacing:.14em;text-shadow:0 0 12px rgba(0,0,0,.9);opacity:.85;transition:opacity .4s}
+.hud-track{width:2px;height:min(36vh,300px);background:rgba(255,255,255,.14);border-radius:2px;overflow:hidden}
+.hud-track i{display:block;width:100%;height:100%;background:var(--accent-grad);transform-origin:top;transform:scaleY(0);
+  box-shadow:0 0 10px var(--accent-1)}
+@media(max-width:980px){.hud{right:8px}.hud-name{display:none}.hero-card-wrap{display:none}}
