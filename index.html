@@ -1331,7 +1331,7 @@
     });
 
     function completarDados(dados) {
-      return {
+      const base = {
         ...dadosPadrao,
         ...dados,
         servicos: dados.servicos || dadosPadrao.servicos,
@@ -1347,6 +1347,14 @@
         contatosSubtitulo2: dados.contatosSubtitulo2 || dadosPadrao.contatosSubtitulo2,
         categoriasContato: dados.categoriasContato || dadosPadrao.categoriasContato
       };
+      // Se algum texto ficou vazio no banco, usa o texto padrão (evita página em branco)
+      const r = base;
+      Object.keys(dadosPadrao).forEach(k => {
+        const d = dadosPadrao[k];
+        if (k !== "heroImagem" && typeof d === "string" && !r[k]) r[k] = d;
+        if (["servicos", "stats", "processo"].includes(k) && (!Array.isArray(r[k]) || r[k].length === 0)) r[k] = d;
+      });
+      return r;
     }
 
     function preCarregarImagem(src) {

@@ -3,89 +3,117 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#08070a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <title>Painel Excellent Services | Admin</title>
   <meta name="robots" content="noindex, nofollow">
 
   <style>
     :root {
-      --bg-body: #0a0a0a;
-      --bg-card: #141414;
-      --bg-input: #1a1a1a;
-      --text-main: #f0f0f0;
-      --text-muted: #a0a0a0;
-      --accent-main: #f3c623;
-      --accent-dark: #cda415;
-      --border-color: rgba(255, 255, 255, 0.08);
-      --border-focus: rgba(243, 198, 35, 0.5);
+      --bg-body: #08070a;
+      --bg-card: #0d0b0e;
+      --bg-solid: #0d0b0e;
+      --bg-input: rgba(255,255,255,0.045);
+      --text-main: #f4f2ec;
+      --text-muted: #96917f;
+      --text-dim: #6b6252;
+      --text-btn: #1c1509;
+      --accent-main: #e0b24a;
+      --accent-dark: #a9781f;
+      --accent-1: #f0cf7e;
+      --accent-grad: linear-gradient(135deg, #f0cf7e, #a9781f);
+      --accent-mono: #f2d896;
+      --badge-bg: rgba(201,151,63,0.12);
+      --badge-border: rgba(201,151,63,0.32);
+      --badge-text: #eccb84;
+      --border-color: rgba(255,255,255,0.09);
+      --border-focus: rgba(214,171,90,0.55);
+      --shadow-2: rgba(0,0,0,0.65);
+      --shadow-glow: rgba(180,138,40,0.22);
+      --shadow-glow-strong: rgba(180,138,40,0.38);
+      --radius-xl: 28px;
+      --ease: cubic-bezier(.16,1,.3,1);
+      --font-display: 'Space Grotesk', 'Inter', Arial, sans-serif;
+      --font-body: 'Inter', Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
     }
 
-    *{margin:0;padding:0;box-sizing:border-box;font-family:Inter,Arial,sans-serif}
+    *{margin:0;padding:0;box-sizing:border-box;font-family:var(--font-body)}
+    h1,h2,h3{font-family:var(--font-display)}
+    .mono{font-family:var(--font-mono)}
 
     body{
       background: var(--bg-body);
       color: var(--text-main);
       padding: 30px;
-    }
-
-    /* TELA DE LOADING DO PAINEL */
-    #adminLoading {
-      position: fixed;
-      inset: 0;
-      background: rgba(10, 10, 10, 0.9);
-      backdrop-filter: blur(8px);
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.5s ease;
-    }
-    .loading-box-admin {
-      width: min(380px, 100%);
-      text-align: center;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 32px;
-      padding: 38px 30px;
-      box-shadow: 0 30px 80px rgba(0,0,0,.6);
-    }
-    .loading-logo {
-      font-size: 1.7rem;
-      font-weight: 900;
-      letter-spacing: -1px;
-      margin-bottom: 8px;
-    }
-    .loading-logo span { color: var(--accent-main); }
-    .loading-subtext {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      margin-bottom: 24px;
-    }
-    .progress-area {
-      width: 100%;
-      height: 12px;
-      background: #222;
-      border-radius: 999px;
-      overflow: hidden;
       position: relative;
     }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      pointer-events:none;
+      background:
+        radial-gradient(900px circle at 8% 0%, rgba(201,151,63,.10), transparent 55%),
+        radial-gradient(900px circle at 92% 28%, rgba(169,120,31,.09), transparent 55%),
+        radial-gradient(700px circle at 50% 100%, rgba(201,151,63,.06), transparent 55%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0px, rgba(255,255,255,.022) 1px, transparent 1px, transparent 56px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0px, rgba(255,255,255,.022) 1px, transparent 1px, transparent 56px);
+    }
+
+    /* TELA DE LOADING DO PAINEL (igual à do site) */
+    #adminLoading {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg-body);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      transition: opacity .6s var(--ease);
+    }
+    #adminLoading::before, .tela-auth::before {
+      content:""; position:absolute; inset:0; pointer-events:none;
+      background:
+        radial-gradient(520px circle at 20% 20%, rgba(201,151,63,.14), transparent 60%),
+        radial-gradient(480px circle at 80% 80%, rgba(169,120,31,.12), transparent 60%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px, transparent 1px, transparent 46px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px, transparent 1px, transparent 46px);
+    }
+    .loading-box {
+      position: relative; width: min(420px,100%); text-align: left;
+      background: var(--bg-solid); border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl); padding: 36px 32px;
+      box-shadow: 0 30px 80px var(--shadow-2);
+    }
+    .brand-mark {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; letter-spacing: -.5px;
+    }
+    .brand-mark .dot {
+      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent-grad); box-shadow: 0 0 0 4px rgba(201,151,63,.15);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    .brand-mark em { font-style: normal; color: var(--accent-main); }
+    .loading-box .brand-mark { margin-bottom: 14px; }
+    .loading-text { color: var(--text-muted); line-height: 1.6; margin-bottom: 28px; font-size: .94rem; }
+    .progress-area { width: 100%; height: 6px; background: rgba(255,255,255,.07); border-radius: 999px; overflow: hidden; position: relative; }
     .progress-bar {
-      width: 0%;
-      height: 100%;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent-main), var(--accent-dark));
-      animation: progressFillAdmin 1s ease forwards;
+      width: 0%; height: 100%; border-radius: 999px; background: var(--accent-grad);
+      position: relative; overflow: hidden; animation: progressFillAdmin 1s ease forwards;
     }
-    @keyframes progressFillAdmin {
-      from { width: 0%; }
-      to { width: 100%; }
+    .progress-bar::before {
+      content:""; position:absolute; top:-80%; left:-35%; width:35%; height:260%;
+      background: rgba(255,255,255,.55); transform: rotate(25deg); animation: shine 1.8s ease infinite;
     }
-    .loading-percent {
-      margin-top: 14px;
-      color: var(--accent-main);
-      font-weight: 900;
-      font-size: .92rem;
-    }
+    @keyframes progressFillAdmin { from { width: 0%; } to { width: 100%; } }
+    @keyframes shine { from { left: -45%; } to { left: 125%; } }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.8); } }
+    .loading-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: .8rem; }
+    .loading-status { color: var(--text-dim); letter-spacing: .02em; }
+    .loading-status::after { content:"_"; animation: pulse 1s steps(2) infinite; color: var(--accent-mono); }
+    .loading-percent { color: var(--accent-main); font-weight: 600; }
 
     /* MODAL DE SUCESSO, ERRO OU SALVANDO */
     .popup-bg-save {
@@ -106,7 +134,7 @@
       width: 100%;
       max-width: 400px;
       background: var(--bg-card);
-      border: 1px solid rgba(243, 198, 35, 0.2);
+      border: 1px solid rgba(201, 151, 63, 0.2);
       border-radius: 30px;
       padding: 36px;
       text-align: center;
@@ -121,7 +149,7 @@
     .icon-check {
       width: 64px;
       height: 64px;
-      background: rgba(243, 198, 35, 0.1);
+      background: rgba(201, 151, 63, 0.1);
       color: var(--accent-main);
       border-radius: 50%;
       display: flex;
@@ -130,8 +158,8 @@
       font-size: 32px;
       font-weight: bold;
       margin: 0 auto 20px;
-      box-shadow: 0 10px 20px rgba(243, 198, 35, 0.15);
-      border: 1px solid rgba(243, 198, 35, 0.3);
+      box-shadow: 0 10px 20px rgba(201, 151, 63, 0.15);
+      border: 1px solid rgba(201, 151, 63, 0.3);
     }
     .icon-error {
       background: rgba(211, 47, 47, 0.1);
@@ -144,7 +172,7 @@
       height: 50px;
       background: transparent;
       box-shadow: none;
-      border: 4px solid rgba(243, 198, 35, 0.2);
+      border: 4px solid rgba(201, 151, 63, 0.2);
       border-top-color: var(--accent-main);
       border-radius: 50%;
       animation: spin 1s linear infinite;
@@ -172,12 +200,12 @@
     .top p { color: var(--text-muted); line-height: 1.6; }
 
     .dica-ouro {
-      background: rgba(243, 198, 35, 0.08);
-      border: 1px solid rgba(243, 198, 35, 0.2);
+      background: rgba(201, 151, 63, 0.08);
+      border: 1px solid rgba(201, 151, 63, 0.2);
       border-radius: 16px;
       padding: 18px 24px;
       margin-bottom: 24px;
-      color: #ffd700;
+      color: #eccb84;
       font-weight: 500;
       display: flex;
       align-items: center;
@@ -216,7 +244,7 @@
     }
     input:focus, textarea:focus, select:focus {
       border-color: var(--border-focus);
-      box-shadow: 0 0 0 3px rgba(243, 198, 35, 0.1);
+      box-shadow: 0 0 0 3px rgba(201, 151, 63, 0.1);
     }
 
     textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
@@ -240,23 +268,23 @@
       justify-content: center;
       padding: 15px 28px;
       border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent-main), var(--accent-dark));
-      color: #111;
-      font-weight: 900;
+      background: var(--accent-grad);
+      color: var(--text-btn);
+      font-weight: 800;
       overflow: hidden;
       border: none;
       cursor: pointer;
-      box-shadow: 0 14px 34px rgba(243, 198, 35, 0.2);
+      box-shadow: 0 14px 34px rgba(201, 151, 63, 0.2);
       transition: .3s ease;
       margin-top: 10px;
     }
     .btn:hover {
       transform: translateY(-3px);
-      box-shadow: 0 18px 46px rgba(243, 198, 35, 0.35);
+      box-shadow: 0 18px 46px rgba(201, 151, 63, 0.35);
     }
 
     .btn-dark {
-      background: #222;
+      background: rgba(255,255,255,.06);
       color: #fff;
       box-shadow: none;
       border: 1px solid rgba(255,255,255,0.1);
@@ -266,10 +294,10 @@
     .btn-outline {
       background: transparent;
       color: var(--accent-main);
-      border: 1px solid rgba(243, 198, 35, 0.4);
+      border: 1px solid rgba(201, 151, 63, 0.4);
       box-shadow: none;
     }
-    .btn-outline:hover { background: rgba(243, 198, 35, 0.1); }
+    .btn-outline:hover { background: rgba(201, 151, 63, 0.1); }
 
     .btn-small {
       padding: 6px 12px;
@@ -330,26 +358,69 @@
     }
 
     /* ===== LOGIN / PERMISSÕES ===== */
-    #telaLogin, #telaNegado {
+    .tela-auth {
       position: fixed; inset: 0; z-index: 9000; display: none;
-      align-items: center; justify-content: center; padding: 20px;
-      background: var(--bg-body);
+      align-items: center; justify-content: center; padding: 24px;
+      background: var(--bg-body); overflow-y: auto;
     }
-    .login-box {
-      width: min(420px, 100%); text-align: center; background: var(--bg-card);
-      border: 1px solid var(--border-color); border-radius: 32px; padding: 40px 30px;
-      box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    .auth-card {
+      position: relative; width: min(440px, 100%);
+      background: var(--bg-solid); border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl); padding: 40px 34px 30px;
+      box-shadow: 0 30px 80px var(--shadow-2);
+      animation: authIn .7s var(--ease) both;
     }
-    .login-box h2 { font-size: 1.5rem; margin-bottom: 8px; letter-spacing: -1px; }
-    .login-box h2 span { color: var(--accent-main); }
-    .login-box p { color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; font-size: .95rem; }
-    .login-erro { color: #ff6b6b; font-size: .9rem; margin-top: 16px; min-height: 1.2em; }
+    .auth-card::after {
+      content:""; position:absolute; top:0; left:12%; right:12%; height:1px;
+      background: linear-gradient(90deg, transparent, rgba(240,207,126,.75), transparent);
+    }
+    @keyframes authIn { from { opacity: 0; transform: translateY(18px) scale(.98); } to { opacity: 1; transform: none; } }
+    .auth-badge {
+      display: inline-flex; align-items: center; gap: 8px; margin: 26px 0 16px;
+      padding: 7px 13px; border-radius: 999px; font-family: var(--font-mono);
+      font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+      background: var(--badge-bg); border: 1px solid var(--badge-border); color: var(--badge-text);
+    }
+    .auth-card h1 { font-size: 2.1rem; line-height: 1.08; letter-spacing: -1.2px; margin-bottom: 12px; }
+    .auth-card h1 .gold {
+      background: linear-gradient(100deg, #8a6116 0%, #e8c064 20%, #fff3cf 36%, #e8c064 52%, #a9781f 68%, #f0cf7e 84%, #8a6116 100%);
+      background-size: 200% auto; -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: var(--accent-main);
+    }
+    .auth-sub { color: var(--text-muted); line-height: 1.65; margin-bottom: 28px; font-size: .95rem; }
+    .btn-google {
+      width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px;
+      padding: 15px 22px; border: none; border-radius: 999px; cursor: pointer;
+      background: #f7f5f0; color: #1f1f1f; font-weight: 600; font-size: .98rem;
+      box-shadow: 0 14px 34px var(--shadow-glow);
+      transition: transform .35s var(--ease), box-shadow .35s var(--ease);
+    }
+    .btn-google:hover { transform: translateY(-3px); box-shadow: 0 18px 46px var(--shadow-glow-strong); }
+    .btn-google:disabled { opacity: .7; cursor: wait; transform: none; }
+    .btn-ghost {
+      width: 100%; padding: 14px 22px; border-radius: 999px; cursor: pointer;
+      background: transparent; color: var(--accent-main); font-weight: 600; font-size: .95rem;
+      border: 1px solid var(--badge-border); transition: .3s ease;
+    }
+    .btn-ghost:hover { background: rgba(201,151,63,.1); }
+    .auth-divider { height: 1px; background: var(--border-color); margin: 24px 0 16px; }
+    .auth-foot { display: flex; align-items: center; gap: 8px; color: var(--text-dim); font-size: .8rem; line-height: 1.4; }
+    .auth-foot svg { flex-shrink: 0; color: var(--accent-main); }
+    .auth-back { display: inline-block; margin-top: 16px; color: var(--text-muted); font-size: .85rem; text-decoration: none; transition: color .2s; }
+    .auth-back:hover { color: var(--accent-1); }
+    .auth-icon {
+      width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 4px; background: rgba(255,77,77,.1); border: 1px solid rgba(255,77,77,.3); color: #ff6b6b;
+    }
+    .login-erro { color: #ff6b6b; font-size: .88rem; margin-top: 14px; min-height: 1.2em; text-align: center; }
     .user-bar {
       display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
       margin-bottom: 20px; padding: 12px 18px; background: var(--bg-card);
       border: 1px solid var(--border-color); border-radius: 16px; color: var(--text-muted); font-size: .9rem;
     }
     .user-bar strong { color: var(--text-main); }
+    .user-bar .btn, .admins-add .btn { margin-top: 0; }
+    .admins-add { align-items: center; }
     .admins-lista { margin-top: 18px; display: grid; gap: 10px; }
     .admin-item {
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -363,36 +434,54 @@
 </head>
 
 <body>
+  <!-- TELA DE LOADING INICIAL -->
+  <div id="adminLoading">
+    <div class="loading-box">
+      <div class="brand-mark"><span class="dot"></span><span><em>Excel</em>lent Services</span></div>
+      <p class="loading-text">Verificando acesso e sincronizando o painel.</p>
+      <div class="progress-area"><div class="progress-bar"></div></div>
+      <div class="loading-meta mono">
+        <span class="loading-status">Sincronizando banco de dados</span>
+        <span class="loading-percent" id="loadingPercentAdmin">…</span>
+      </div>
+    </div>
+  </div>
+
   <!-- TELA DE LOGIN -->
-  <div id="telaLogin">
-    <div class="login-box">
-      <h2>Painel <span>Excellent Services</span></h2>
-      <p>Acesso restrito. Entre com uma conta Google autorizada.</p>
-      <button class="btn" id="btnGoogle" style="width:100%; color:#111;">Entrar com Google</button>
+  <div id="telaLogin" class="tela-auth">
+    <div class="auth-card">
+      <div class="brand-mark"><span class="dot"></span><span><em>Excel</em>lent Services</span></div>
+      <span class="auth-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+        Área restrita
+      </span>
+      <h1>Painel de <span class="gold">edição</span></h1>
+      <p class="auth-sub">Entre com a sua conta Google para editar o conteúdo do portfólio. Somente e-mails autorizados têm acesso.</p>
+      <button class="btn-google" id="btnGoogle">
+        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continuar com Google
+      </button>
       <div class="login-erro" id="loginErro"></div>
+      <div class="auth-divider"></div>
+      <div class="auth-foot">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></svg>
+        O acesso é liberado pelo administrador do site.
+      </div>
+      <a class="auth-back" href="/">← Voltar ao site</a>
     </div>
   </div>
 
   <!-- TELA DE ACESSO NEGADO -->
-  <div id="telaNegado">
-    <div class="login-box">
-      <h2>Acesso <span>negado</span></h2>
-      <p id="negadoMsg">Este e-mail não tem permissão para acessar o painel.</p>
-      <button class="btn" id="btnTentarOutra" style="width:100%; color:#111;">Entrar com outra conta</button>
-    </div>
-  </div>
-
-  <!-- TELA DE LOADING INICIAL -->
-  <div id="adminLoading">
-    <div class="loading-box-admin">
-      <div class="loading-logo">
-        <span>Excel</span>lent Services
+  <div id="telaNegado" class="tela-auth">
+    <div class="auth-card">
+      <div class="auth-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>
       </div>
-      <p class="loading-subtext">Sincronizando banco de dados...</p>
-      <div class="progress-area">
-        <div class="progress-bar"></div>
-      </div>
-      <div class="loading-percent" id="loadingPercentAdmin">0%</div>
+      <span class="auth-badge">Sem permissão</span>
+      <h1>Acesso <span class="gold">negado</span></h1>
+      <p class="auth-sub" id="negadoMsg">Este e-mail não tem permissão para acessar o painel.</p>
+      <button class="btn-ghost" id="btnTentarOutra">Entrar com outra conta</button>
+      <a class="auth-back" href="/">← Voltar ao site</a>
     </div>
   </div>
 
@@ -418,6 +507,16 @@
         <button class="btn" style="color:#111;" onclick="adicionarAdmin()">Dar permissão</button>
       </div>
       <div class="admins-lista" id="adminsLista"></div>
+    </div>
+
+    <!-- IMPORTAR DO PROJETO ANTIGO (somente admin principal) -->
+    <div class="box" id="boxImportar" style="display:none;">
+      <h2>Importar do projeto antigo</h2>
+      <p style="color: var(--text-muted); margin-bottom: 14px; line-height:1.6;">
+        Traz textos e imagens que você já tinha cadastrado no Firebase antigo (planilhasimple) para este painel.
+        Depois de importar, confira e clique em <strong>Salvar alterações</strong> para publicar.
+      </p>
+      <button class="btn" id="btnImportar" style="color: var(--text-btn);" onclick="importarDoAntigo()">Importar dados do projeto antigo</button>
     </div>
 
     <!-- INSTRUÇÃO DE PINTURA DE TEXTO -->
@@ -855,39 +954,99 @@
       }
     }
 
+    const CONTEUDO_INICIAL = {
+      badge: "Sistemas, Apps, Sites e Sistemas em Excel personalizados",
+      heroTitulo: "Soluções digitais modernas para empresas que querem *crescer*.",
+      heroTexto: "A Excellent Services desenvolve soluções personalizadas para empresas: sistemas, apps, sites, páginas profissionais e sistemas em Excel. Já ajudamos diversas empresas pelo mundo a organizar processos, melhorar sua presença digital e trabalhar com mais profissionalismo.",
+      heroImagem: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=900&q=80",
+
+      servicosTitulo: "Soluções completas e personalizadas.",
+      servicosTexto: "Desenvolvemos projetos sob medida para cada negócio, unindo design, tecnologia, organização e praticidade.",
+      servicos: [
+        {titulo:"Sistemas personalizados",texto:"Sistemas sob medida para gestão de clientes, vendas, financeiro, estoque, projetos, equipes, relatórios e processos internos."},
+        {titulo:"Apps personalizados",texto:"Aplicativos modernos para digitalizar processos, melhorar o atendimento e facilitar o acesso de clientes e equipes."},
+        {titulo:"Sites profissionais",texto:"Sites institucionais, páginas de vendas e landing pages modernas, responsivas, estratégicas e com aparência premium."},
+        {titulo:"Sistemas em Excel",texto:"Soluções em Excel com dashboards, automações, macros, controles inteligentes, relatórios e gestão visual personalizada."}
+      ],
+
+      portfolioTitulo: "Projetos desenvolvidos com foco em *resultado*.",
+      portfolioTexto: "Criamos interfaces modernas, funcionais e profissionais para empresas que desejam mais controle, presença digital e eficiência.",
+      portfolio: [
+        {categoria:"Sistema empresarial",titulo:"Gestão financeira premium",texto:"Interface limpa para acompanhar receitas, despesas, indicadores, clientes, relatórios e evolução do negócio.",imagens:["https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80"],ajuste: "cover"},
+        {categoria:"Dashboard personalizado",titulo:"Controle operacional",texto:"Plataforma para organizar vendas, tarefas, equipe, estoque, financeiro e relatórios em um só lugar.",imagens:["https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80"],ajuste: "cover"},
+        {categoria:"Site profissional",titulo:"Landing page de alta conversão",texto:"Design estratégico, moderno e responsivo para apresentar ofertas, serviços e empresas com mais autoridade.",imagens:["https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80"],ajuste: "cover"}
+      ],
+
+      stats: [
+        {numero:"+50",texto:"Projetos digitais desenvolvidos"},
+        {numero:"Global",texto:"Empresas atendidas em diferentes regiões do mundo"},
+        {numero:"100%",texto:"Soluções personalizadas"},
+        {numero:"7-30d",texto:"Suporte após a entrega, conforme complexidade"}
+      ],
+
+      processoTitulo: "Processo simples, direto e profissional.",
+      processoTexto: "Da primeira conversa até a entrega final, cada etapa é pensada para transformar sua necessidade em uma solução clara, bonita e funcional.",
+      processo: [
+        {titulo:"01 — Diagnóstico",texto:"Entendemos o problema, objetivo, público, operação e recursos necessários para o projeto."},
+        {titulo:"02 — Estruturação",texto:"Organizamos a ideia em telas, fluxos, funcionalidades, identidade visual e experiência do usuário."},
+        {titulo:"03 — Desenvolvimento",texto:"Criamos o projeto com foco em design, usabilidade, velocidade, segurança e profissionalismo."},
+        {titulo:"04 — Entrega e suporte",texto:"Você recebe a solução pronta para usar, com suporte de 7 a 30 dias após a entrega, dependendo da complexidade do projeto."}
+      ],
+
+      equipeTitulo: "A força da nossa *Equipe*",
+      equipeTexto: "Conheça os profissionais que transformam suas ideias em soluções de altíssimo nível.",
+      equipe: [
+        {titulo: "Sobre Marcos Valério",subtitulo: "Fundador & Especialista",texto: "Fundador e especialista em soluções em Excel e sistemas.",imagem: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=80"}
+      ],
+
+      ctaTitulo: "Vamos transformar sua ideia em uma solução *profissional*?",
+      ctaTexto: "Solicite um orçamento para sistema, app, site, sistema em Excel, dashboard, automação ou página personalizada.",
+
+      contatosTitulo1: "Selecione as opções",
+      contatosSubtitulo1: "Escolha o departamento que deseja falar.",
+      contatosTitulo2: "Fale com um de nossos representantes",
+      contatosSubtitulo2: "Selecione um dos contatos abaixo.",
+      categoriasContato: [
+        {
+          categoria: "Sites",
+          contatos: [
+            { numero: "5515996247188", rotulo: "Gledson: 15 99624-7188" },
+            { numero: "5515996054322", rotulo: "Marta: 15 99605-4322" }
+          ]
+        },
+        {
+          categoria: "Sistemas",
+          contatos: [
+            { numero: "5511934664498", rotulo: "Marcos: 11 93466-4498" }
+          ]
+        },
+        {
+          categoria: "Outros",
+          contatos: [
+            { numero: "5515991422218", rotulo: "Andressa: 15 99142-2218" }
+          ]
+        }
+      ]
+    };
+
+    // Garante a estrutura completa; só preenche o que está FALTANDO (não sobrescreve o que você já editou)
+    function normalizarDados() {
+      Object.keys(CONTEUDO_INICIAL).forEach(k => {
+        if (dados[k] === undefined || dados[k] === null) dados[k] = JSON.parse(JSON.stringify(CONTEUDO_INICIAL[k]));
+      });
+      ["servicos", "stats", "processo"].forEach(k => {
+        if (!Array.isArray(dados[k]) || dados[k].length === 0) dados[k] = JSON.parse(JSON.stringify(CONTEUDO_INICIAL[k]));
+      });
+      if (Array.isArray(dados.portfolio)) {
+        dados.portfolio.forEach(p => { if(!p.imagens) p.imagens = p.imagem ? [p.imagem] : []; if(!p.ajuste) p.ajuste = "cover"; });
+      }
+      if (!dados.equipe) dados.equipe = [];
+    }
+
     window.carregarSite = async function() {
       const snapshot = await get(siteRef);
-      if (snapshot.exists()) {
-        dados = snapshot.val();
-        if(dados.portfolio) { dados.portfolio.forEach(p => { if(!p.imagens) p.imagens = p.imagem ? [p.imagem] : []; if(!p.ajuste) p.ajuste = "cover"; }); }
-        if(!dados.equipe) dados.equipe = [];
-        
-        // Garante que os contatos de WhatsApp existam mesmo se o banco for antigo
-        if(!dados.categoriasContato) {
-          dados.categoriasContato = [
-            { categoria: "Sites", contatos: [ { rotulo: "Gledson: 15 99624-7188", numero: "5515996247188" }, { rotulo: "Marta: 15 99605-4322", numero: "5515996054322" } ] },
-            { categoria: "Sistemas", contatos: [ { rotulo: "Marcos: 11 93466-4498", numero: "5511934664498" } ] },
-            { categoria: "Outros", contatos: [ { rotulo: "Andressa: 15 99142-2218", numero: "5515991422218" } ] }
-          ];
-        }
-        if(!dados.contatosTitulo1) dados.contatosTitulo1 = "Selecione as opções";
-        if(!dados.contatosSubtitulo1) dados.contatosSubtitulo1 = "Escolha o departamento que deseja falar.";
-        if(!dados.contatosTitulo2) dados.contatosTitulo2 = "Fale com um de nossos representantes";
-        if(!dados.contatosSubtitulo2) dados.contatosSubtitulo2 = "Selecione um dos contatos abaixo.";
-
-      } else {
-        // Se ainda não existir no banco, cria a estrutura com os títulos
-        dados = { 
-          servicos: [], portfolio: [], stats: [], processo: [], equipeTitulo: "", equipeTexto: "", equipe: [],
-          contatosTitulo1: "Selecione as opções", contatosSubtitulo1: "Escolha o departamento que deseja falar.",
-          contatosTitulo2: "Fale com um de nossos representantes", contatosSubtitulo2: "Selecione um dos contatos abaixo.",
-          categoriasContato: [
-            { categoria: "Sites", contatos: [ { rotulo: "Gledson: 15 99624-7188", numero: "5515996247188" }, { rotulo: "Marta: 15 99605-4322", numero: "5515996054322" } ] },
-            { categoria: "Sistemas", contatos: [ { rotulo: "Marcos: 11 93466-4498", numero: "5511934664498" } ] },
-            { categoria: "Outros", contatos: [ { rotulo: "Andressa: 15 99142-2218", numero: "5515991422218" } ] }
-          ]
-        };
-      }
+      dados = snapshot.exists() ? snapshot.val() : {};
+      normalizarDados();
       await resolverReferenciasImagens();
       gerarCampos();
     }
@@ -1058,6 +1217,26 @@
     $("btnSair").onclick = () => signOut(auth);
     $("btnTentarOutra").onclick = () => signOut(auth);
 
+    window.importarDoAntigo = async function() {
+      if (!confirm("Isso substitui, na tela, o conteúdo atual pelo do projeto antigo. Nada é publicado até você clicar em Salvar alterações. Continuar?")) return;
+      const btn = $("btnImportar");
+      btn.disabled = true; btn.textContent = "Importando...";
+      try {
+        const r = await fetch("https://planilhasimple-default-rtdb.firebaseio.com/excellentServices/site.json");
+        if (!r.ok) throw new Error("o projeto antigo respondeu HTTP " + r.status);
+        const antigo = await r.json();
+        if (!antigo) throw new Error("não encontrei dados no projeto antigo");
+        dados = antigo;
+        normalizarDados();
+        gerarCampos();
+        alert("Importado! Confira os campos e clique em Salvar alterações para publicar.");
+      } catch (e) {
+        alert("Não foi possível importar: " + e.message);
+      } finally {
+        btn.disabled = false; btn.textContent = "Importar dados do projeto antigo";
+      }
+    };
+
     window.listarAdmins = async function() {
       const lista = $("adminsLista");
       lista.innerHTML = "";
@@ -1120,6 +1299,7 @@
       $("userEmail").textContent = user.email;
       const principal = (user.email || "").toLowerCase() === ADMIN_PRINCIPAL;
       $("boxPermissoes").style.display = principal ? "block" : "none";
+      $("boxImportar").style.display = principal ? "block" : "none";
       mostrarSo("admin");
       if (principal) listarAdmins();
       carregarSiteComLoading();
