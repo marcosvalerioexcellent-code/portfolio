@@ -207,7 +207,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   const mkSprite = (color, op) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, color, transparent: true, depthWrite: false, opacity: op, fog: true })); s.frustumCulled = false; scene.add(s); return s; };
   const mist = Array.from({ length: mobile ? 8 : 16 }, (_, i) => { const s = mkSprite(0x4a5260, .2); const sz = 40 + rand() * 50; s.scale.set(sz, sz * .35, 1);
     s.position.set((rand() - .5) * 120, 2 + rand() * 4, -20 - rand() * 70); return { s, v: (rand() - .5) * .8, sz }; });
-  const puffs = Array.from({ length: mobile ? 50 : 110 }, () => { const s = mkSprite(0x3c3f46, 0); s.visible = false; return { s, life: 0, dur: 1, v: new THREE.Vector3(), sz: 1, op: .4, grow: 2.2 }; });
+  const puffs = Array.from({ length: mobile ? 70 : 160 }, () => { const s = mkSprite(0x3c3f46, 0); s.visible = false; return { s, life: 0, dur: 1, v: new THREE.Vector3(), sz: 1, op: .4, grow: 2.2 }; });
   function puff(x, y, z, n, spread, up, size, color = 0x3c3f46, op = .3, grow = 2.2, dur = 1) {
     if (reduce) return;
     for (let i = 0; i < n; i++) {
@@ -270,8 +270,8 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   const lieTip = (head) => rig.apply({ phase: 0, walk: 0, breath: 0, spine: LIE_SPINE, headPitch: head, jaw: JAW_CLOSED }).pos[tipI * 3 + 1];
   let l2 = 0, h2 = 1.25; for (let i = 0; i < 18; i++) { const mid = (l2 + h2) / 2; if ((lieTip(mid) - LIE_DROP) * S > .3) l2 = mid; else h2 = mid; }
   const LIE_HEAD = h2;
-  const R = { phase: 0, walk: 0, jaw: 0, headYaw: 0, headPitch: 0, spine: 0, tailYaw: 0, tailWave: 0, breath: 0, legA: .6 };
-  const P = { eye: 1, lie: 0, phase: 0, walk: 0, jaw: JAW_CLOSED, headYaw: 0, headPitch: 0, spine: 0, tailYaw: 0, tailWave: .05, breath: 0, legA: .6 };
+  const R = { phase: 0, walk: 0, jaw: 0, headYaw: 0, headPitch: 0, spine: 0, tailYaw: 0, tailWave: 0, breath: 0, legA: .75 };
+  const P = { eye: 1, lie: 0, phase: 0, walk: 0, jaw: JAW_CLOSED, headYaw: 0, headPitch: 0, spine: 0, tailYaw: 0, tailWave: .05, breath: 0, legA: .75 };
   const T = { eye: 1, lie: 0, walk: 0, jaw: JAW_CLOSED, headYaw: 0, headPitch: 0, spine: 0 };
 
   /* ---------- entrada (cursor) ---------- */
@@ -304,77 +304,84 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   }
 
   const ZMIN = -19, ZMAX = -7, ZCH = -8.5, HOME_Z = -13, T0 = performance.now() / 1000;
-  let nextAtk = T0 + 7;
-  const fogStep = (side) => {                       // neblina subindo sobre o pé que pisa
-    tmp.set(side * .95, .1, .25); dino.root.localToWorld(tmp);
-    puff(tmp.x, tmp.y + .25, tmp.z, 3, 1.4, .55, 3.6, 0x7a828e, .38, 2.8, 2.3);
-    puff(tmp.x, tmp.y + .1, tmp.z, 2, 1.6, 1.3, 2.6);
-  };
-  const fogBurst = () => { for (const sd of [-1, 1]) { tmp.set(sd * 1.2, .1, .5); dino.root.localToWorld(tmp); puff(tmp.x, tmp.y + .3, tmp.z, 5, 3, .6, 4.5, 0x7a828e, .35, 2.6, 2.6); } };
+  let nextAtk = T0 + 7, trail = 0, moveAcc = 0;
+  const footAt = (side) => { tmp.set(side * .95, .1, .25); dino.root.localToWorld(tmp); return tmp; };
+  const fogStep = (side) => { footAt(side); puff(tmp.x, tmp.y + .3, tmp.z, 2, 1.8, .35, 5, 0x7a828e, .3, 2.4, 4.5); };   // neblina densa e duradoura sobre o pé
+  const fogBurst = () => { for (const sd of [-1, 1]) { footAt(sd * 1.2); puff(tmp.x, tmp.y + .3, tmp.z, 5, 3, .6, 4.5, 0x7a828e, .35, 2.6, 3.5); } };
 
   function think(dt, t, info) {
     const now = performance.now() / 1000;
-    dino.x = damp(dino.x, lerp(0, 3.5, ss(.75, 1.5, innerWidth / innerHeight)), 3, dt);   // centraliza em telas estreitas
     let ly, lp;
     if (info.look) { const la = lookAngles(info.look); ly = la.yaw; lp = la.pitch; }
     else { AI.scanT += dt; ly = Math.sin(AI.scanT * .5) * .5 + Math.sin(AI.scanT * 1.3) * .1; lp = .02 + Math.sin(AI.scanT * .8) * .06; }
-    dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.turn = 0;
+    const faceYaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z), homeX = lerp(0, 3.5, ss(.75, 1.5, innerWidth / innerHeight));
     T.eye = 1; T.lie = 0; T.spine = 0; T.jaw = JAW_CLOSED + Math.sin(t * 1.6) * .015;
     T.headYaw = clamp(ly, -.9, .9); T.headPitch = clamp(lp, -.5, .85);
     const st = AI.state, idle = now - Math.max(ptr.last, T0);
-    let dir = 0, spd = 1.7;
+    if (now - ptr.last < .3) moveAcc += dt; else if (now - ptr.last > .6) moveAcc = 0;
+    let wantYaw = faceYaw, vt = 0, free = false;
 
-    /* ---- dormir: deitar, fechar os olhos, acordar ---- */
-    if (st === "lie" || st === "sleep" || st === "wake") {
-      dino.speed = damp(dino.speed, 0, 8, dt); T.walk = 0;
-      if (st === "lie") { T.lie = 1; T.eye = P.lie > .75 ? 0 : 1; if (P.lie > .985) { AI.state = "sleep"; AI.sleepT = 0; } }
-      else if (st === "sleep") { T.lie = 1; T.eye = 0; AI.sleepT += dt; if (AI.sleepT > 1 && ptr.last > AI.lieStart) { AI.state = "wake"; AI.wakeT = 0; } }
-      else { AI.wakeT += dt; T.eye = 1; T.lie = AI.wakeT > .9 ? 0 : 1; if (AI.wakeT > .9 && P.lie < .02) { AI.state = "track"; nextAtk = now + 4 + Math.random() * 4; } }
+    if (st === "away") {                              // fora da tela: volta após 1 s de movimento do cursor
+      dino.speed = 0; T.walk = 0; if (moveAcc >= 1) { AI.state = "enter"; moveAcc = 0; }
       return { ly, lp };
-    }
-    if (st === "track" && idle > 5 && Math.abs(dino.speed) < .3) { AI.state = "lie"; AI.lieStart = now; fogBurst(); return { ly, lp }; }
-
-    /* ---- ataque (só às vezes): corre em direção à câmera e morde ---- */
-    if (st === "track" && ptr.active && now > nextAtk) {
-      tmp.copy(headW).project(camera);
-      const dx = (tmp.x - (ptr.x * 2 - 1)) * camera.aspect, dy = tmp.y + (ptr.y * 2 - 1);
-      if (Math.hypot(dx, dy) < .3 && tmp.z < 1) {
-        if (Math.random() < .6) { AI.state = "charge"; AI.chargeT = 0; AI.struck = false; }
-        else nextAtk = now + 4 + Math.random() * 4;
+    } else if (st === "leave") {                      // cursor parado 5 s: vira e vai embora
+      free = true; wantYaw = AI.exitYaw; vt = 3.6; T.headYaw = 0; T.headPitch = 0;
+      if (Math.abs(dino.x) > 22 || dino.z < -40) AI.state = "away";
+    } else if (st === "enter") {                      // reaparece pelo mesmo lugar onde saiu
+      free = true; const dx = homeX - dino.x, dz = HOME_Z - dino.z, d = Math.hypot(dx, dz);
+      wantYaw = d > 2 ? Math.atan2(dx, dz) : faceYaw; vt = d > .8 ? 3.6 : 0;
+      if (d < .8) { AI.state = "track"; nextAtk = now + 5; }
+    } else {
+      if (st === "track" && idle > 5 && dino.speed < .3) { AI.exitYaw = [-Math.PI / 2, Math.PI / 2, Math.PI][Math.floor(Math.random() * 3)]; AI.state = "leave"; return { ly, lp }; }
+      /* ---- ataque (só às vezes): corre em direção à câmera e morde ---- */
+      if (st === "track" && ptr.active && now > nextAtk) {
+        tmp.copy(headW).project(camera);
+        const dx = (tmp.x - (ptr.x * 2 - 1)) * camera.aspect, dy = tmp.y + (ptr.y * 2 - 1);
+        if (Math.hypot(dx, dy) < .3 && tmp.z < 1) {
+          if (Math.random() < .6) { AI.state = "charge"; AI.chargeT = 0; AI.struck = false; }
+          else nextAtk = now + 4 + Math.random() * 4;
+        }
+      }
+      if (AI.state === "charge") {
+        AI.chargeT += dt; vt = 5.5; T.spine = .1; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, .35);
+        if (AI.chargeT > 1.1 || dino.z >= ZCH) { AI.state = "bite"; AI.biteT = 0; AI.struck = false; }
+      }
+      if (AI.state === "bite") {
+        AI.biteT += dt; const b = AI.biteT, hy = clamp(ly, -.9, .9), hp = clamp(lp, -.3, .7);
+        dino.speed = damp(dino.speed, 0, 7, dt); T.walk = 0; T.headYaw = hy; dino.yaw = faceYaw;
+        if (b < .35) { const k = ss(0, .35, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
+        else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, .3, k); T.headPitch = lerp(-.2, hp + .15, k); T.jaw = JAW_OPEN; }
+        else if (b < .68) { const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = .3; T.headPitch = hp + .15;
+          if (!AI.struck && b > .65) { AI.struck = true; AI.shake = 1; fogBurst(); } }
+        else if (b < 1.4) { const k = ss(.68, 1.4, b); T.spine = lerp(.3, 0, k); T.headPitch = lerp(hp + .15, clamp(lp, -.5, .85), k) + Math.sin(b * 16) * .06 * (1 - k); T.jaw = JAW_CLOSED; T.headYaw = hy + Math.sin(b * 13) * .25 * (1 - k); }
+        else { AI.state = "track"; nextAtk = now + 6 + Math.random() * 6; }
+        dino.z = clamp(dino.z + Math.cos(dino.yaw) * dino.speed * dt, ZMIN, ZMAX);
+        return { ly, lp };
+      }
+      if (AI.state === "track" && ptr.active) {         // cursor bem embaixo: vem; bem em cima: vira e se afasta (sem dar ré)
+        if (ptr.y > .85) vt = 2.4; else if (ptr.y < .15 && dino.z > ZMIN + .5) { vt = 2.4; wantYaw = Math.PI; }
       }
     }
-    if (AI.state === "charge") {
-      AI.chargeT += dt; spd = 5.5; dir = 1; T.spine = .1; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, .35);
-      if (AI.chargeT > 1.1 || dino.z >= ZCH) { AI.state = "bite"; AI.biteT = 0; AI.struck = false; }
+
+    /* ---- locomoção: gira o corpo até o rumo desejado e anda nessa direção ---- */
+    const dy = angDiff(dino.yaw, wantYaw); dino.yaw += dy * (1 - Math.exp(-3.2 * dt));
+    const err = Math.abs(angDiff(dino.yaw, wantYaw)), facing = clamp(1 - err / .8, 0, 1);
+    dino.turn = clamp(dy * 1.5, -1.5, 1.5);
+    dino.speed = damp(dino.speed, vt * facing, vt > dino.speed ? (AI.state === "charge" ? 4 : 2) : 3, dt);
+    dino.x += Math.sin(dino.yaw) * dino.speed * dt; dino.z += Math.cos(dino.yaw) * dino.speed * dt;
+    if (!free) {
+      if (dino.speed < .05) dino.x = damp(dino.x, homeX, 1.5, dt);
+      dino.x = clamp(dino.x, -13, 13); dino.z = clamp(dino.z, ZMIN, AI.state === "charge" ? Math.max(ZCH, dino.z) : ZMAX);
     }
-    if (AI.state === "bite") {
-      AI.biteT += dt; const b = AI.biteT, hy = clamp(ly, -.9, .9), hp = clamp(lp, -.3, .7);
-      dino.speed = damp(dino.speed, 0, 7, dt); T.walk = 0; T.headYaw = hy;
-      if (b < .35) { const k = ss(0, .35, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
-      else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, .3, k); T.headPitch = lerp(-.2, hp + .15, k); T.jaw = JAW_OPEN; }
-      else if (b < .68) { const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = .3; T.headPitch = hp + .15;
-        if (!AI.struck && b > .65) { AI.struck = true; AI.shake = 1; fogBurst(); } }
-      else if (b < 1.4) { const k = ss(.68, 1.4, b); T.spine = lerp(.3, 0, k); T.headPitch = lerp(hp + .15, clamp(lp, -.5, .85), k) + Math.sin(b * 16) * .06 * (1 - k); T.jaw = JAW_CLOSED; T.headYaw = hy + Math.sin(b * 13) * .25 * (1 - k); }
-      else { AI.state = dino.z < HOME_Z - 1 ? "track" : "back"; AI.backT = 0; nextAtk = now + 6 + Math.random() * 6; }
-      dino.z = clamp(dino.z + dino.speed * dt, ZMIN, ZMAX);
-      return { ly, lp };
-    }
-    if (AI.state === "back") {                         // volta devagar para o lugar de origem
-      AI.backT += dt; dir = -1; spd = 2.2;
-      if (dino.z <= HOME_Z + .2 || AI.backT > 5) AI.state = "track";
-    } else if (AI.state === "track") {                 // anda só se o cursor estiver bem embaixo (vem) ou bem em cima (recua)
-      if (ptr.active) { if (ptr.y > .85) dir = 1; else if (ptr.y < .15) dir = -1; }
-    }
-    const zmax = AI.state === "charge" ? Math.max(ZCH, dino.z) : ZMAX;
-    if ((dir > 0 && dino.z >= zmax - .05) || (dir < 0 && dino.z <= ZMIN + .05)) dir = 0;
-    dino.speed = damp(dino.speed, dir * spd, AI.state === "charge" ? 4 : 2.2, dt);
-    T.walk = Math.min(1, Math.abs(dino.speed) / 1.0);
-    dino.z = clamp(dino.z + dino.speed * dt, ZMIN, zmax);
-    const dph = clamp(dino.speed / .488, -14, 14) * dt, before = Math.floor(P.phase / Math.PI); P.phase += dph;
-    if (P.walk > .3 && Math.floor(P.phase / Math.PI) !== before) {            // pisada: neblina + poeira + tremor
+    T.walk = Math.min(1, dino.speed / 1.2 + (vt > 0 ? Math.min(.6, err) : 0));
+    const stride = dino.speed / .88 + (vt > 0 ? clamp(err * 3, 0, 2.5) : 0);   // passada longa (pernas de dinossauro)
+    const dph = Math.min(14, stride) * dt, before = Math.floor(P.phase / Math.PI); P.phase += dph;
+    if (P.walk > .3 && Math.floor(P.phase / Math.PI) !== before) {            // pisada: neblina + tremor
       stepSide = -stepSide; fogStep(stepSide);
       AI.shake = Math.max(AI.shake, (AI.state === "charge" ? .35 : .15) * P.walk);
     }
+    trail += dino.speed * dt;                                                 // rastro contínuo de neblina junto aos pés
+    if (trail > .9) { trail = 0; footAt(Math.random() < .5 ? -1 : 1); puff(tmp.x, tmp.y + .3, tmp.z, 1, 2.2, .25, 4.5, 0x7a828e, .2, 2.2, 4); }
     return { ly, lp };
   }
 
@@ -393,7 +400,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     { const lr = (T.lie > P.lie ? .38 : .55) * dt; P.lie += clamp(T.lie - P.lie, -lr, lr); }
     P.eye = damp(P.eye, T.eye, T.eye > P.eye ? 5 : 1.6, dt);
     const e = ss(0, 1, P.lie);
-    P.tailYaw = damp(P.tailYaw, Math.sin(P.phase * .5) * .08 * P.walk, 4, dt);
+    P.tailYaw = damp(P.tailYaw, -dino.turn * .2 + Math.sin(P.phase * .5) * .08 * P.walk, 4, dt);
     P.tailWave = .04 + .16 * P.walk; P.breath = Math.sin(t * 1.5) * .5 + .5;
     R.phase = P.phase; R.walk = P.walk * (1 - e); R.jaw = P.jaw; R.headYaw = lerp(P.headYaw, .35, e); R.headPitch = lerp(P.headPitch, LIE_HEAD, e);
     R.spine = P.spine + LIE_SPINE * e; R.tailYaw = P.tailYaw; R.tailWave = P.tailWave * (1 - e); R.breath = P.breath * (1 + e * 2); R.legA = P.legA;
@@ -401,6 +408,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     if (!out || qLevel < 2 || skinAcc >= 1 / 30) { skinAcc = 0; out = lastOut = rig.apply(R); posA.array.set(out.pos); norA.array.set(out.nor); posA.needsUpdate = true; norA.needsUpdate = true; }
 
     const gy = heightAt(dino.x, dino.z), bobY = Math.abs(Math.sin(P.phase)) * .07 * P.walk;
+    dino.root.visible = AI.state !== "away";
     dino.root.position.set(dino.x, gy + bobY - LIE_DROP * S * e, dino.z);
     dino.root.rotation.set(0, dino.yaw, Math.sin(P.phase) * .03 * P.walk, "YXZ");
     dino.root.updateMatrixWorld(true);
@@ -428,7 +436,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     for (const q of puffs) if (q.life > 0) {
       q.life -= dt; if (q.life <= 0) { q.s.visible = false; q.s.material.opacity = 0; continue; }
       const k = 1 - q.life / q.dur; q.s.position.addScaledVector(q.v, dt); q.v.multiplyScalar(1 - dt * 1.4);
-      q.s.scale.setScalar(q.sz * (.5 + k * q.grow)); q.s.material.opacity = (1 - k) * (1 - k) * q.op;
+      q.s.scale.setScalar(q.sz * (.5 + k * q.grow)); q.s.material.opacity = Math.min(1, k * 8) * Math.pow(1 - k, 1.4) * q.op;
     }
     for (const m of mist) { m.s.position.x += m.v * dt; if (m.s.position.x > 70) m.s.position.x = -70; if (m.s.position.x < -70) m.s.position.x = 70; }
   }
