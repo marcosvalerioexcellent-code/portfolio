@@ -14,6 +14,16 @@ export const PIV = {
 // linha que separa maxilar superior e mandíbula (mesmo plano de corte usado nos pesos)
 const jawLineY = (z) => 3.065 - 0.73 * (z - 2.85);
 
+/* Marcha bípede: cada perna alterna apoio (pé fixo no chão, anda para trás em relação ao corpo em velocidade
+   constante) e balanço (pé sai do chão e passa à frente). th>0 = pé para trás. duty = fração do ciclo em apoio. */
+const gait = (ph, A, duty) => {
+  const u = ((ph / (Math.PI * 2)) % 1 + 1) % 1;
+  if (u < duty) return [-A + 2 * A * (u / duty), 0];
+  const s = (u - duty) / (1 - duty), e = s * s * (3 - 2 * s);
+  return [A - 2 * A * e, Math.sin(Math.PI * s)];
+};
+const ANK_Y = 0.35, ANK_Z = 0.05, LEGL = 1.75;
+
 export function createRig(rest /* Float32Array xyz */, restN /* Float32Array xyz */) {
   const n = rest.length / 3;
   const W = { jaw: new Float32Array(n), head: new Float32Array(n), spine: new Float32Array(n), leg: new Float32Array(n),
@@ -52,7 +62,14 @@ export function createRig(rest /* Float32Array xyz */, restN /* Float32Array xyz
      jaw: rotação da mandíbula em rad (negativo = fecha, positivo = abre além da pose original) */
   function apply(p) {
     out.set(rest); outN.set(restN);
-    const A = (p.legA ?? 0.42) * p.walk, lift = 0.38 * p.walk;
+    const walkOn = p.walk > 0.001, A = (p.legA ?? 0.5) * p.walk, lift = 0.4 * p.walk, duty = p.duty ?? 0.62, HY = PIV.hip[1];
+    let thL = 0, thR = 0, swL = 0, swR = 0, pL = null, pR = null;
+    if (walkOn) {
+      [thL, swL] = gait(p.phase, A, duty); [thR, swR] = gait(p.phase + Math.PI, A, duty);
+      const anchor = (th, sw) => { const c = Math.cos(th), s = Math.sin(th), yr = ANK_Y - HY;
+        return [0, HY + yr * c - ANK_Z * s - (-yr) * (1 - c) + lift * sw * Math.min(1, -yr / LEGL), yr * s + ANK_Z * c]; };
+      pL = anchor(thL, swL); pR = anchor(thR, swR);
+    }
     for (let i = 0; i < n; i++) {
       const o = i * 3;
       // 0) respiração (empurra o peito para fora da normal)
@@ -70,15 +87,14 @@ export function createRig(rest /* Float32Array xyz */, restN /* Float32Array xyz
       // 3) coluna: inclina todo o tronco acima do quadril (mergulho do bote)
       w = W.spine[i];
       if (w > 0.001 && p.spine) { rot(out, o, 0, p.spine * w, PIV.hip); rotN(outN, o, 0, p.spine * w); }
-      // 4) pernas (alternadas) + elevação do pé
+      // 4) pernas: apoio/balanço; pé mantido no chão e plano em apoio (compensa o arco do quadril)
       w = W.leg[i];
-      if (w > 0.001 && p.walk > 0.001) {
-        const sl = W.sideL[i], ph = p.phase;
-        const th = A * (Math.sin(ph) * sl + Math.sin(ph + Math.PI) * (1 - sl));
-        rot(out, o, 0, th * w, PIV.hip);
-        const lf = lift * (Math.max(0, -Math.cos(ph)) * sl + Math.max(0, -Math.cos(ph + Math.PI)) * (1 - sl));
-        out[o + 1] += lf * w * ss(1.1, 0.15, rest[o + 1]);
-        rotN(outN, o, 0, th * w);
+      if (w > 0.001 && walkOn) {
+        const sl = W.sideL[i], th = (thL * sl + thR * (1 - sl)) * w, sw = swL * sl + swR * (1 - sl), ry = rest[o + 1], cw = Math.cos(th);
+        rot(out, o, 0, th, PIV.hip); rotN(outN, o, 0, th);
+        out[o + 1] += -(HY - ry) * (1 - cw) + w * lift * sw * Math.min(1, Math.max(0, (HY - ry) / LEGL));
+        const ff = ss(0.62, 0.3, ry);
+        if (ff > 0.01) { const piv = sl > 0.5 ? pL : pR; rot(out, o, 0, -th * ff, piv); rotN(outN, o, 0, -th * ff); }
       }
       // 5) cauda: guinada (inércia da curva) + onda
       w = W.tail[i];
