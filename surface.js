@@ -43,16 +43,16 @@ void main(){
   vec3 d=normalize(vDir);
   float y=max(d.y,0.);
   float sd=max(dot(d,sunDir),0.);
-  vec3 zen=vec3(.006,.011,.03), mid=vec3(.035,.04,.07), hor=vec3(.10,.07,.075);
+  vec3 zen=vec3(.003,.005,.011), mid=vec3(.014,.017,.026), hor=vec3(.04,.045,.055);
   vec3 col=mix(hor,mid,smoothstep(0.,.22,y));col=mix(col,zen,smoothstep(.15,.9,y));
-  col+=vec3(1.,.36,.10)*pow(sd,5.)*.9*exp(-y*5.)+vec3(1.,.55,.2)*pow(sd,40.)*1.4+vec3(1.,.8,.5)*pow(sd,900.)*10.;
-  col=mix(col,vec3(.07,.05,.05),smoothstep(.0,-.06,d.y));
+  col+=vec3(.5,.55,.65)*pow(sd,5.)*.12*exp(-y*5.)+vec3(.6,.65,.75)*pow(sd,40.)*.1;
+  col=mix(col,vec3(.02,.022,.026),smoothstep(.0,-.06,d.y));
   if(d.y>0.005){
     vec2 uv=d.xz/(d.y+.28)*1.2+vec2(time*.003,time*.0015);
     float c=fb(uv*1.1),c2=fb(uv*3.4+7.);
     float dens=smoothstep(.45,.8,c*.85+c2*.25);
     float lit=clamp(.5+(fb(uv*1.1+sunDir.xz*.3)-c)*5.,0.,1.);
-    vec3 cc=mix(vec3(.02,.025,.045),vec3(.45,.17,.07),lit*pow(sd,.7))+vec3(1.,.4,.12)*pow(sd,8.)*.5*lit;
+    vec3 cc=mix(vec3(.01,.012,.02),vec3(.12,.13,.16),lit*pow(sd,.7));
     col=mix(col,cc,dens*smoothstep(.005,.25,d.y)*.95);
   }
   vec3 sp=vec3(.001,.0015,.004);
@@ -67,7 +67,7 @@ const COMP_VS = "varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.x
 const COMP_FS = `varying vec2 vUv;uniform sampler2D tex;uniform float alpha;uniform float veil;uniform float vig;uniform float time;
 void main(){
   vec3 c=texture2D(tex,vUv).rgb;
-  c=mix(c,vec3(.55,.45,.45)*1.4,veil);
+  float lum=dot(c,vec3(.3,.6,.1));c=mix(vec3(lum),c,.55)*.8;c=mix(c,vec3(.55,.45,.45)*1.4,veil);
   vec2 p=vUv-.5;float v=clamp(1.-dot(p,p)*vig,0.,1.);c*=v*v*(3.-2.*v)*.55+.45*v;
   float g=fract(sin(dot(vUv*1000.+time,vec2(12.9898,78.233)))*43758.5453);c*=1.+(g-.5)*.035;
   gl_FragColor=vec4(c,alpha);
@@ -101,15 +101,15 @@ export async function createSurface(renderer, { mobile = false, reduce = false }
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(envScene, 0, .1, 100).texture; pmrem.dispose();
 
-  const key = new THREE.DirectionalLight(0xffd9b0, 3.4);
+  const key = new THREE.DirectionalLight(0xaebbd0, 1.25);
   key.castShadow = true; key.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
   const kc = key.shadow.camera; kc.left = -24; kc.right = 24; kc.top = 24; kc.bottom = -24; kc.near = 1; kc.far = 160;
   key.shadow.bias = -.0004; key.shadow.normalBias = .05; key.shadow.radius = 4;
-  const rim = new THREE.DirectionalLight(0xff7a30, 5.2); rim.position.copy(RIM).multiplyScalar(90);
-  const cool = new THREE.DirectionalLight(0x5f86d8, .55); cool.position.set(.8, .15, .6).multiplyScalar(60);
-  scene.add(key, key.target, rim, cool, new THREE.HemisphereLight(0x6d7fb0, 0x20140c, .35));
+  const rim = new THREE.DirectionalLight(0x6f819c, 1.7); rim.position.copy(RIM).multiplyScalar(90);
+  const cool = new THREE.DirectionalLight(0x5a74a8, .22); cool.position.set(.8, .15, .6).multiplyScalar(60);
+  scene.add(key, key.target, rim, cool, new THREE.HemisphereLight(0x3a4560, 0x0a0a0c, .1));
 
-  scene.fog = new THREE.FogExp2(new THREE.Color().setRGB(.085, .06, .055), .0036);
+  scene.fog = new THREE.FogExp2(new THREE.Color().setRGB(.028, .032, .038), .03);
 
   /* ---------- chão escuro e úmido (albedo + relevo procedurais) ---------- */
   const groundTex = (() => {
@@ -134,7 +134,7 @@ export async function createSurface(renderer, { mobile = false, reduce = false }
   const terrain = (() => {
     const R0 = 20, A = .04, NR = mobile ? 100 : 130, NS = mobile ? 150 : 200;
     const pos = new Float32Array((NR + 1) * NS * 3 + 3), col = new Float32Array(pos.length), uv = new Float32Array((NR + 1) * NS * 2 + 2), idx = [];
-    const cc = new THREE.Color(), cA = new THREE.Color().setRGB(.15, .105, .075), cB = new THREE.Color().setRGB(.1, .09, .08), cR = new THREE.Color().setRGB(.11, .11, .11);
+    const cc = new THREE.Color(), cA = new THREE.Color().setRGB(.05, .052, .058), cB = new THREE.Color().setRGB(.035, .038, .042), cR = new THREE.Color().setRGB(.04, .04, .045);
     let vi = 0;
     for (let i = 0; i <= NR; i++) {
       const r = i === 0 ? 0 : R0 * (Math.exp(A * i) - 1);
@@ -161,30 +161,9 @@ export async function createSurface(renderer, { mobile = false, reduce = false }
   })();
   scene.add(terrain);
 
-  /* ---------- poucos elementos: silhuetas de árvores e rochas na névoa ---------- */
-  const treeGeo = (() => {
-    const paint = (g, r, gg, b) => { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const k = .8 + hash2(i, n) * .4; a[i * 3] = r * k; a[i * 3 + 1] = gg * k; a[i * 3 + 2] = b * k; } g.setAttribute("color", new THREE.BufferAttribute(a, 3)); return g; };
-    const trunk = new THREE.CylinderGeometry(.3, .55, 9, 6); trunk.translate(0, 4.5, 0); paint(trunk, .03, .02, .015);
-    const parts = [trunk];
-    for (let i = 0; i < 4; i++) { const c = new THREE.ConeGeometry(3.2 - i * .6, 5.5, 7, 1); c.translate(0, 8 + i * 3.1, 0); paint(c, .012, .02, .012); parts.push(c); }
-    return mergeGeometries(parts.map(g => g.toNonIndexed()));
-  })();
-  const NT = mobile ? 40 : 90, trees = new THREE.InstancedMesh(treeGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, envMapIntensity: .3 }), NT); trees.frustumCulled = false;
-  {
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s3 = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0); let k = 0, tries = 0;
-    while (k < NT && tries++ < NT * 80) {
-      const x = (rand() - .5) * 700, z = -50 - rand() * 330;
-      if (Math.abs(x) < 38 && z > -90) continue;
-      const h = heightAt(x, z); if (h > 40) continue;
-      const sz = 1 + rand() * 1.7;
-      p.set(x, h - .3, z); q.setFromAxisAngle(up, rand() * 6.283); s3.set(sz, sz * (.9 + rand() * .6), sz); m.compose(p, q, s3); trees.setMatrixAt(k++, m);
-    }
-    trees.count = k;
-  }
-  scene.add(trees);
-
+  /* ---------- rochas escuras na névoa (sem árvores) ---------- */
   const rockGeo = (() => { const g = new THREE.IcosahedronGeometry(1, 3), p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), n = .7 + vn(x * 2.1 + 8, y * 2.1 + z * 1.9) * .6 + vn(x * 6 + 1, z * 6 + y * 5) * .12; p.setXYZ(i, x * n * 1.2, y * n * .7, z * n); } g.computeVertexNormals(); return g; })();
-  const NRK = mobile ? 16 : 30, rocks = new THREE.InstancedMesh(rockGeo, new THREE.MeshStandardMaterial({ color: 0x2a2724, roughness: .9, envMapIntensity: .6 }), NRK); rocks.castShadow = true; rocks.receiveShadow = true; rocks.frustumCulled = false;
+  const NRK = mobile ? 16 : 30, rocks = new THREE.InstancedMesh(rockGeo, new THREE.MeshStandardMaterial({ color: 0x14151a, roughness: .9, envMapIntensity: .3 }), NRK); rocks.castShadow = true; rocks.receiveShadow = true; rocks.frustumCulled = false;
   {
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s3 = new THREE.Vector3(), e = new THREE.Euler();
     for (let i = 0; i < NRK; i++) {
@@ -216,7 +195,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     const n = mobile ? 200 : 450, a = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) { a[i * 3] = (rand() - .5) * 60; a[i * 3 + 1] = rand() * 12; a[i * 3 + 2] = 8 - rand() * 50; }
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(a, 3));
-    const p = new THREE.Points(g, new THREE.PointsMaterial({ size: .07, color: 0xff9a55, transparent: true, opacity: .5, depthWrite: false, blending: THREE.AdditiveBlending })); p.frustumCulled = false; return p;
+    const p = new THREE.Points(g, new THREE.PointsMaterial({ size: .07, color: 0x8fa0b8, transparent: true, opacity: .22, depthWrite: false, blending: THREE.AdditiveBlending })); p.frustumCulled = false; return p;
   })();
   scene.add(motes);
 
@@ -224,10 +203,10 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   const puffTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
     r.addColorStop(0, "rgba(255,255,255,.9)"); r.addColorStop(.5, "rgba(255,255,255,.35)"); r.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
   const mkSprite = (color, op) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, color, transparent: true, depthWrite: false, opacity: op, fog: true })); s.frustumCulled = false; scene.add(s); return s; };
-  const mist = Array.from({ length: mobile ? 8 : 16 }, (_, i) => { const s = mkSprite(0x6a4c40, .11); const sz = 40 + rand() * 50; s.scale.set(sz, sz * .35, 1);
+  const mist = Array.from({ length: mobile ? 8 : 16 }, (_, i) => { const s = mkSprite(0x4a5260, .2); const sz = 40 + rand() * 50; s.scale.set(sz, sz * .35, 1);
     s.position.set((rand() - .5) * 120, 2 + rand() * 4, -20 - rand() * 70); return { s, v: (rand() - .5) * .8, sz }; });
-  const puffs = Array.from({ length: mobile ? 40 : 80 }, () => { const s = mkSprite(0x6b5a48, 0); s.visible = false; return { s, life: 0, dur: 1, v: new THREE.Vector3(), sz: 1, op: .4, grow: 2.2 }; });
-  function puff(x, y, z, n, spread, up, size, color = 0x6b5a48, op = .4, grow = 2.2, dur = 1) {
+  const puffs = Array.from({ length: mobile ? 40 : 80 }, () => { const s = mkSprite(0x3c3f46, 0); s.visible = false; return { s, life: 0, dur: 1, v: new THREE.Vector3(), sz: 1, op: .4, grow: 2.2 }; });
+  function puff(x, y, z, n, spread, up, size, color = 0x3c3f46, op = .3, grow = 2.2, dur = 1) {
     if (reduce) return;
     for (let i = 0; i < n; i++) {
       const q = puffs.find(p => p.life <= 0); if (!q) return;
@@ -239,13 +218,13 @@ gl_FragColor=vec4(col,d*fade*.97);}`
 
   /* ---------- marcador do cursor no chão ---------- */
   const marker = new THREE.Group();
-  const ringM = new THREE.MeshBasicMaterial({ color: 0xf0cf7e, transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(.55, .65, 48), ringM); ring.rotation.x = -Math.PI / 2;
-  const dotM = ringM.clone(); const dot = new THREE.Mesh(new THREE.CircleGeometry(.14, 24), dotM); dot.rotation.x = -Math.PI / 2;
-  marker.add(ring, dot); scene.add(marker);
+  const ringM = new THREE.MeshBasicMaterial({ color: 0xd8dde8, transparent: true, opacity: 0, depthWrite: false, depthTest: false, fog: false, toneMapped: false });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(.55, .62, 48), ringM);
+  const dotM = ringM.clone(); const dot = new THREE.Mesh(new THREE.CircleGeometry(.11, 24), dotM);
+  marker.add(ring, dot); marker.renderOrder = 50; ring.renderOrder = dot.renderOrder = 50; marker.frustumCulled = false; scene.add(marker);
 
   /* ---------- T-Rex ---------- */
-  const dino = { root: new THREE.Group(), x: 3, z: -13, yaw: Math.PI * .45, speed: 0, turn: 0 };
+  const dino = { root: new THREE.Group(), x: 3.5, z: -13, yaw: 0, speed: 0, turn: 0 };
   dino.root.scale.setScalar(S); scene.add(dino.root);
   const gltf = await new Promise((ok, no) => new GLTFLoader().load("/models/trex.glb", ok, undefined, no));
   let mesh; gltf.scene.traverse(o => { if (o.isMesh) mesh = o; });
@@ -260,7 +239,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     map: old.map, normalMap: old.normalMap, aoMap: old.aoMap, roughnessMap: old.roughnessMap, metalnessMap: old.metalnessMap,
     roughness: .92, metalness: 0, normalScale: new THREE.Vector2(1.7, 1.7), aoMapIntensity: 1.3,
     clearcoat: .3, clearcoatRoughness: .32, sheen: .5, sheenRoughness: .5, sheenColor: new THREE.Color(0x6b5a45),
-    envMapIntensity: 1.1, side: THREE.DoubleSide, shadowSide: THREE.BackSide
+    envMapIntensity: .45, side: THREE.DoubleSide, shadowSide: THREE.BackSide
   });
   for (const t of [skin.map, skin.normalMap, skin.aoMap, skin.roughnessMap]) if (t) t.anisotropy = 8;
   mesh.material = skin; mesh.castShadow = true; mesh.receiveShadow = true; mesh.frustumCulled = false;
@@ -291,7 +270,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   let lo = 0, hi = 1.25; for (let i = 0; i < 18; i++) { const mid = (lo + hi) / 2; if (tipAt(mid)[0] * S > .55) lo = mid; else hi = mid; }
   const BITE_HEAD = hi, REACH = tipAt(hi)[1] * S;
 
-  const P = { phase: 0, walk: 0, jaw: JAW_CLOSED, headYaw: 0, headPitch: 0, spine: 0, tailYaw: 0, tailWave: .05, breath: 0, legA: .42 };
+  const P = { phase: 0, walk: 0, jaw: JAW_CLOSED, headYaw: 0, headPitch: 0, spine: 0, tailYaw: 0, tailWave: .05, breath: 0, legA: .6 };
   const T = { walk: 0, jaw: JAW_CLOSED, headYaw: 0, headPitch: 0, spine: 0 };
 
   /* ---------- entrada (cursor) ---------- */
@@ -309,10 +288,6 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     surfacePose(); ndc.set(ptr.x * 2 - 1, -(ptr.y * 2 - 1)); ray.setFromCamera(ndc, camera);
     const look = ray.ray.at(clamp(camera.position.distanceTo(headW), 10, 40), new THREE.Vector3());
     let ground = null;
-    if (ray.ray.direction.y < -.012 && ray.ray.intersectPlane(plane, hit)) {
-      const d = hit.distanceTo(camera.position);
-      if (d > 8 && d < 36) { ground = hit.clone(); ground.x = clamp(ground.x, -15, 15); ground.z = clamp(ground.z, -26, -1); ground.y = 0; }   // muito baixo / muito alto → só procura
-    }
     return { ground, look };
   }
 
@@ -327,51 +302,27 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     return { yaw: Math.atan2(dx, dz), pitch: -Math.atan2(dy, Math.hypot(dx, dz)) + .08 };
   }
 
+  const ZMIN = -19, ZMAX = -7;
   function think(dt, t, info) {
-    const gt = info.ground, now = performance.now() / 1000, stopped = now - ptr.last > .35;
-    AI.biteCd -= dt;
-    // olhar: cabeça segue o cursor (ou escaneia se não há cursor)
-    let ly = 0, lp = 0, la = null;
-    if (info.look) { la = lookAngles(gt ? gt.clone().setY(.6) : info.look); ly = la.yaw; lp = la.pitch; }
-    else { AI.scanT += dt; ly = Math.sin(AI.scanT * .5) * .55 + Math.sin(AI.scanT * 1.3) * .1; lp = .02 + Math.sin(AI.scanT * .8) * .06; }
-
-    if (AI.state === "bite") {
-      AI.biteT += dt; const b = AI.biteT, tg = AI.target; dino.speed = damp(dino.speed, 0, 7, dt); T.walk = 0;
-      if (b < .45) { const k = ss(0, .45, b); T.spine = -.06 * k; T.headPitch = -.25 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); T.headYaw = 0; }       // recua e abre a boca
-      else if (b < .68) { const k = ss(.45, .68, b); T.spine = lerp(-.06, BITE_SPINE, k); T.headPitch = lerp(-.25, BITE_HEAD, k); T.jaw = JAW_OPEN;
-        if (tg) { const d = Math.max(-.3, Math.min(1.8, Math.hypot(tg.x - dino.x, tg.z - dino.z) - REACH)), sp = d * (k - AI.adv); dino.x += Math.sin(dino.yaw) * sp; dino.z += Math.cos(dino.yaw) * sp; AI.adv = k; } }
-      else if (b < .8) { const k = ss(.68, .8, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = BITE_SPINE; T.headPitch = BITE_HEAD;
-        if (!AI.struck && b > .77) { AI.struck = true; AI.shake = 1; AI.bites++; if (tg) puff(tg.x, .3, tg.z, 16, 3.2, 5, 5.5, 0x6b5a48, .5, 2.2, 1.1); } }
-      else if (b < 1.6) { const k = ss(.8, 1.6, b); T.spine = lerp(BITE_SPINE, 0, k); T.headPitch = lerp(BITE_HEAD, 0, k) + Math.sin(b * 16) * .07 * (1 - k); T.jaw = JAW_CLOSED; T.headYaw = Math.sin(b * 13) * .3 * (1 - k); }
-      else { AI.state = gt ? "chase" : "track"; AI.biteCd = 1.0; AI.adv = 0; }
-    } else if (gt) {
-      AI.state = "chase"; AI.target = gt;
-      const dx = gt.x - dino.x, dz = gt.z - dino.z, dist = Math.hypot(dx, dz), err = angDiff(dino.yaw, Math.atan2(dx, dz)), arrive = dist - REACH;
-      const tr = clamp(err * 3, -2.4, 2.4); dino.yaw += tr * dt; dino.turn = damp(dino.turn, tr, 6, dt);
-      const facing = Math.abs(err) < .6 ? 1 : Math.max(0, 1 - (Math.abs(err) - .6) * 1.2);
-      const vt = clamp((arrive - .2) * 1.4, 0, 6.5) * facing;
-      dino.speed = damp(dino.speed, vt, vt > dino.speed ? 1.5 : 3.4, dt);
-      T.headYaw = clamp(ly - dino.turn * 0, -.9, .9) * .85; T.headPitch = clamp(lp, -.4, .8) * .8; T.jaw = JAW_CLOSED; T.spine = 0;
-      T.walk = Math.min(1, dino.speed / 2.2 + Math.abs(tr) * .18);
-      if (arrive < .9 && Math.abs(err) < .22 && stopped && AI.biteCd <= 0) { AI.state = "bite"; AI.biteT = 0; AI.struck = false; AI.adv = 0; }
-    } else {
-      // sem alvo no chão: fica parado, cabeça e olhos acompanham o cursor, corpo gira para acompanhar
-      AI.state = "track"; dino.speed = damp(dino.speed, 0, 3, dt);
-      const over = Math.abs(ly) > .45 ? Math.sign(ly) * (Math.abs(ly) - .45) : 0, tr = clamp(over * 2.2, -1.4, 1.4);
-      dino.yaw += tr * dt; dino.turn = damp(dino.turn, tr, 5, dt);
-      T.headYaw = clamp(ly - tr * .0, -.9, .9) * (Math.abs(ly) > .9 ? .9 / Math.abs(ly) : 1); T.headPitch = clamp(lp, -.5, .85); T.jaw = JAW_CLOSED + Math.sin(t * 1.6) * .015; T.spine = 0;
-      T.walk = Math.min(.6, Math.abs(tr) * 1.2);
-    }
-
-    dino.x += Math.sin(dino.yaw) * dino.speed * dt; dino.z += Math.cos(dino.yaw) * dino.speed * dt;
-    dino.x = clamp(dino.x, -13, 13); dino.z = clamp(dino.z, -19, -6);
-    const adv = Math.max(dino.speed / (.64 * 1.8 * S * .42), Math.abs(dino.turn) * 2.2 * T.walk);
-    const dph = Math.min(8, adv) * dt, before = Math.floor(P.phase / Math.PI); P.phase += dph;
+    // cabeça + olhos seguem o cursor (só a cabeça; o corpo nunca gira)
+    let ly, lp;
+    if (info.look) { const la = lookAngles(info.look); ly = la.yaw; lp = la.pitch; }
+    else { AI.scanT += dt; ly = Math.sin(AI.scanT * .5) * .5 + Math.sin(AI.scanT * 1.3) * .1; lp = .02 + Math.sin(AI.scanT * .8) * .06; }
+    // sempre de frente para a câmera
+    dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.turn = 0;
+    // só anda se o cursor estiver bem embaixo (vem) ou bem em cima (recua)
+    let dir = 0;
+    if (ptr.active) { if (ptr.y > .85) dir = 1; else if (ptr.y < .15) dir = -1; }
+    if ((dir > 0 && dino.z >= ZMAX - .05) || (dir < 0 && dino.z <= ZMIN + .05)) dir = 0;
+    dino.speed = damp(dino.speed, dir * 1.7, 2.2, dt);
+    T.walk = Math.min(1, Math.abs(dino.speed) / 1.0);
+    T.headYaw = clamp(ly, -.9, .9); T.headPitch = clamp(lp, -.5, .85); T.jaw = JAW_CLOSED + Math.sin(t * 1.6) * .015; T.spine = 0;
+    dino.z = clamp(dino.z + dino.speed * dt, ZMIN, ZMAX);
+    const dph = clamp(dino.speed / .488, -8, 8) * dt, before = Math.floor(P.phase / Math.PI); P.phase += dph;
     if (P.walk > .3 && Math.floor(P.phase / Math.PI) !== before) {            // pisada: poeira + tremor
       stepSide = -stepSide;
-      const fx = Math.sin(dino.yaw), fz = Math.cos(dino.yaw), sx = Math.cos(dino.yaw), sz = -Math.sin(dino.yaw);
-      puff(dino.x + fx * .4 * S + sx * stepSide * .6 * S, heightAt(dino.x, dino.z) + .1, dino.z + fz * .4 * S + sz * stepSide * .6 * S, 3, 1.6, 1.3, 2.8);
-      AI.shake = Math.max(AI.shake, .22 * P.walk);
+      puff(dino.x + stepSide * .6 * S, heightAt(dino.x, dino.z) + .1, dino.z, 3, 1.6, 1.3, 2.8);
+      AI.shake = Math.max(AI.shake, .15 * P.walk);
     }
     return { ly, lp };
   }
@@ -387,7 +338,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     P.walk = damp(P.walk, T.walk, 5, dt); P.jaw = damp(P.jaw, T.jaw, bite ? 24 : 7, dt);
     P.headYaw = damp(P.headYaw, T.headYaw, bite ? 12 : 5.5, dt); P.headPitch = damp(P.headPitch, T.headPitch, bite ? 16 : 5.5, dt);
     P.spine = damp(P.spine, T.spine, bite ? 14 : 5, dt);
-    P.tailYaw = damp(P.tailYaw, -dino.turn * .22 + Math.sin(P.phase * .5) * .05 * P.walk, 4, dt);
+    P.tailYaw = damp(P.tailYaw, Math.sin(P.phase * .5) * .08 * P.walk, 4, dt);
     P.tailWave = .04 + .16 * P.walk; P.breath = Math.sin(t * 1.5) * .5 + .5;
     const out = rig.apply(P);
     posA.array.set(out.pos); norA.array.set(out.nor); posA.needsUpdate = true; norA.needsUpdate = true;
@@ -409,13 +360,6 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       e.look.lerp(gaze, 1 - Math.exp(-16 * dt)).normalize();
       e.m.quaternion.setFromUnitVectors(zAx, e.look);
     }
-
-    // marcador no chão
-    if (info.ground) marker.position.set(info.ground.x, heightAt(info.ground.x, info.ground.z) + .05, info.ground.z);
-    const wantM = info.ground && !(bite && AI.biteT > .75) ? .8 : 0;
-    ringM.opacity = damp(ringM.opacity, wantM, 9, dt); dotM.opacity = ringM.opacity;
-    const pulse = 1 + Math.sin(t * 5) * .07, ts = bite ? 1 + (1 - Math.min(1, AI.biteT / .7)) * 1.1 : 1;
-    ring.scale.setScalar(damp(ring.scale.x, pulse * ts, 10, dt)); dot.scale.setScalar(pulse);
 
     key.position.set(dino.x + KEY.x * 90, KEY.y * 90, dino.z + KEY.z * 90); key.target.position.set(dino.x, 0, dino.z); key.target.updateMatrixWorld();
 
@@ -450,12 +394,17 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     camera.fov = 42 + 16 * ss(.2, .8, a); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
     sky.position.copy(camera.position);
     skyU.alt.value = ss(500, 3300, alt);
-    scene.fog.density = .0036 / (1 + alt * .03);
+    scene.fog.density = .03 / (1 + alt * .03);
     cloudU.fade.value = ss(150, 500, alt);
     cloudDeck.position.x = camera.position.x; cloudDeck.position.z = camera.position.z;
     quadMat.uniforms.veil.value = Math.max(0, 1 - Math.abs(alt - 850) / 170) * .8;
     quadMat.uniforms.alpha.value = alphaOf(a);
-    quadMat.uniforms.vig.value = lerp(1.1, .2, a);
+    quadMat.uniforms.vig.value = lerp(1.8, .2, a);
+    if (ptr.active) {
+      ndc.set(ptr.x * 2 - 1, -(ptr.y * 2 - 1)); ray.setFromCamera(ndc, camera); ray.ray.at(12, marker.position); marker.quaternion.copy(camera.quaternion);
+      marker.scale.setScalar(1 + Math.sin(t * 4) * .05);
+    }
+    ringM.opacity = damp(ringM.opacity, ptr.active ? .8 * (1 - ss(0, .06, a)) : 0, 9, dt); dotM.opacity = ringM.opacity;
     renderer.setRenderTarget(rt); renderer.clear(); renderer.render(scene, camera); renderer.setRenderTarget(null);
   }
   function composite() { const ac = renderer.autoClear; renderer.autoClear = false; renderer.render(qScene, qCam); renderer.autoClear = ac; }
