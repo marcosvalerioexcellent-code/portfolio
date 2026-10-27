@@ -1,3 +1,9 @@
+/* sempre começa no topo: desliga a restauração automática de rolagem do navegador */
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+const voltarTopo = () => { if (location.hash) history.replaceState(null, "", location.pathname + location.search); scrollTo(0, 0); };
+voltarTopo();
+addEventListener("load", voltarTopo);
+addEventListener("pageshow", voltarTopo);
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createSurface } from "/surface.js";
