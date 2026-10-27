@@ -118,16 +118,20 @@
     h1,h2,h3,.logo,.loading-mark{font-family:var(--font-display)}
     .mono{font-family:var(--font-mono)}
 
-    /* DESTAQUE DE TEXTO (gradiente) */
+    /* DESTAQUE DE TEXTO: ouro metálico com brilho passando (sweep) */
     .highlight {
-      background:var(--gold-shine);
-      background-size:200% auto;
+      background:linear-gradient(100deg, #5e4109 0%, #a87b22 16%, #d4af37 27%, #fff4c2 38%, #e9c75a 46%, #b8862b 58%, #7a5512 70%, #d4af37 82%, #5e4109 100%);
+      background-size:260% auto;
       -webkit-background-clip:text;
       background-clip:text;
-      color:var(--accent-text);
+      color:#d4af37;
       -webkit-text-fill-color:transparent;
       font-weight:700;
+      filter:drop-shadow(0 0 8px rgba(212,175,55,.28));
+      animation:goldSweep 3.8s linear infinite;
     }
+    @keyframes goldSweep{from{background-position:100% 0}to{background-position:-100% 0}}
+    @media (prefers-reduced-motion: reduce){.highlight{animation:none}}
 
     /* ===== LOADING SCREEN ===== */
     .loading-screen{
