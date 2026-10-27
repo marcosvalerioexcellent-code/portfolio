@@ -171,7 +171,7 @@ export async function createSurface(renderer, { mobile = false, reduce = false }
     for (let i = 0; i < NRK; i++) {
       const big = i < 7, side = rand() < .5 ? -1 : 1;
       let x, z; do { x = big ? side * (22 + rand() * 30) : (rand() - .5) * 40; z = big ? -18 - rand() * 40 : -3 - rand() * 28; }
-      while (!big && Math.hypot(x - 1.75, z - (CAM0.z - 12)) < 9);   // nada de pedra embaixo do T-Rex
+      while (!big && Math.hypot(x - 1.75, z + 4) < 9);   // nada de pedra embaixo do T-Rex
       const sz = big ? 2.5 + rand() * 4.5 : .25 + Math.pow(rand(), 2.2) * .9, h = heightAt(x, z);
       p.set(x, h + sz * .12, z); q.setFromEuler(e.set(rand() * .3, rand() * 6.28, rand() * .3)); s3.set(sz, sz * (.7 + rand() * .5), sz); m.compose(p, q, s3); rocks.setMatrixAt(i, m);
     }
