@@ -287,7 +287,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   function pointerInfo() {
     if (!ptr.active) return { ground: null, look: null };
     surfacePose(); ndc.set(ptr.x * 2 - 1, -(ptr.y * 2 - 1)); ray.setFromCamera(ndc, camera);
-    const look = ray.ray.at(clamp(camera.position.distanceTo(headW), 10, 40), new THREE.Vector3());
+    const look = ray.ray.at(Math.max(2, camera.position.distanceTo(headW)), new THREE.Vector3());   // ponto na mesma profundidade da cabeça
     let ground = null;
     return { ground, look };
   }
@@ -337,11 +337,11 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     dino.x = lerp(0, 3.5, ss(.75, 1.5, innerWidth / innerHeight)); dino.z = DINO_Z;
     dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.speed = 0; dino.turn = 0;
     T.eye = 1; T.lie = 0; T.spine = 0; T.walk = 0; T.jaw = JAW_CLOSED + Math.sin(t * 1.6) * .015;
-    T.headYaw = clamp(ly, -.9, .9); T.headPitch = clamp(lp, -.5, .85);
+    T.headYaw = clamp(ly, -1.35, 1.35); T.headPitch = clamp(lp, -.6, .9);
     if (AI.state === "roar") {                                       // rugido: boca abre, cabeça sobe, tremor
       AI.roarT += dt; const b = AI.roarT;
       const up = ss(0, .6, b) * (1 - ss(ROAR_DUR - .7, ROAR_DUR, b)), tr = Math.sin(b * 34) * .03 * up;
-      T.spine = -.1 * up; T.headPitch = -.5 * up + tr; T.headYaw = clamp(ly, -.9, .9) * (1 - up);
+      T.spine = -.1 * up; T.headPitch = -.5 * up + tr; T.headYaw = clamp(ly, -1.35, 1.35) * (1 - up);
       T.jaw = lerp(JAW_CLOSED, JAW_OPEN + .1, up) + Math.sin(b * 22) * .04 * up;
       if (b > .6 && b < ROAR_DUR - .6) AI.shake = Math.max(AI.shake, .55);
       if (!AI.fogged && b > .8) { AI.fogged = true; fogBurst(); }
