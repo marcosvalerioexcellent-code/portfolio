@@ -342,10 +342,11 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     }, 500);
   }
 
-  function cursorNaBoca() {
+  function cursorNaBoca() {                      // só come o que está logo abaixo/na frente do focinho, nunca acima dele
     tmp.copy(headW).project(camera);
-    const dx = (tmp.x - (ptr.x * 2 - 1)) * innerWidth / 2, dy = (tmp.y + (ptr.y * 2 - 1)) * innerHeight / 2;
-    return Math.hypot(dx, dy) < 140;   // área da boca (inclui a mandíbula, não só o focinho)
+    const dx = (tmp.x - (ptr.x * 2 - 1)) * innerWidth / 2;
+    const dy = (tmp.y + (ptr.y * 2 - 1)) * innerHeight / 2;      // > 0: cursor abaixo da ponta do focinho
+    return Math.abs(dx) < 60 && dy > -10 && dy < 110;
   }
   function think(dt, t, info) {
     const now = performance.now() / 1000;
