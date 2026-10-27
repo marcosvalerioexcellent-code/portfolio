@@ -337,7 +337,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     dino.x = lerp(0, 3.5, ss(.75, 1.5, innerWidth / innerHeight)); dino.z = DINO_Z;
     dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.speed = 0; dino.turn = 0;
     T.eye = 1; T.lie = 0; T.spine = 0; T.walk = 0; T.jaw = JAW_CLOSED + Math.sin(t * 1.6) * .015;
-    T.headYaw = clamp(ly, -1.35, 1.35); T.headPitch = clamp(lp, -.6, .9);
+    T.headYaw = clamp(ly, -1.35, 1.35); T.headPitch = clamp(lp, -.6, .3);
     if (AI.state === "roar") {                                       // rugido: boca abre, cabeça sobe, tremor
       AI.roarT += dt; const b = AI.roarT;
       const up = ss(0, .6, b) * (1 - ss(ROAR_DUR - .7, ROAR_DUR, b)), tr = Math.sin(b * 34) * .03 * up;
