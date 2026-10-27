@@ -313,7 +313,8 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     document.documentElement.classList.add("mouse-comido"); clearTimeout(comidoT);
     comidoT = setTimeout(() => { AI.comido = false; document.documentElement.classList.remove("mouse-comido"); }, MOUSE_SOME_MS);
   }
-  const DINO_Z = CAM0.z - 12, ROAR_DUR = 4.68, T0 = performance.now() / 1000;   // T-Rex parado a 10 m da câmera (sem andar)
+  const PRE_ROAR = 1.6, ROAR_DUR = PRE_ROAR + 4.68, T0 = performance.now() / 1000;   // preparação antes do som (s) e duração total
+  const DINO_Z = CAM0.z - 12;   // T-Rex parado a 10 m da câmera (sem andar)
   const footAt = (side) => { tmp.set(side * .95, .1, .25); dino.root.localToWorld(tmp); return tmp; };
   const fogBurst = () => { for (const sd of [-1, 1]) { footAt(sd * 1.2); puff(tmp.x, tmp.y + .3, tmp.z, 5, 3, .6, 4.5, 0x7a828e, .35, 2.6, 3.5); } };
 
@@ -338,7 +339,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       AI.state = "roar"; AI.roarT = 0; AI.fogged = false;
       pending.then(buf => { if (!buf || !actx) return; const s = actx.createBufferSource(); s.buffer = buf;
         const g = actx.createGain(); g.gain.value = alphaOf(aSnap()); s.connect(g).connect(actx.destination);
-        roarGain = g; roarSrc = s; s.onended = () => { if (roarGain === g) { roarGain = null; roarSrc = null; } }; s.start(); }).catch(() => {});
+        roarGain = g; roarSrc = s; s.onended = () => { if (roarGain === g) { roarGain = null; roarSrc = null; } }; s.start(actx.currentTime + PRE_ROAR); }).catch(() => {});
     }, 500);
   }
 
@@ -394,16 +395,19 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       }
       else { AI.state = "track"; }
     }
-    if (AI.state === "roar") {                                       // rugido: boca abre, cabeça sobe, tremor
+    if (AI.state === "roar") {                                       // 1) agacha e abaixa a cabeça  2) sobe e abre a boca  3) rugido com perna levantada
       AI.roarT += dt; const b = AI.roarT;
       const fim = 1 - ss(ROAR_DUR - .7, ROAR_DUR, b);
-      const dip = ss(0, .4, b) * fim;                                // costas descem primeiro
-      const up = ss(.4, 1, b) * fim, tr = Math.sin(b * 34) * .03 * up;   // depois a cabeça sobe e a boca abre
-      T.spine = .42 * dip; T.headPitch = -.85 * up + tr; T.headYaw = clamp(ly, -1.35, 1.35) * (1 - up);   // tronco fica inclinado até o fim do rugido
-      T.jaw = lerp(JAW_CLOSED, .32, up) + Math.sin(b * 22) * .04 * up;   // boca bem aberta
-      if (b > .6 && b < ROAR_DUR - .6) AI.shake = Math.max(AI.shake, .55);
-      if (!AI.fogged && b > .8) { AI.fogged = true; fogBurst(); }
-      AI.liftR = ss(.9, 1.5, b) * (1 - ss(ROAR_DUR - 1.4, ROAR_DUR - .7, b));   // sobe e desce
+      const agacha = ss(0, 1.0, b) * fim;                            // costas descem devagar
+      const sobe = ss(PRE_ROAR * .65, PRE_ROAR + .5, b) * fim;       // cabeça sobe com a boca já abrindo
+      const boca = ss(PRE_ROAR * .5, PRE_ROAR + .3, b) * fim;
+      const tr = Math.sin(b * 34) * .03 * sobe;
+      T.spine = .42 * agacha; T.headPitch = .35 * agacha * (1 - sobe) - .85 * sobe + tr;
+      T.headYaw = clamp(ly, -1.35, 1.35) * (1 - sobe);
+      T.jaw = lerp(JAW_CLOSED, .32, boca) + Math.sin(b * 22) * .04 * sobe;
+      if (b > PRE_ROAR && b < ROAR_DUR - .6) AI.shake = Math.max(AI.shake, .55);
+      if (!AI.fogged && b > PRE_ROAR) { AI.fogged = true; fogBurst(); }
+      AI.liftR = ss(PRE_ROAR + .3, PRE_ROAR + .9, b) * (1 - ss(ROAR_DUR - 1.4, ROAR_DUR - .7, b));   // perna sobe no rugido e volta
       if (b >= ROAR_DUR) { AI.state = "track"; AI.fogged = false; AI.liftR = 0; }
     }
     return { ly, lp };
