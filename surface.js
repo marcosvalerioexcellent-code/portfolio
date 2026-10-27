@@ -344,11 +344,13 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     }, 500);
   }
 
-  function cursorNaBoca() {                      // só come o que está logo abaixo/na frente do focinho, nunca acima dele
+  // zona da boca: "forte" para decidir se vai tentar (só ataca quando dá para comer);
+  // "larga" para decidir se come no momento do bote (se o cursor escapar, não come)
+  function cursorNaBoca(larga = false) {
     tmp.copy(headW).project(camera);
     const dx = (tmp.x - (ptr.x * 2 - 1)) * innerWidth / 2;
     const dy = (tmp.y + (ptr.y * 2 - 1)) * innerHeight / 2;      // > 0: cursor abaixo da ponta do focinho
-    return Math.abs(dx) < 85 && dy > -30 && dy < 130;   // rosto/boca: pega o cursor encostado no focinho e logo abaixo, não acima da cabeça
+    return larga ? Math.abs(dx) < 120 && dy > -50 && dy < 170 : Math.abs(dx) < 80 && dy > -20 && dy < 120;
   }
   function think(dt, t, info) {
     const now = performance.now() / 1000;
@@ -378,7 +380,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
         const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = lean; T.headPitch = hp0 + .15; T.headYaw = hy0;
         if (!AI.struck && b > .65) {                                 // no momento da mordida: decide se acertou e congela a pose
           AI.struck = true; AI.frozen = { yaw: hy0, pitch: hp0 + .15 };
-          AI.hit = cursorNaBoca(); if (AI.hit) comerMouse();
+          AI.hit = cursorNaBoca(true); if (AI.hit) comerMouse();
         }
       }
       else if (b < 3.2) {
