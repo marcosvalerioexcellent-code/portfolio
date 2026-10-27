@@ -7,6 +7,7 @@ addEventListener("pageshow", voltarTopo);
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createSurface } from "/surface.js";
+import { createSea } from "/mar.js";
 
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const mobile = innerWidth < 760;
@@ -143,6 +144,7 @@ const surfReady = createSurface(renderer, { mobile, reduce }).then(s => { surf =
 Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/jupiter.glb"), surfReady]).then(([t, l, j]) => {
   // Terra
   const earth = holder(t.scene, 2.2); world.earth = earth; scene.add(earth);
+  world.sea = createSea({ scene, camera, earth, renderer });
   t.scene.traverse(o => {
     if (o.name === "Clouds") world.clouds = o;
     if (o.isMesh && o.material.emissiveMap) {
@@ -321,6 +323,7 @@ function frame() {
     try { surf.update(dt, t, a); surf.render(a, t, dt); } catch (err) { console.error("Erro na superfície:", err); }
     shade.style.opacity = sa;
   }
+  if (world.sea) world.sea.update(dt, t);
   if (sa < 1) renderer.render(scene, camera); else renderer.clear();
   if (sa > 0) surf.composite();
 }
