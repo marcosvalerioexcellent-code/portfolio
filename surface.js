@@ -235,7 +235,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   const skin = new THREE.MeshPhysicalMaterial({
     map: old.map, normalMap: old.normalMap, aoMap: old.aoMap, roughnessMap: old.roughnessMap, metalnessMap: old.metalnessMap,
     roughness: .92, metalness: 0, normalScale: new THREE.Vector2(1.7, 1.7), aoMapIntensity: 1.3,
-    clearcoat: .3, clearcoatRoughness: .32, sheen: .5, sheenRoughness: .5, sheenColor: new THREE.Color(0x6b5a45),
+    clearcoat: .08, clearcoatRoughness: .45, sheen: 0,
     envMapIntensity: .45, side: THREE.DoubleSide, shadowSide: THREE.BackSide
   });
   for (const t of [skin.map, skin.normalMap, skin.aoMap, skin.roughnessMap]) if (t) t.anisotropy = 8;
@@ -304,6 +304,14 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     return { yaw: Math.atan2(dx, dz), pitch: -Math.atan2(dy, Math.hypot(dx, dz)) + .08 };
   }
 
+  const estiloCursor = document.createElement("style");
+  estiloCursor.textContent = "html.mouse-comido, html.mouse-comido * { cursor: none !important; }"; document.head.append(estiloCursor);
+  const MOUSE_SOME_MS = 3000, MORDIDA_CD = 8;             // tempo sem o cursor e intervalo mínimo entre mordidas (s)
+  let comidoT = 0;
+  function comerMouse() {
+    document.documentElement.classList.add("mouse-comido"); clearTimeout(comidoT);
+    comidoT = setTimeout(() => document.documentElement.classList.remove("mouse-comido"), MOUSE_SOME_MS);
+  }
   const DINO_Z = CAM0.z - 12, ROAR_DUR = 4.68, T0 = performance.now() / 1000;   // T-Rex parado a 10 m da câmera (sem andar)
   const footAt = (side) => { tmp.set(side * .95, .1, .25); dino.root.localToWorld(tmp); return tmp; };
   const fogBurst = () => { for (const sd of [-1, 1]) { footAt(sd * 1.2); puff(tmp.x, tmp.y + .3, tmp.z, 5, 3, .6, 4.5, 0x7a828e, .35, 2.6, 3.5); } };
@@ -342,10 +350,28 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.speed = 0; dino.turn = 0;
     T.eye = 1; T.lie = 0; T.spine = 0; T.walk = 0; T.jaw = JAW_CLOSED + Math.sin(t * 1.6) * .015;
     T.headYaw = clamp(ly, -1.35, 1.35); T.headPitch = clamp(lp, -.6, .3);
+    // mordida: se o cursor encostar na boca (e não estiver rugindo), ele come o mouse
+    if (AI.state === "track" && ptr.active && now > AI.biteCd && roarLock < now) {
+      tmp.copy(headW).project(camera);
+      const dx = (tmp.x - (ptr.x * 2 - 1)) * innerWidth / 2, dy = (tmp.y + (ptr.y * 2 - 1)) * innerHeight / 2;
+      if (Math.hypot(dx, dy) < 70) { AI.state = "bite"; AI.biteT = 0; AI.struck = false; AI.biteCd = now + MORDIDA_CD; }
+    }
+    if (AI.state === "bite") {
+      AI.biteT += dt; const b = AI.biteT, hy = clamp(ly, -.9, .9), hp = clamp(lp, -.3, .7);
+      T.walk = 0; T.headYaw = hy;
+      if (b < .35) { const k = ss(0, .35, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
+      else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, .3, k); T.headPitch = lerp(-.2, hp + .15, k); T.jaw = JAW_OPEN; }
+      else if (b < .68) { const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = .3; T.headPitch = hp + .15;
+        if (!AI.struck && b > .65) { AI.struck = true; comerMouse(); } }
+      else if (b < 1.4) { const k = ss(.68, 1.4, b); T.spine = lerp(.3, 0, k); T.headPitch = lerp(hp + .15, clamp(lp, -.6, .3), k); T.jaw = JAW_CLOSED; }
+      else { AI.state = "track"; }
+    }
     if (AI.state === "roar") {                                       // rugido: boca abre, cabeça sobe, tremor
       AI.roarT += dt; const b = AI.roarT;
-      const up = ss(0, .6, b) * (1 - ss(ROAR_DUR - .7, ROAR_DUR, b)), tr = Math.sin(b * 34) * .03 * up;
-      T.spine = .1 * up; T.headPitch = -.45 * up + tr; T.headYaw = clamp(ly, -1.35, 1.35) * (1 - up);   // agachado: tronco inclina um pouco, cabeça alta e de frente
+      const fim = 1 - ss(ROAR_DUR - .7, ROAR_DUR, b);
+      const dip = ss(0, .4, b) * fim;                                // costas descem primeiro
+      const up = ss(.4, 1, b) * fim, tr = Math.sin(b * 34) * .03 * up;   // depois a cabeça sobe e a boca abre
+      T.spine = .22 * dip * (1 - up) + .05 * up; T.headPitch = -.45 * up + tr; T.headYaw = clamp(ly, -1.35, 1.35) * (1 - up);
       T.jaw = lerp(JAW_CLOSED, .32, up) + Math.sin(b * 22) * .04 * up;   // boca bem aberta
       if (b > .6 && b < ROAR_DUR - .6) AI.shake = Math.max(AI.shake, .55);
       if (!AI.fogged && b > .8) { AI.fogged = true; fogBurst(); }
@@ -389,7 +415,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       const ax = rig.point(e.c[0] + e.n.x, e.c[1] + e.n.y, e.c[2] + e.n.z, R); g0.set(ax[0] - pp[0], ax[1] - pp[1], ax[2] - pp[2]).normalize();
       if (target) { eyeW.copy(e.m.position); dino.root.localToWorld(eyeW); const w = dino.root.worldToLocal(e.tgt.copy(target)); gaze.copy(w).sub(e.m.position).normalize(); }
       else gaze.copy(g0).add(tmp.set(Math.sin(t * .7) * .3, Math.sin(t * 1.1) * .1, 0)).normalize();
-      q1.setFromUnitVectors(g0, gaze); const ang = 2 * Math.acos(clamp(q1.w, -1, 1)), lim = .75;
+      q1.setFromUnitVectors(g0, gaze); const ang = 2 * Math.acos(clamp(q1.w, -1, 1)), lim = .32;
       if (ang > lim) { q2.identity().slerp(q1, lim / ang); gaze.copy(g0).applyQuaternion(q2); }
       e.look.lerp(gaze, 1 - Math.exp(-16 * dt)).normalize();
       e.m.quaternion.setFromUnitVectors(zAx, e.look); e.m.scale.set(1, Math.max(.06, P.eye), 1);
