@@ -155,7 +155,7 @@ Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/j
   // Lua (menor que a Terra: ~27%)
   world.moon = holder(l.scene, 0.95); scene.add(world.moon); world.moon.userData.base = world.moon.scale.x;   // lua maior
   // Júpiter (o gigante)
-  world.jup = holder(j.scene, 14); world.jup.position.copy(JUP); world.jup.rotation.z = .05;
+  world.jup = holder(j.scene, 14); world.jup.position.copy(JUP); world.jup.rotation.z = .05; world.jup.userData.base = world.jup.scale.x;
   world.jup.add(atmos(14, 0xd9b27a, { thick: 1.02, power: 3.5, gain: .55, haze: .25 })); scene.add(world.jup);
   tag.dataset.space = "ready";
 }).catch(e => { console.warn("Modelos 3D não carregados:", e); tag.dataset.space = "error"; });
@@ -305,6 +305,9 @@ function frame() {
     const dC = world.moon.position.distanceTo(camera.position);
     world.moon.scale.setScalar(world.moon.userData.base * Math.min(3, Math.max(.85, 10 / Math.max(dC, .1))));
     world.jup.rotation.y += dt * .09 * spd;
+    // ao se aproximar da câmera, Júpiter cresce (sem sumir)
+    const dJ = world.jup.position.distanceTo(camera.position);
+    world.jup.scale.setScalar(world.jup.userData.base * Math.min(3, Math.max(1, 60 / Math.max(dJ, .1))));
   }
   if (!reduce || !belts[0].done) belts.forEach(B => {
     B.items.forEach((a, i) => { dm.position.copy(a.p); dm.rotation.set(a.o + t * a.r.x * spd, a.o + t * a.r.y * spd, t * a.r.z * spd); dm.scale.setScalar(a.s); dm.updateMatrix(); B.mesh.setMatrixAt(i, dm.matrix); });
