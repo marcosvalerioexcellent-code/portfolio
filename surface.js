@@ -342,6 +342,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   }
 
   function think(dt, t, info) {
+    const now = performance.now() / 1000;
     let ly, lp;
     if (info.look) { const la = lookAngles(info.look); ly = la.yaw; lp = la.pitch; }
     else { AI.scanT += dt; ly = Math.sin(AI.scanT * .5) * .5 + Math.sin(AI.scanT * 1.3) * .1; lp = .02 + Math.sin(AI.scanT * .8) * .06; }
