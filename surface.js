@@ -306,7 +306,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
 
   const estiloCursor = document.createElement("style");
   estiloCursor.textContent = "html.mouse-comido, html.mouse-comido * { cursor: none !important; }"; document.head.append(estiloCursor);
-  const MOUSE_SOME_MS = 3000, MORDIDA_CD = 8;             // tempo sem o cursor e intervalo mínimo entre mordidas (s)
+  const MOUSE_SOME_MS = 3000, MORDIDA_CD = 1.5;             // tempo sem o cursor e intervalo mínimo entre mordidas (s)
   let comidoT = 0, piscaEm = 2, piscaAte = 0;
   function comerMouse() {
     AI.comido = true; AI.hit = true;
@@ -350,7 +350,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     tmp.copy(headW).project(camera);
     const dx = (tmp.x - (ptr.x * 2 - 1)) * innerWidth / 2;
     const dy = (tmp.y + (ptr.y * 2 - 1)) * innerHeight / 2;      // > 0: cursor abaixo da ponta do focinho
-    return larga ? Math.abs(dx) < 120 && dy > -50 && dy < 170 : Math.abs(dx) < 80 && dy > -20 && dy < 120;
+    return larga ? Math.abs(dx) < 150 && dy > -60 && dy < 190 : Math.abs(dx) < 110 && dy > -40 && dy < 150;
   }
   function think(dt, t, info) {
     const now = performance.now() / 1000;
@@ -374,22 +374,22 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       const hy0 = clamp(ly, -1.1, 1.1), hp0 = clamp(lp, -.9, .7);
       const lean = .3 * (1 - clamp(-hp0 / .6, 0, 1) * .8);
       T.walk = 0;
-      if (b < .35) { const k = ss(0, .35, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.headYaw = hy0 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
-      else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, lean, k); T.headPitch = lerp(-.2, hp0 + .15, k); T.headYaw = hy0; T.jaw = JAW_OPEN; }
-      else if (b < .68) {
-        const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = lean; T.headPitch = hp0 + .15; T.headYaw = hy0;
-        if (!AI.hit && cursorNaBoca(true)) { AI.hit = true; comerMouse(); }   // se o cursor estiver na boca durante o bote, come na hora
-        if (!AI.struck && b > .65) {                                 // fim do bote: se não comeu, congela a pose e chacoalha
+      if (b < .15) { const k = ss(0, .15, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.headYaw = hy0 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
+      else if (b < .3) { const k = ss(.15, .3, b); T.spine = lerp(-.05, lean, k); T.headPitch = lerp(-.2, hp0 + .15, k); T.headYaw = hy0; T.jaw = JAW_OPEN; }
+      else if (b < .42) {
+        const k = ss(.3, .42, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = lean; T.headPitch = hp0 + .15; T.headYaw = hy0;
+        if (!AI.hit && b > .12 && cursorNaBoca(true)) { AI.hit = true; comerMouse(); }   // se o cursor estiver na boca durante o bote, come na hora
+        if (!AI.struck && b > .4) {                                 // fim do bote: se não comeu, congela a pose e chacoalha
           AI.struck = true; AI.frozen = { yaw: hy0, pitch: hp0 + .15 };
         }
       }
       else if (b < 3.2) {
-        const F = AI.frozen || { yaw: 0, pitch: 0 }, k = ss(.68, 3.2, b);
+        const F = AI.frozen || { yaw: 0, pitch: 0 }, k = ss(.42, 3.2, b);
         T.spine = lerp(lean, 0, k); T.jaw = JAW_CLOSED;
         if (AI.hit) {                                                // engoliu: volta devagar à posição normal
           T.headYaw = lerp(F.yaw, 0, k); T.headPitch = lerp(F.pitch, 0, k);
         } else if (b < 1.6) {                                        // errou: chacoalha SEM seguir o cursor
-          const amp = .5 * (1 - ss(.68, 1.6, b));
+          const amp = .5 * (1 - ss(.42, 1.6, b));
           T.headYaw = F.yaw + Math.sin((b - .68) * 30) * amp; T.headPitch = F.pitch;
         } else {                                                     // terminou de chacoalhar: volta a seguir
           const r = ss(1.6, 2.4, b);
