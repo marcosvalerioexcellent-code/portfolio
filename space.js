@@ -285,7 +285,9 @@ function frame() {
   camera.position.copy(camPath.getPoint(u)); look.copy(lookPath.getPoint(u));
   // subida: superfície (a=0) → atmosfera → espaço (a=1). Sem superfície, começa direto no espaço.
   const aT = surf ? Math.min(1, scrollY / (innerHeight * .12)) : 1; aS += (aT - aS) * Math.min(1, dt * 2.8); if (Math.abs(aT - aS) < .002) aS = aT;
-  const a = aS, sa = surf ? surf.alpha(a) : 0;
+  // cenas separadas: sobre o mar some o dinossauro; sobre a terra somem os tubarões e o mar
+  const uwNow = world.sea ? world.sea.uw : 0;
+  const a = aS, sa = surf ? surf.alpha(a) * (1 - uwNow) : 0;
   if (a < 1) { const b = bb(.4, 1, a); camera.position.lerp(ENTRY_P, 1 - b); look.lerp(ENTRY_L, 1 - b); }
   // no celular, a Terra sobe para ficar atrás do título em vez de ao lado
   if (innerWidth < 900) { look.x = look.x * .4; look.y += (1 - u * 6 > 0 ? -1.6 * (1 - u * 6) : 0); }

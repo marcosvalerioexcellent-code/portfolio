@@ -152,7 +152,7 @@ export function createSea({ scene, camera, earth, renderer }) {
     const alvo = (alt < 2.6 && ehMarSob(camera, earth)) ? 1 : 0;
     uw += (alvo - uw) * Math.min(1, dt * 2);
     if (uw < .003) uw = 0;
-    fundo.style.opacity = (uw * .85).toFixed(3);
+    fundo.style.opacity = (uw * .6).toFixed(3);
     root.visible = uw > .01;
     if (root.visible) {
       if (!carregando) carregar();
