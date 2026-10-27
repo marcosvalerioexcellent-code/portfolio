@@ -954,6 +954,18 @@
         scroll-behavior:auto !important;
       }
     }
+    /* ===== HOVER DOS CARDS: borda dourada, brilho e reflexo que atravessa o card ===== */
+    .service-card,.project,.stat,.equipe-card{position:relative;overflow:hidden;isolation:isolate}
+    .service-card::after,.project::after,.stat::after,.equipe-card::after{
+      content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+      background:linear-gradient(115deg, transparent 38%, rgba(255,240,190,.20) 50%, transparent 62%);
+      transform:translateX(-120%);transition:transform .9s cubic-bezier(.2,.7,.2,1);
+    }
+    .service-card:hover::after,.project:hover::after,.stat:hover::after,.equipe-card:hover::after{transform:translateX(120%)}
+    .service-card:hover,.project:hover,.stat:hover,.equipe-card:hover{
+      border-color:rgba(214,178,78,.75);
+      box-shadow:0 0 0 1px rgba(214,178,78,.22), 0 18px 48px rgba(214,178,78,.16), inset 0 1px 0 rgba(255,240,190,.12);
+    }
   </style>
   <link rel="stylesheet" href="/space.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
