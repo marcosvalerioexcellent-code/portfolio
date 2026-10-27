@@ -372,7 +372,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       const fim = 1 - ss(ROAR_DUR - .7, ROAR_DUR, b);
       const dip = ss(0, .4, b) * fim;                                // costas descem primeiro
       const up = ss(.4, 1, b) * fim, tr = Math.sin(b * 34) * .03 * up;   // depois a cabeça sobe e a boca abre
-      T.spine = .22 * dip * (1 - up) + .05 * up; T.headPitch = -.45 * up + tr; T.headYaw = clamp(ly, -1.35, 1.35) * (1 - up);
+      T.spine = .42 * dip; T.headPitch = -.85 * up + tr; T.headYaw = clamp(ly, -1.35, 1.35) * (1 - up);   // tronco fica inclinado até o fim do rugido
       T.jaw = lerp(JAW_CLOSED, .32, up) + Math.sin(b * 22) * .04 * up;   // boca bem aberta
       if (b > .6 && b < ROAR_DUR - .6) AI.shake = Math.max(AI.shake, .55);
       if (!AI.fogged && b > .8) { AI.fogged = true; fogBurst(); }
