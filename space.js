@@ -165,6 +165,8 @@ Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/j
 
 /* ---------- Trajetória da câmera ---------- */
 const V = (...a) => new THREE.Vector3(...a);
+let rolou = false;                                                 // o mar só aparece depois da primeira rolagem (no início, o foco é o dinossauro)
+addEventListener("scroll", () => { rolou = true; }, { passive: true });
 const camPath = new THREE.CatmullRomCurve3([V(0, .6, 10), V(-7, 2, -8), V(5, 1, -150), V(-4, -1, -260), V(9, 3, -380), V(14, 4, -483), V(-16, 5, -483)], false, "catmullrom", .4);
 const lookPath = new THREE.CatmullRomCurve3([V(-3.2, 0, 0), V(-6, .5, -90), V(4, -1, -230), V(-20, 2, -330), V(-34, 4, -450), V(-48, 6, -520), V(-48, 6, -520)], false, "catmullrom", .4);
 
@@ -325,7 +327,7 @@ function frame() {
     try { surf.update(dt, t, a); surf.render(a, t, dt); } catch (err) { console.error("Erro na superfície:", err); }
     shade.style.opacity = sa;
   }
-  if (world.sea) world.sea.update(dt, t, aS > .6);
+  if (world.sea) world.sea.update(dt, t, rolou);
   if (sa < 1) renderer.render(scene, camera); else renderer.clear();
   if (sa > 0) surf.composite();
 }
