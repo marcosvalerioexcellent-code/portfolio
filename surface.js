@@ -313,7 +313,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     document.documentElement.classList.add("mouse-comido"); clearTimeout(comidoT);
     comidoT = setTimeout(() => { AI.comido = false; document.documentElement.classList.remove("mouse-comido"); }, MOUSE_SOME_MS);
   }
-  const PRE_ROAR = 1.6, ROAR_DUR = PRE_ROAR + 4.68, T0 = performance.now() / 1000;   // preparação antes do som (s) e duração total
+  const PRE_ROAR = 1.6, SOM_EM = 1.0, ROAR_DUR = PRE_ROAR + 4.68, T0 = performance.now() / 1000;   // som começa com a boca abrindo (SOM_EM s)   // preparação antes do som (s) e duração total
   const DINO_Z = CAM0.z - 12;   // T-Rex parado a 10 m da câmera (sem andar)
   const footAt = (side) => { tmp.set(side * .95, .1, .25); dino.root.localToWorld(tmp); return tmp; };
   const fogBurst = () => { for (const sd of [-1, 1]) { footAt(sd * 1.2); puff(tmp.x, tmp.y + .3, tmp.z, 5, 3, .6, 4.5, 0x7a828e, .35, 2.6, 3.5); } };
@@ -337,9 +337,10 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     setTimeout(() => {
       if (visivel && !visivel()) { roarLock = 0; return; }             // saiu da tela antes de rugir: cancela
       AI.state = "roar"; AI.roarT = 0; AI.fogged = false;
+      const t0 = actx ? actx.currentTime : 0;
       pending.then(buf => { if (!buf || !actx) return; const s = actx.createBufferSource(); s.buffer = buf;
         const g = actx.createGain(); g.gain.value = alphaOf(aSnap()); s.connect(g).connect(actx.destination);
-        roarGain = g; roarSrc = s; s.onended = () => { if (roarGain === g) { roarGain = null; roarSrc = null; } }; s.start(actx.currentTime + PRE_ROAR); }).catch(() => {});
+        roarGain = g; roarSrc = s; s.onended = () => { if (roarGain === g) { roarGain = null; roarSrc = null; } }; s.start(Math.max(actx.currentTime, t0 + SOM_EM)); }).catch(() => {});
     }, 500);
   }
 
