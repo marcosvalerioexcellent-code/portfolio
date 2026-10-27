@@ -364,14 +364,38 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       AI.state = "bite"; AI.biteT = 0; AI.struck = false; AI.hit = false; AI.biteCd = now + MORDIDA_CD;
     }
     if (AI.state === "bite") {
-      AI.biteT += dt; const b = AI.biteT, hy = clamp(ly, -.9, .9), hp = clamp(lp, -.75, .7);
-      T.walk = 0; T.headYaw = hy;
-      if (b < .35) { const k = ss(0, .35, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
-      else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, .3, k); T.headPitch = lerp(-.2, hp + .15, k); T.jaw = JAW_OPEN; }
-      else if (b < .68) { const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = .3; T.headPitch = hp + .15;
-        if (!AI.struck && b > .65) { AI.struck = true; if (cursorNaBoca()) comerMouse(); } }
-      else if (b < 3.2) { const k = ss(.68, 3.2, b); T.spine = lerp(.3, 0, k); T.headPitch = lerp(hp + .15, clamp(lp, -.6, .3), k); T.jaw = JAW_CLOSED;
-        if (!AI.hit) T.headYaw += Math.sin((b - .68) * 30) * .5 * (1 - k); }   // errou: chacoalha a cabeça
+      AI.biteT += dt; const b = AI.biteT;
+      // mira: a ponta do focinho aponta para o cursor (inclusive quando ele está acima)
+      const aim = (() => {
+        if (!info.look || !lastOut) return lp;
+        tmp.copy(info.look); dino.root.worldToLocal(tmp);
+        const dy = tmp.y - lastOut.pos[tipI * 3 + 1], dz = Math.hypot(tmp.x - lastOut.pos[tipI * 3], tmp.z - lastOut.pos[tipI * 3 + 2]) + .3;
+        return -Math.atan2(dy, dz) + .05;
+      })();
+      const hy0 = clamp(ly, -.9, .9), hp0 = clamp(aim, -.9, .7);
+      T.walk = 0;
+      if (b < .35) { const k = ss(0, .35, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.headYaw = hy0 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
+      else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, .3, k); T.headPitch = lerp(-.2, hp0 + .15, k); T.headYaw = hy0; T.jaw = JAW_OPEN; }
+      else if (b < .68) {
+        const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = .3; T.headPitch = hp0 + .15; T.headYaw = hy0;
+        if (!AI.struck && b > .65) {                                 // no momento da mordida: decide se acertou e congela a pose
+          AI.struck = true; AI.frozen = { yaw: hy0, pitch: hp0 + .15 };
+          AI.hit = cursorNaBoca(); if (AI.hit) comerMouse();
+        }
+      }
+      else if (b < 3.2) {
+        const F = AI.frozen || { yaw: 0, pitch: 0 }, k = ss(.68, 3.2, b);
+        T.spine = lerp(.3, 0, k); T.jaw = JAW_CLOSED;
+        if (AI.hit) {                                                // engoliu: volta devagar à posição normal
+          T.headYaw = lerp(F.yaw, 0, k); T.headPitch = lerp(F.pitch, 0, k);
+        } else if (b < 1.6) {                                        // errou: chacoalha SEM seguir o cursor
+          const amp = .5 * (1 - ss(.68, 1.6, b));
+          T.headYaw = F.yaw + Math.sin((b - .68) * 30) * amp; T.headPitch = F.pitch;
+        } else {                                                     // terminou de chacoalhar: volta a seguir
+          const r = ss(1.6, 2.4, b);
+          T.headYaw = lerp(F.yaw, hy0, r); T.headPitch = lerp(F.pitch, hp0, r);
+        }
+      }
       else { AI.state = "track"; }
     }
     if (AI.state === "roar") {                                       // rugido: boca abre, cabeça sobe, tremor
