@@ -317,8 +317,9 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     if (!roarBuf) roarBuf = fetch("/sounds/trex-roar.wav").then(r => r.arrayBuffer()).then(b => actx.decodeAudioData(b)).catch(e => console.warn("Rugido não carregado:", e));
     return roarBuf;
   }
-  let roarLock = 0;                                                  // até quando novos pedidos são ignorados
-  function roar(visivel) {
+  let roarLock = 0, roarGain = null, aSnap = () => 1;                 // volume do rugido acompanha a Terra sair da tela
+  function roar(visivel, getA) {
+    if (getA) aSnap = getA;
     const now = performance.now() / 1000;
     if (now < roarLock || (visivel && !visivel())) return;          // só ruge se o T-Rex estiver visível na tela                                      // já rugindo ou esperando: não cancela
     roarLock = now + .5 + ROAR_DUR + .5;                             // rugido + 0,5 s antes de aceitar outro
@@ -326,7 +327,9 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     setTimeout(() => {
       if (visivel && !visivel()) { roarLock = 0; return; }             // saiu da tela antes de rugir: cancela
       AI.state = "roar"; AI.roarT = 0; AI.fogged = false;
-      pending.then(buf => { if (!buf || !actx) return; const s = actx.createBufferSource(); s.buffer = buf; s.connect(actx.destination); s.start(); }).catch(() => {});
+      pending.then(buf => { if (!buf || !actx) return; const s = actx.createBufferSource(); s.buffer = buf;
+        const g = actx.createGain(); g.gain.value = alphaOf(aSnap()); s.connect(g).connect(actx.destination);
+        roarGain = g; s.onended = () => { if (roarGain === g) roarGain = null; }; s.start(); }).catch(() => {});
     }, 500);
   }
 
@@ -342,7 +345,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     if (AI.state === "roar") {                                       // rugido: boca abre, cabeça sobe, tremor
       AI.roarT += dt; const b = AI.roarT;
       const up = ss(0, .6, b) * (1 - ss(ROAR_DUR - .7, ROAR_DUR, b)), tr = Math.sin(b * 34) * .03 * up;
-      T.spine = -.05 * up; T.headPitch = -.32 * up + tr; T.headYaw = clamp(ly, -1.35, 1.35) * (1 - up);   // cabeça esticada para frente
+      T.spine = .1 * up; T.headPitch = -.45 * up + tr; T.headYaw = clamp(ly, -1.35, 1.35) * (1 - up);   // agachado: tronco inclina um pouco, cabeça alta e de frente
       T.jaw = lerp(JAW_CLOSED, .32, up) + Math.sin(b * 22) * .04 * up;   // boca bem aberta
       if (b > .6 && b < ROAR_DUR - .6) AI.shake = Math.max(AI.shake, .55);
       if (!AI.fogged && b > .8) { AI.fogged = true; fogBurst(); }
@@ -416,6 +419,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   const alphaOf = (a) => 1 - ss(.55, .93, a);
   let sx = 0, sy = 0, shk = 0;
   function render(a, t, dt) {
+    if (roarGain) roarGain.gain.value = alphaOf(a);   // som some na mesma velocidade que a Terra sai da tela
     const alt = 3 + 3400 * (Math.exp(5.6 * a) - 1) / (Math.exp(5.6) - 1);
     const pitch = PITCH0 + (-1.32 - PITCH0) * ss(.08, 1, Math.pow(a, 1.1));
     sx = damp(sx, ptr.active ? ptr.x - .5 : 0, 3, dt); sy = damp(sy, ptr.active ? ptr.y - .5 : 0, 3, dt);
