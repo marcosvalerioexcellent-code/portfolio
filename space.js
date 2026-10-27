@@ -20,8 +20,8 @@ catch (e) { canvas.remove(); throw e; }
 /* ---------- desempenho adaptativo ----------
    Mede o tempo real dos quadros e ajusta sozinho resolução, sombras, MSAA e skinning.
    Passos (resolução, nível): vão do máximo ao mínimo; sobe de novo só se houver folga. */
-const weak = mobile || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
-const BASE_DPR = Math.min(devicePixelRatio, weak ? 1.5 : 2);
+const weak = mobile;   // desktop começa sempre em qualidade máxima; a redução automática só acontece se travar de verdade
+const BASE_DPR = Math.min(devicePixelRatio, mobile ? 1.5 : 2);
 const STEPS = [[1, 0], [.85, 0], [.75, 1], [.65, 1], [.6, 2], [.5, 2], [.4, 3]];
 let qi = weak ? 1 : 0, qBad = new Set(), qSince = 0, qBuf = [], qOk = 0;
 renderer.setPixelRatio(BASE_DPR * STEPS[qi][0]);
@@ -275,8 +275,8 @@ function governor(raw) {
   if (raw > 250 || document.hidden) return;                       // ignora picos (carregamento, troca de aba)
   qBuf.push(raw); if (qBuf.length < 40 || performance.now() - qSince < 1500) { if (qBuf.length > 40) qBuf.shift(); return; }
   const avg = qBuf.reduce((x, y) => x + y, 0) / qBuf.length; qBuf.length = 0;
-  if (avg > 20 && qi < STEPS.length - 1) { qBad.add(qi); qi++; applyQuality(); }   // abaixo de ~50 fps: simplifica
-  else if (avg < 18 && qi > 0 && !qBad.has(qi - 1) && ++qOk >= 6) { qi--; applyQuality(); }  // ~10 s folgado: tenta subir
+  if (avg > 40 && qi < STEPS.length - 1) { qi++; applyQuality(); }   // só abaixo de ~25 fps (travando de verdade): simplifica
+  else if (avg < 18 && qi > 0 && ++qOk >= 4) { qi--; applyQuality(); }  // folga: volta à qualidade maior
   else if (avg >= 18) qOk = 0;
 }
 const look = new THREE.Vector3(), tmpV = new THREE.Vector3(), sv = new THREE.Vector3();
