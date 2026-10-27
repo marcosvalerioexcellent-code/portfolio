@@ -67,8 +67,11 @@ const NS = mobile ? 6000 : 14000, pos = new Float32Array(NS * 3), col = new Floa
 const bandN = new THREE.Vector3(.25, .85, .35).normalize(), tmp = new THREE.Vector3(), c = new THREE.Color();
 const temps = [[.6, .75, 1], [.8, .88, 1], [1, 1, 1], [1, .93, .78], [1, .78, .55], [1, .6, .45]];
 for (let i = 0; i < NS; i++) {
-  do { tmp.randomDirection(); } while (i % 10 < 4 && Math.random() > Math.exp(-Math.pow(tmp.dot(bandN) * 3.2, 2)));
-  tmp.multiplyScalar(1200).toArray(pos, i * 3);
+  // campo de estrelas fixo no espaço ao redor do caminho da câmera: ao avançar, elas passam e geram paralaxe
+  let x, y, z;
+  do { x = (Math.random() - .5) * 520; y = (Math.random() - .5) * 280; z = 60 - Math.random() * 680; }
+  while (Math.hypot(x, y - 2) < 18);                               // nada colado na lente
+  pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
   const t = temps[Math.min(5, Math.floor(Math.pow(Math.random(), 1.4) * 6))];
   const b = .35 + Math.random() * .65; col.set([t[0] * b, t[1] * b, t[2] * b], i * 3);
   siz[i] = 1 + Math.pow(Math.random(), 7) * 5.5; ph[i] = Math.random() * 6.28;
@@ -88,25 +91,6 @@ float g=exp(-r*r*5.)+.25*exp(-abs(p.x)*40.)*exp(-abs(p.y)*4.)+.25*exp(-abs(p.y)*
 if(g<.01)discard;gl_FragColor=vec4(c*g*a*1.6,1.);}`
 });
 const stars = new THREE.Points(starGeo, starMat); stars.frustumCulled = false; scene.add(stars);
-
-/* poeira espalhada de forma uniforme (um ponto em cada célula com leve variação), sem aglomerados */
-function dustPositions(n) {
-  const W = 90, D = 560, Z0 = 20;                                  // largura/altura ±45, profundidade de -540 a +20
-  const s = Math.cbrt((W * W * D) / n);                            // tamanho da célula para dar ~n pontos
-  const gx = Math.round(W / s), gy = gx, gz = Math.round(D / s);
-  const out = new Float32Array(gx * gy * gz * 3); let k = 0;
-  for (let i = 0; i < gx; i++) for (let j = 0; j < gy; j++) for (let l = 0; l < gz; l++) {
-    out[k++] = -W / 2 + (i + .15 + Math.random() * .7) * (W / gx);
-    out[k++] = -W / 2 + (j + .15 + Math.random() * .7) * (W / gy);
-    out[k++] = Z0 - (l + .15 + Math.random() * .7) * (D / gz);
-  }
-  return out;
-}
-/* poeira próxima: dá sensação de velocidade ao viajar */
-const dust = new THREE.Points(
-  new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(dustPositions(mobile ? 6000 : 13500), 3)),
-  new THREE.PointsMaterial({ size: .09, color: 0xbfc9ff, transparent: true, opacity: .55, depthWrite: false })
-); dust.frustumCulled = false; scene.add(dust);
 
 /* ---------- Sol distante (brilho) ---------- */
 const sc = document.createElement("canvas"); sc.width = sc.height = 256;
@@ -304,8 +288,7 @@ function frame() {
   camera.lookAt(look); camera.rotateZ(sx2 * -.03 + Math.sin(t * .15) * .004);
   camera.fov = 55 + Math.min(14, Math.abs(vel) * 9); camera.updateProjectionMatrix();
 
-  stars.position.copy(camera.position); sky.position.copy(camera.position); sun.position.copy(camera.position).add(SUN_OFF); starMat.uniforms.t.value = t;
-  dust.position.z = 0;
+  sky.position.copy(camera.position); sun.position.copy(camera.position).add(SUN_OFF); starMat.uniforms.t.value = t;
   sv.copy(SUN).transformDirection(camera.matrixWorldInverse); nightU.v.value.copy(sv);
 
   if (world.earth) {
