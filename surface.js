@@ -326,7 +326,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     if (!roarBuf) roarBuf = fetch("/sounds/trex-roar.wav").then(r => r.arrayBuffer()).then(b => actx.decodeAudioData(b)).catch(e => console.warn("Rugido não carregado:", e));
     return roarBuf;
   }
-  let roarLock = 0, roarGain = null, aSnap = () => 1;                 // volume do rugido acompanha a Terra sair da tela
+  let roarLock = 0, roarGain = null, roarSrc = null, aSnap = () => 1, foraT = 0;                 // volume do rugido acompanha a Terra sair da tela
   function roar(visivel, getA) {
     if (getA) aSnap = getA;
     const now = performance.now() / 1000;
@@ -338,7 +338,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       AI.state = "roar"; AI.roarT = 0; AI.fogged = false;
       pending.then(buf => { if (!buf || !actx) return; const s = actx.createBufferSource(); s.buffer = buf;
         const g = actx.createGain(); g.gain.value = alphaOf(aSnap()); s.connect(g).connect(actx.destination);
-        roarGain = g; s.onended = () => { if (roarGain === g) roarGain = null; }; s.start(); }).catch(() => {});
+        roarGain = g; roarSrc = s; s.onended = () => { if (roarGain === g) { roarGain = null; roarSrc = null; } }; s.start(); }).catch(() => {});
     }, 500);
   }
 
@@ -480,6 +480,13 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   let sx = 0, sy = 0, shk = 0;
   function render(a, t, dt) {
     if (roarGain) roarGain.gain.value = alphaOf(a);   // som some na mesma velocidade que a Terra sai da tela
+    // fora da tela por mais de 1 s: o rugido acaba de vez (ao voltar, o T-Rex não está mais rugindo)
+    if (alphaOf(a) < .05 && (AI.state === "roar" || roarSrc)) foraT += dt; else foraT = 0;
+    if (foraT > 1) {
+      foraT = 0; AI.state = "track"; AI.roarT = 0; AI.fogged = false; AI.liftR = 0; roarLock = 0;
+      if (roarSrc) { try { roarSrc.stop(); } catch (e) {} roarSrc = null; }
+      roarGain = null;
+    }
     const alt = 3 + 3400 * (Math.exp(5.6 * a) - 1) / (Math.exp(5.6) - 1);
     const pitch = PITCH0 + (-1.32 - PITCH0) * ss(.08, 1, Math.pow(a, 1.1));
     sx = damp(sx, ptr.active ? ptr.x - .5 : 0, 3, dt); sy = damp(sy, ptr.active ? ptr.y - .5 : 0, 3, dt);
