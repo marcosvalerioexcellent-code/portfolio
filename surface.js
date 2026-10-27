@@ -388,6 +388,9 @@ gl_FragColor=vec4(col,d*fade*.97);}`
         T.spine = lerp(.3, 0, k); T.jaw = JAW_CLOSED;
         if (AI.hit) {                                                // engoliu: volta devagar à posição normal
           T.headYaw = lerp(F.yaw, 0, k); T.headPitch = lerp(F.pitch, 0, k);
+          // depois de engolir: tremidinha rápida com a cabeça, como quem diz "sim"
+          const nod = (1 - ss(.85, 1.9, b)) * ss(.8, .9, b);
+          T.headPitch += Math.sin((b - .85) * 40) * .13 * nod;
         } else if (b < 1.6) {                                        // errou: chacoalha SEM seguir o cursor
           const amp = .5 * (1 - ss(.68, 1.6, b));
           T.headYaw = F.yaw + Math.sin((b - .68) * 30) * amp; T.headPitch = F.pitch;
