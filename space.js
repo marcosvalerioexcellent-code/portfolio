@@ -274,6 +274,7 @@ function applyQuality() {
 function governor() { /* qualidade fixa no máximo: sem redução automática */ }
 const look = new THREE.Vector3(), tmpV = new THREE.Vector3(), sv = new THREE.Vector3();
 function frame() {
+  requestAnimationFrame(frame);                                   // agenda o próximo quadro antes de tudo: um erro não congela a página
   const nowRaw = performance.now(); governor(nowRaw - lastRaw); lastRaw = nowRaw;
   const dt = Math.min(clock.getDelta(), .1), t = clock.elapsedTime, spd = reduce ? 0 : 1;
   tT = target(); tS += (tT - tS) * Math.min(1, dt * 3.2);
@@ -310,13 +311,12 @@ function frame() {
   updateMeteors(dt);
   hudBar.style.transform = `scaleY(${u})`;
   if (surf) {
-    surf.update(dt, t, a); surf.render(a, t, dt);
+    try { surf.update(dt, t, a); surf.render(a, t, dt); } catch (err) { console.error("Erro na superfície:", err); }
     shade.style.opacity = sa; hint.style.opacity = Math.max(0, 1 - a * 5) * (hint.dataset.gone ? 0 : 1);
     if (t > 14 && !hint.dataset.gone && a < .02) hint.dataset.gone = "1";
   }
   if (sa < 1) renderer.render(scene, camera); else renderer.clear();
   if (sa > 0) surf.composite();
-  requestAnimationFrame(frame);
 }
 let rsT = 0;
 addEventListener("resize", () => {
