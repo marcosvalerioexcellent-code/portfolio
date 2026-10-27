@@ -955,6 +955,17 @@
     }
     /* ===== HOVER DOS CARDS: todos se aproximam igual, sem brilho ===== */
     .service-card:hover,.project:hover,.stat:hover,.equipe-card:hover{transform:translateY(-6px) scale(1.025)}
+    /* ===== CELULAR: fundo leve igual ao do painel (sem o cenário 3D) ===== */
+    @media (max-width: 759px){
+      body{
+        background:
+          radial-gradient(900px circle at 8% 0%, rgba(201,151,63,.10), transparent 55%),
+          radial-gradient(900px circle at 92% 28%, rgba(169,120,31,.09), transparent 55%),
+          radial-gradient(700px circle at 50% 100%, rgba(201,151,63,.06), transparent 55%),
+          #08070a !important;
+      }
+      body::before, body::after{display:none !important}
+    }
   </style>
   <link rel="stylesheet" href="/space.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>

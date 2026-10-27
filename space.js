@@ -11,6 +11,7 @@ import { createSurface } from "/surface.js";
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const mobile = innerWidth < 760;
 const canvas = document.createElement("canvas");
+if (mobile) canvas.style.display = "none";   // celular: sem 3D (fica o fundo leve do painel, sem travar)
 canvas.id = "space";
 document.body.prepend(canvas);
 
@@ -245,7 +246,7 @@ const secs = [".hero", "#servicos", "#portfolio", ".stats-section", "#processo",
 const hud = document.createElement("div"); hud.className = "hud";
 hud.innerHTML = `<div class="hud-track"><i></i></div>`; document.body.append(hud);
 const hudBar = hud.querySelector("i");
-const shade = document.createElement("div"); shade.className = "surface-shade"; document.body.append(shade);
+const shade = document.createElement("div"); shade.className = "surface-shade"; if (mobile) shade.style.display = "none"; document.body.append(shade);
 let aS = 0, tT = 0, tS = 0, lastY = scrollY, vel = 0, mx = 0, my = 0, sx2 = 0, sy2 = 0;
 const ENTRY_P = V(0, .5, 2.8), ENTRY_L = V(0, -.18, 1.15);   // câmera rasante sobre a Terra (ponto de encontro com a superfície)
 const bb = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -273,6 +274,7 @@ function governor() { /* qualidade fixa no máximo: sem redução automática */
 const look = new THREE.Vector3(), tmpV = new THREE.Vector3(), sv = new THREE.Vector3();
 function frame() {
   requestAnimationFrame(frame);                                   // agenda o próximo quadro antes de tudo: um erro não congela a página
+  if (mobile) return;                                            // celular: não renderiza o 3D
   const nowRaw = performance.now(); governor(nowRaw - lastRaw); lastRaw = nowRaw;
   const dt = Math.min(clock.getDelta(), .1), t = clock.elapsedTime, spd = reduce ? 0 : 1;
   tT = target(); tS += (tT - tS) * Math.min(1, dt * 3.2);
