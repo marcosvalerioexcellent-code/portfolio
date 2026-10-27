@@ -82,7 +82,7 @@ export async function createSurface(renderer, { mobile = false, reduce = false }
   const SKYSUN = new THREE.Vector3(.25, .06, -.97).normalize();   // brilho do poente (atrás do T-Rex)
   const KEY = new THREE.Vector3(-.55, .62, .75).normalize();      // luz principal: frente, esquerda, alto
   const RIM = new THREE.Vector3(.4, .3, -.87).normalize();        // contraluz laranja
-  const S = 1.7;                                                  // escala do T-Rex (~13 m)
+  const S = mobile ? .8 : 1.2;                                    // escala do T-Rex: menor e mais perto, sem cortar a cabeça
   const U = { time: { value: 0 } };
 
   let qLevel = 0;
@@ -220,7 +220,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
 
   /* ---------- marcador do cursor no chão ---------- */
   /* ---------- T-Rex ---------- */
-  const dino = { root: new THREE.Group(), x: 3.5, z: -13, yaw: 0, speed: 0, turn: 0 };
+  const dino = { root: new THREE.Group(), x: 3.5, z: -2, yaw: 0, speed: 0, turn: 0 };
   dino.root.scale.setScalar(S); scene.add(dino.root);
   const gltf = await new Promise((ok, no) => new GLTFLoader().load("/models/trex.glb", ok, undefined, no));
   let mesh; gltf.scene.traverse(o => { if (o.isMesh) mesh = o; });
@@ -303,98 +303,41 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     return { yaw: Math.atan2(dx, dz), pitch: -Math.atan2(dy, Math.hypot(dx, dz)) + .08 };
   }
 
-  const ZMIN = -19, ZMAX = -7, ZCH = -8.5, HOME_Z = -13, T0 = performance.now() / 1000;
-  let nextAtk = T0 + 7, trail = 0, moveAcc = 0;
+  const DINO_Z = CAM0.z - 10, ROAR_DUR = 4.68, T0 = performance.now() / 1000;   // T-Rex parado a 10 m da câmera (sem andar)
   const footAt = (side) => { tmp.set(side * .95, .1, .25); dino.root.localToWorld(tmp); return tmp; };
-  const fogStep = (side) => { footAt(side); puff(tmp.x, tmp.y + .3, tmp.z, 2, 1.8, .35, 5, 0x7a828e, .3, 2.4, 4.5); };   // neblina densa e duradoura sobre o pé
   const fogBurst = () => { for (const sd of [-1, 1]) { footAt(sd * 1.2); puff(tmp.x, tmp.y + .3, tmp.z, 5, 3, .6, 4.5, 0x7a828e, .35, 2.6, 3.5); } };
 
-  function think(dt, t, info) {
+  /* ---------- rugido: áudio realista + pose; quem pede espera 0,5 s, depois ruge ---------- */
+  const roarSnd = new Audio("/sounds/trex-roar.wav"); roarSnd.preload = "auto";
+  let roarLock = 0;                                                  // até quando novos pedidos são ignorados
+  function roar() {
     const now = performance.now() / 1000;
+    if (now < roarLock) return;                                      // já rugindo ou esperando: não cancela
+    roarLock = now + .5 + ROAR_DUR + .5;                             // rugido + 0,5 s antes de aceitar outro
+    setTimeout(() => {
+      AI.state = "roar"; AI.roarT = 0; AI.fogged = false;
+      roarSnd.currentTime = 0; roarSnd.play().catch(() => {});
+    }, 500);
+  }
+
+  function think(dt, t, info) {
     let ly, lp;
     if (info.look) { const la = lookAngles(info.look); ly = la.yaw; lp = la.pitch; }
     else { AI.scanT += dt; ly = Math.sin(AI.scanT * .5) * .5 + Math.sin(AI.scanT * 1.3) * .1; lp = .02 + Math.sin(AI.scanT * .8) * .06; }
-    const faceYaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z), homeX = lerp(0, 3.5, ss(.75, 1.5, innerWidth / innerHeight));
-    T.eye = 1; T.lie = 0; T.spine = 0; T.jaw = JAW_CLOSED + Math.sin(t * 1.6) * .015;
+    // posição fixa: não anda, não ataca, não foge — só gira a cabeça e os olhos para o cursor
+    dino.x = lerp(0, 3.5, ss(.75, 1.5, innerWidth / innerHeight)); dino.z = DINO_Z;
+    dino.yaw = Math.atan2(CAM0.x - dino.x, CAM0.z - dino.z); dino.speed = 0; dino.turn = 0;
+    T.eye = 1; T.lie = 0; T.spine = 0; T.walk = 0; T.jaw = JAW_CLOSED + Math.sin(t * 1.6) * .015;
     T.headYaw = clamp(ly, -.9, .9); T.headPitch = clamp(lp, -.5, .85);
-    const st = AI.state, idle = now - Math.max(ptr.last, T0);
-    if (now - ptr.last < .3) moveAcc += dt; else if (now - ptr.last > .6) moveAcc = 0;
-    let wantYaw = faceYaw, vt = 0, free = false;
-
-    if (st === "away") {                              // fora da tela: volta após 1 s de movimento do cursor
-      dino.speed = 0; T.walk = 0; if (moveAcc >= 1) { AI.state = "enter"; moveAcc = 0; }
-      return { ly, lp };
-    } else if (st === "leave") {                      // cursor parado 5 s: vira e vai embora
-      free = true; wantYaw = AI.exitYaw; vt = 2.8; T.headYaw = 0; T.headPitch = 0;
-      if (Math.abs(dino.x) > 22 || dino.z < -40) AI.state = "away";
-    } else if (st === "enter") {                      // reaparece pelo mesmo lugar onde saiu
-      free = true; const dx = homeX - dino.x, dz = HOME_Z - dino.z, d = Math.hypot(dx, dz);
-      wantYaw = d > 2 ? Math.atan2(dx, dz) : faceYaw; vt = d > .8 ? 2.8 : 0;
-      if (d < .8) { AI.state = "track"; nextAtk = now + 5; }
-    } else {
-      if (st === "track" && idle > 30 && dino.speed < .3) { AI.exitYaw = [-Math.PI / 2, Math.PI / 2, Math.PI][Math.floor(Math.random() * 3)]; AI.state = "roar"; AI.roarT = 0; return { ly, lp }; }
-      if (st === "roar") {                               // ruge antes de ir embora
-        AI.roarT += dt; const b = AI.roarT; dino.speed = damp(dino.speed, 0, 6, dt); T.walk = 0; dino.yaw = faceYaw;
-        const up = ss(0, .6, b) * (1 - ss(2.2, 2.9, b)), tr = Math.sin(b * 34) * .03 * up;
-        T.spine = -.1 * up; T.headPitch = -.5 * up + tr; T.headYaw = clamp(ly, -.9, .9) * (1 - up); T.jaw = lerp(JAW_CLOSED, JAW_OPEN + .1, up) + Math.sin(b * 22) * .04 * up;
-        if (b > .6 && b < 2.2) AI.shake = Math.max(AI.shake, .55);
-        if (!AI.fogged && b > .8) { AI.fogged = true; fogBurst(); }
-        if (b > 2.9) { AI.state = "leave"; AI.fogged = false; }
-        return { ly, lp };
-      }
-      /* ---- ataque (só às vezes): corre em direção à câmera e morde ---- */
-      if (st === "track" && ptr.active && now > nextAtk) {
-        tmp.copy(headW).project(camera);
-        const dx = (tmp.x - (ptr.x * 2 - 1)) * camera.aspect, dy = tmp.y + (ptr.y * 2 - 1);
-        if (Math.hypot(dx, dy) < .3 && tmp.z < 1) {
-          if (Math.random() < .6) { AI.state = "charge"; AI.chargeT = 0; AI.struck = false; }
-          else nextAtk = now + 4 + Math.random() * 4;
-        }
-      }
-      if (AI.state === "charge") {
-        AI.chargeT += dt; vt = 5.5; T.spine = .1; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, .35);
-        if (AI.chargeT > 1.1 || dino.z >= ZCH) { AI.state = "bite"; AI.biteT = 0; AI.struck = false; }
-      }
-      if (AI.state === "bite") {
-        AI.biteT += dt; const b = AI.biteT, hy = clamp(ly, -.9, .9), hp = clamp(lp, -.3, .7);
-        dino.speed = damp(dino.speed, 0, 7, dt); T.walk = 0; T.headYaw = hy; dino.yaw = faceYaw;
-        if (b < .35) { const k = ss(0, .35, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
-        else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, .3, k); T.headPitch = lerp(-.2, hp + .15, k); T.jaw = JAW_OPEN; }
-        else if (b < .68) { const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = .3; T.headPitch = hp + .15;
-          if (!AI.struck && b > .65) { AI.struck = true; AI.shake = 1; fogBurst(); } }
-        else if (b < 1.4) { const k = ss(.68, 1.4, b); T.spine = lerp(.3, 0, k); T.headPitch = lerp(hp + .15, clamp(lp, -.5, .85), k) + Math.sin(b * 16) * .06 * (1 - k); T.jaw = JAW_CLOSED; T.headYaw = hy + Math.sin(b * 13) * .25 * (1 - k); }
-        else { AI.state = "track"; nextAtk = now + 6 + Math.random() * 6; }
-        dino.z = clamp(dino.z + Math.cos(dino.yaw) * dino.speed * dt, ZMIN, ZMAX);
-        return { ly, lp };
-      }
-      if (AI.state === "track" && ptr.active) {         // cursor bem embaixo: vem; bem em cima: vira e se afasta (sem dar ré)
-        if (ptr.y > .85) vt = 2.2; else if (ptr.y < .15 && dino.z > ZMIN + .5) { vt = 2.2; wantYaw = Math.PI; }
-      }
+    if (AI.state === "roar") {                                       // rugido: boca abre, cabeça sobe, tremor
+      AI.roarT += dt; const b = AI.roarT;
+      const up = ss(0, .6, b) * (1 - ss(ROAR_DUR - .7, ROAR_DUR, b)), tr = Math.sin(b * 34) * .03 * up;
+      T.spine = -.1 * up; T.headPitch = -.5 * up + tr; T.headYaw = clamp(ly, -.9, .9) * (1 - up);
+      T.jaw = lerp(JAW_CLOSED, JAW_OPEN + .1, up) + Math.sin(b * 22) * .04 * up;
+      if (b > .6 && b < ROAR_DUR - .6) AI.shake = Math.max(AI.shake, .55);
+      if (!AI.fogged && b > .8) { AI.fogged = true; fogBurst(); }
+      if (b >= ROAR_DUR) { AI.state = "track"; AI.fogged = false; }
     }
-
-    /* ---- locomoção: gira o corpo até o rumo desejado e anda nessa direção ---- */
-    const dy = angDiff(dino.yaw, wantYaw); dino.yaw += dy * (1 - Math.exp(-2 * dt));
-    const err = Math.abs(angDiff(dino.yaw, wantYaw)), facing = clamp(1 - err / .8, 0, 1);
-    dino.turn = clamp(dy * 1.5, -1.5, 1.5);
-    dino.speed = damp(dino.speed, vt * facing, vt > dino.speed ? (AI.state === "charge" ? 4 : 2) : 3, dt);
-    dino.x += Math.sin(dino.yaw) * dino.speed * dt; dino.z += Math.cos(dino.yaw) * dino.speed * dt;
-    if (!free) {
-      if (dino.speed < .05) dino.x = damp(dino.x, homeX, 1.5, dt);
-      dino.x = clamp(dino.x, -13, 13); dino.z = clamp(dino.z, ZMIN, AI.state === "charge" ? Math.max(ZCH, dino.z) : ZMAX);
-    }
-    T.walk = Math.min(1, dino.speed / 1.2 + (vt > 0 ? Math.min(.6, err) : 0));
-    // cadência ligada à velocidade real: o pé de apoio anda para trás na mesma velocidade com que o chão passa (sem patinar)
-    const A = lerp(.5, .8, ss(.3, 5, dino.speed)), duty = lerp(.62, .42, ss(2.5, 5.5, dino.speed));
-    P.legA = A; P.duty = duty;
-    let om = 1.22 * Math.PI * duty * (dino.speed / S) / (1.75 * Math.sin(A));   // 1.22 = calibrado no modelo (pé de apoio acompanha o chão)
-    if (vt > 0 && dino.speed < 1.2) om = Math.max(om, clamp(err * 1.4, 0, 1.4));      // gira dando passos curtos
-    const before = Math.floor(P.phase / Math.PI); P.phase += Math.min(9, om) * dt;
-    if (P.walk > .3 && Math.floor(P.phase / Math.PI) !== before) {                    // pé acabou de tocar o chão
-      stepSide = Math.floor(P.phase / Math.PI) % 2 === 0 ? -1 : 1; fogStep(stepSide);
-      AI.shake = Math.max(AI.shake, (AI.state === "charge" ? .35 : .12) * P.walk);
-    }
-    trail += dino.speed * dt;                                                 // rastro contínuo de neblina junto aos pés
-    if (trail > .9) { trail = 0; footAt(Math.random() < .5 ? -1 : 1); puff(tmp.x, tmp.y + .3, tmp.z, 1, 2.2, .25, 4.5, 0x7a828e, .2, 2.2, 4); }
     return { ly, lp };
   }
 
@@ -496,7 +439,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   }
 
   return {
-    setQuality, update, render, composite, resize, setPointer, leave() { ptr.active = false; }, alpha: alphaOf,
+    setQuality, update, render, composite, resize, setPointer, roar, leave() { ptr.active = false; }, alpha: alphaOf,
     noteMove() { ptr.last = performance.now() / 1000; }
   };
 }
