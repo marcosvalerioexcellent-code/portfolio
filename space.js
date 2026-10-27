@@ -7,7 +7,6 @@ addEventListener("pageshow", voltarTopo);
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createSurface } from "/surface.js";
-import { createSea } from "/mar.js";
 
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const mobile = innerWidth < 760;
@@ -144,7 +143,6 @@ const surfReady = createSurface(renderer, { mobile, reduce }).then(s => { surf =
 Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/jupiter.glb"), surfReady]).then(([t, l, j]) => {
   // Terra
   const earth = holder(t.scene, 2.2); world.earth = earth; scene.add(earth);
-  world.sea = createSea({ scene, camera, earth, renderer });
   t.scene.traverse(o => {
     if (o.name === "Clouds") world.clouds = o;
     if (o.isMesh && o.material.emissiveMap) {
@@ -165,8 +163,6 @@ Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/j
 
 /* ---------- Trajetória da câmera ---------- */
 const V = (...a) => new THREE.Vector3(...a);
-let rolou = false;                                                 // o mar só aparece depois da primeira rolagem (no início, o foco é o dinossauro)
-addEventListener("scroll", () => { rolou = true; }, { passive: true });
 const camPath = new THREE.CatmullRomCurve3([V(0, .6, 10), V(-7, 2, -8), V(5, 1, -150), V(-4, -1, -260), V(9, 3, -380), V(14, 4, -483), V(-16, 5, -483)], false, "catmullrom", .4);
 const lookPath = new THREE.CatmullRomCurve3([V(-3.2, 0, 0), V(-6, .5, -90), V(4, -1, -230), V(-20, 2, -330), V(-34, 4, -450), V(-48, 6, -520), V(-48, 6, -520)], false, "catmullrom", .4);
 
@@ -256,7 +252,7 @@ const ENTRY_P = V(0, .5, 2.8), ENTRY_L = V(0, -.18, 1.15);   // câmera rasante 
 const bb = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 addEventListener("pointermove", e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; if (surf) { surf.setPointer(e.clientX, e.clientY, e.pointerType !== "mouse"); surf.noteMove(); } });
 addEventListener("pointerdown", e => { if (surf) { surf.setPointer(e.clientX, e.clientY, e.pointerType !== "mouse"); surf.noteMove(); } });
-addEventListener("pointerdown", e => { if (e.button === 0 && surf) surf.roar(() => surf.alpha(aS) > .5 && !(world.sea && world.sea.uw > .3), () => aS); });   // botão esquerdo: o T-Rex ruge (só na terra)   // botão esquerdo: o T-Rex ruge
+addEventListener("pointerdown", e => { if (e.button === 0 && surf) surf.roar(() => surf.alpha(aS) > .5, () => aS); });   // botão esquerdo: o T-Rex ruge
 document.documentElement.addEventListener("pointerleave", () => surf && surf.leave());
 
 function target() {
@@ -287,10 +283,7 @@ function frame() {
   camera.position.copy(camPath.getPoint(u)); look.copy(lookPath.getPoint(u));
   // subida: superfície (a=0) → atmosfera → espaço (a=1). Sem superfície, começa direto no espaço.
   const aT = surf ? Math.min(1, scrollY / (innerHeight * .12)) : 1; aS += (aT - aS) * Math.min(1, dt * 2.8); if (Math.abs(aT - aS) < .002) aS = aT;
-  // cenas separadas: sobre o mar some o dinossauro; sobre a terra somem os tubarões e o mar
-  const uwNow = world.sea ? world.sea.uw : 0, landK = 1 - bb(.15, .6, uwNow);   // sobre o mar, a cena da terra desaparece de vez
-  const a = aS, sa = surf ? surf.alpha(a) * landK : 0;
-  if (world.earth) world.earth.visible = uwNow < .4;   // submerso: some a Terra (senão ela esconde os tubarões)
+  const a = aS, sa = surf ? surf.alpha(a) : 0;
   if (a < 1) { const b = bb(.4, 1, a); camera.position.lerp(ENTRY_P, 1 - b); look.lerp(ENTRY_L, 1 - b); }
   // no celular, a Terra sobe para ficar atrás do título em vez de ao lado
   if (innerWidth < 900) { look.x = look.x * .4; look.y += (1 - u * 6 > 0 ? -1.6 * (1 - u * 6) : 0); }
@@ -328,7 +321,6 @@ function frame() {
     try { surf.update(dt, t, a); surf.render(a, t, dt); } catch (err) { console.error("Erro na superfície:", err); }
     shade.style.opacity = sa;
   }
-  if (world.sea) world.sea.update(dt, t, rolou);
   if (sa < 1) renderer.render(scene, camera); else renderer.clear();
   if (sa > 0) surf.composite();
 }
