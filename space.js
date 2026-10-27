@@ -246,8 +246,6 @@ const hud = document.createElement("div"); hud.className = "hud";
 hud.innerHTML = `<div class="hud-track"><i></i></div>`; document.body.append(hud);
 const hudBar = hud.querySelector("i");
 const shade = document.createElement("div"); shade.className = "surface-shade"; document.body.append(shade);
-const hint = document.createElement("div"); hint.className = "surface-hint";
-hint.innerHTML = `<b>${matchMedia("(pointer:coarse)").matches ? "Toque e arraste" : "Mova o cursor"}</b> — o T-Rex te segue com a cabeça e os olhos. Pare e ele tenta te comer.<span>role para deixar a Terra ↓</span>`; document.body.append(hint);
 let aS = 0, tT = 0, tS = 0, lastY = scrollY, vel = 0, mx = 0, my = 0, sx2 = 0, sy2 = 0;
 const ENTRY_P = V(0, .5, 2.8), ENTRY_L = V(0, -.18, 1.15);   // câmera rasante sobre a Terra (ponto de encontro com a superfície)
 const bb = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -312,8 +310,7 @@ function frame() {
   hudBar.style.transform = `scaleY(${u})`;
   if (surf) {
     try { surf.update(dt, t, a); surf.render(a, t, dt); } catch (err) { console.error("Erro na superfície:", err); }
-    shade.style.opacity = sa; hint.style.opacity = Math.max(0, 1 - a * 5) * (hint.dataset.gone ? 0 : 1);
-    if (t > 14 && !hint.dataset.gone && a < .02) hint.dataset.gone = "1";
+    shade.style.opacity = sa;
   }
   if (sa < 1) renderer.render(scene, camera); else renderer.clear();
   if (sa > 0) surf.composite();
