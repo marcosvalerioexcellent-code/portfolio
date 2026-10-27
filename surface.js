@@ -206,7 +206,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   const puffTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
     r.addColorStop(0, "rgba(255,255,255,.9)"); r.addColorStop(.5, "rgba(255,255,255,.35)"); r.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
   const mkSprite = (color, op) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, color, transparent: true, depthWrite: false, opacity: op, fog: true })); s.frustumCulled = false; scene.add(s); return s; };
-  const mist = Array.from({ length: mobile ? 8 : 16 }, (_, i) => { const s = mkSprite(0x4a5260, .2); const sz = 40 + rand() * 50; s.scale.set(sz, sz * .35, 1);
+  const mist = Array.from({ length: mobile ? 8 : 16 }, (_, i) => { const s = mkSprite(0x4a5260, .2); s.material.depthTest = false; s.renderOrder = 6; const sz = 40 + rand() * 50; s.scale.set(sz, sz * .35, 1);
     s.position.set((rand() - .5) * 120, 2 + rand() * 4, -20 - rand() * 70); return { s, v: (rand() - .5) * .8, sz }; });
   const puffs = Array.from({ length: mobile ? 70 : 160 }, () => { const s = mkSprite(0x3c3f46, 0); s.visible = false; return { s, life: 0, dur: 1, v: new THREE.Vector3(), sz: 1, op: .4, grow: 2.2 }; });
   function puff(x, y, z, n, spread, up, size, color = 0x3c3f46, op = .3, grow = 2.2, dur = 1) {
@@ -370,7 +370,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, .3, k); T.headPitch = lerp(-.2, hp + .15, k); T.jaw = JAW_OPEN; }
       else if (b < .68) { const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = .3; T.headPitch = hp + .15;
         if (!AI.struck && b > .65) { AI.struck = true; if (cursorNaBoca()) comerMouse(); } }
-      else if (b < 1.4) { const k = ss(.68, 1.4, b); T.spine = lerp(.3, 0, k); T.headPitch = lerp(hp + .15, clamp(lp, -.6, .3), k); T.jaw = JAW_CLOSED;
+      else if (b < 3.2) { const k = ss(.68, 3.2, b); T.spine = lerp(.3, 0, k); T.headPitch = lerp(hp + .15, clamp(lp, -.6, .3), k); T.jaw = JAW_CLOSED;
         if (!AI.hit) T.headYaw += Math.sin((b - .68) * 30) * .5 * (1 - k); }   // errou: chacoalha a cabeça
       else { AI.state = "track"; }
     }
@@ -383,7 +383,8 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       T.jaw = lerp(JAW_CLOSED, .32, up) + Math.sin(b * 22) * .04 * up;   // boca bem aberta
       if (b > .6 && b < ROAR_DUR - .6) AI.shake = Math.max(AI.shake, .55);
       if (!AI.fogged && b > .8) { AI.fogged = true; fogBurst(); }
-      if (b >= ROAR_DUR) { AI.state = "track"; AI.fogged = false; }
+      AI.liftR = ss(.9, 1.5, b) * (1 - ss(ROAR_DUR - 1.4, ROAR_DUR - .7, b));   // sobe e desce
+      if (b >= ROAR_DUR) { AI.state = "track"; AI.fogged = false; AI.liftR = 0; }
     }
     return { ly, lp };
   }
@@ -405,6 +406,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     const e = ss(0, 1, P.lie);
     P.tailYaw = damp(P.tailYaw, -dino.turn * .2 + Math.sin(P.phase * .5) * .08 * P.walk, 4, dt);
     P.tailWave = .04 + .16 * P.walk; P.breath = Math.sin(t * 1.5) * .5 + .5;
+    R.liftL = 0; R.liftR = AI.liftR || 0;   // perna direita levanta no rugido
     R.phase = P.phase; R.walk = P.walk * (1 - e); R.jaw = P.jaw; R.headYaw = lerp(P.headYaw, .35, e); R.headPitch = lerp(P.headPitch, LIE_HEAD, e);
     R.spine = P.spine + LIE_SPINE * e; R.tailYaw = P.tailYaw; R.tailWave = P.tailWave * (1 - e); R.breath = P.breath * (1 + e * 2); R.legA = P.legA; R.duty = P.duty;
     skinAcc += dt; let out = lastOut;

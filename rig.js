@@ -23,6 +23,7 @@ const gait = (ph, A, duty) => {
   return [A - 2 * A * e, Math.sin(Math.PI * s)];
 };
 const ANK_Y = 0.35, ANK_Z = 0.05, LEGL = 1.75;
+const LIFT_ANG = 0.42, LIFT_H = 0.28;   // perna levantada: ângulo para frente e altura do pé (rugido)
 
 export function createRig(rest /* Float32Array xyz */, restN /* Float32Array xyz */) {
   const n = rest.length / 3;
@@ -63,6 +64,7 @@ export function createRig(rest /* Float32Array xyz */, restN /* Float32Array xyz
   function apply(p) {
     out.set(rest); outN.set(restN);
     const walkOn = p.walk > 0.001, A = (p.legA ?? 0.5) * p.walk, lift = 0.4 * p.walk, duty = p.duty ?? 0.62, HY = PIV.hip[1];
+    const lL = p.liftL ?? 0, lR = p.liftR ?? 0, lifting = lL > 0 || lR > 0;
     let thL = 0, thR = 0, swL = 0, swR = 0, pL = null, pR = null;
     if (walkOn) {
       [thL, swL] = gait(p.phase, A, duty); [thR, swR] = gait(p.phase + Math.PI, A, duty);
@@ -89,12 +91,15 @@ export function createRig(rest /* Float32Array xyz */, restN /* Float32Array xyz
       if (w > 0.001 && p.spine) { rot(out, o, 0, p.spine * w, PIV.hip); rotN(outN, o, 0, p.spine * w); }
       // 4) pernas: apoio/balanço; pé mantido no chão e plano em apoio (compensa o arco do quadril)
       w = W.leg[i];
-      if (w > 0.001 && walkOn) {
-        const sl = W.sideL[i], th = (thL * sl + thR * (1 - sl)) * w, sw = swL * sl + swR * (1 - sl), ry = rest[o + 1], cw = Math.cos(th);
+      if (w > 0.001 && (walkOn || lifting)) {
+        const sl = W.sideL[i], lf = lL * sl + lR * (1 - sl);          // 0..1: quanto a perna está levantada
+        const th = (thL * sl + thR * (1 - sl)) * w - LIFT_ANG * lf * w, sw = swL * sl + swR * (1 - sl), ry = rest[o + 1], cw = Math.cos(th);
         rot(out, o, 0, th, PIV.hip); rotN(outN, o, 0, th);
-        out[o + 1] += -(HY - ry) * (1 - cw) + w * lift * sw * Math.min(1, Math.max(0, (HY - ry) / LEGL));
-        const ff = ss(0.62, 0.3, ry);
-        if (ff > 0.01) { const piv = sl > 0.5 ? pL : pR; rot(out, o, 0, -th * ff, piv); rotN(outN, o, 0, -th * ff); }
+        out[o + 1] += -(HY - ry) * (1 - cw) + w * (lift * sw + LIFT_H * lf) * Math.min(1, Math.max(0, (HY - ry) / LEGL));
+        if (walkOn) {
+          const ff = ss(0.62, 0.3, ry);
+          if (ff > 0.01) { const piv = sl > 0.5 ? pL : pR; rot(out, o, 0, -th * ff, piv); rotN(outN, o, 0, -th * ff); }
+        }
       }
       // 5) cauda: guinada (inércia da curva) + onda
       w = W.tail[i];
