@@ -364,7 +364,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       AI.state = "bite"; AI.biteT = 0; AI.struck = false; AI.hit = false; AI.biteCd = now + MORDIDA_CD;
     }
     if (AI.state === "bite") {
-      AI.biteT += dt; const b = AI.biteT, hy = clamp(ly, -.9, .9), hp = clamp(lp, -.3, .7);
+      AI.biteT += dt; const b = AI.biteT, hy = clamp(ly, -.9, .9), hp = clamp(lp, -.75, .7);
       T.walk = 0; T.headYaw = hy;
       if (b < .35) { const k = ss(0, .35, b); T.spine = -.05 * k; T.headPitch = -.2 * k; T.jaw = lerp(JAW_CLOSED, JAW_OPEN, k); }
       else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, .3, k); T.headPitch = lerp(-.2, hp + .15, k); T.jaw = JAW_OPEN; }
