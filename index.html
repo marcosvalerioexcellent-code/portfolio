@@ -118,19 +118,19 @@
     h1,h2,h3,.logo,.loading-mark{font-family:var(--font-display)}
     .mono{font-family:var(--font-mono)}
 
-    /* DESTAQUE DE TEXTO: ouro metálico com brilho passando (sweep) */
+    /* DESTAQUE DE TEXTO: ouro metálico com um reflexo claro que atravessa as letras */
     .highlight {
-      background:linear-gradient(100deg, #5e4109 0%, #a87b22 16%, #d4af37 27%, #fff4c2 38%, #e9c75a 46%, #b8862b 58%, #7a5512 70%, #d4af37 82%, #5e4109 100%);
-      background-size:260% auto;
+      background:linear-gradient(100deg, #b08a2e 0%, #d6b24e 30%, #f6e39a 44%, #fff8d6 50%, #f6e39a 56%, #d6b24e 70%, #b08a2e 100%);
+      background-size:220% auto;
       -webkit-background-clip:text;
       background-clip:text;
-      color:#d4af37;
+      color:#d6b24e;
       -webkit-text-fill-color:transparent;
       font-weight:700;
-      filter:drop-shadow(0 0 8px rgba(212,175,55,.28));
-      animation:goldSweep 3.8s linear infinite;
+      filter:drop-shadow(0 0 8px rgba(214,178,78,.25));
+      animation:goldSweep 4.5s ease-in-out infinite;
     }
-    @keyframes goldSweep{from{background-position:100% 0}to{background-position:-100% 0}}
+    @keyframes goldSweep{from{background-position:100% 0}to{background-position:0% 0}}
     @media (prefers-reduced-motion: reduce){.highlight{animation:none}}
 
     /* ===== LOADING SCREEN ===== */
