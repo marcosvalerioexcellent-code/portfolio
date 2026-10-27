@@ -348,7 +348,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     tmp.copy(headW).project(camera);
     const dx = (tmp.x - (ptr.x * 2 - 1)) * innerWidth / 2;
     const dy = (tmp.y + (ptr.y * 2 - 1)) * innerHeight / 2;      // > 0: cursor abaixo da ponta do focinho
-    return Math.abs(dx) < 60 && dy > -10 && dy < 110;
+    return Math.abs(dx) < 85 && dy > -30 && dy < 130;   // rosto/boca: pega o cursor encostado no focinho e logo abaixo, não acima da cabeça
   }
   function think(dt, t, info) {
     const now = performance.now() / 1000;
