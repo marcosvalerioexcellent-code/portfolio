@@ -118,16 +118,15 @@
     h1,h2,h3,.logo,.loading-mark{font-family:var(--font-display)}
     .mono{font-family:var(--font-mono)}
 
-    /* DESTAQUE DE TEXTO: ouro metálico igual ao logo, com reflexo claro passando */
+    /* DESTAQUE DE TEXTO: dourado sólido; só um reflexo claro passa por ele */
     .highlight {
-      background:linear-gradient(110deg, #7a4f10 0%, #b8862a 22%, #e9bd58 34%, #fff6d2 44%, #e9bd58 54%, #b8862a 72%, #7a4f10 88%, #b8862a 100%);
+      background:linear-gradient(100deg, #d4a43a 0%, #d4a43a 42%, #fff3c0 50%, #d4a43a 58%, #d4a43a 100%);
       background-size:300% auto;
       -webkit-background-clip:text;
       background-clip:text;
-      color:#e9bd58;
+      color:#d4a43a;
       -webkit-text-fill-color:transparent;
       font-weight:700;
-      filter:drop-shadow(0 0 6px rgba(233,189,88,.3));
       animation:goldSweep 3s linear infinite;
     }
     @keyframes goldSweep{from{background-position:100% 0}to{background-position:0% 0}}
