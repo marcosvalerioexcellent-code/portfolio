@@ -317,12 +317,13 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     return roarBuf;
   }
   let roarLock = 0;                                                  // até quando novos pedidos são ignorados
-  function roar() {
+  function roar(visivel) {
     const now = performance.now() / 1000;
-    if (now < roarLock) return;                                      // já rugindo ou esperando: não cancela
+    if (now < roarLock || (visivel && !visivel())) return;          // só ruge se o T-Rex estiver visível na tela                                      // já rugindo ou esperando: não cancela
     roarLock = now + .5 + ROAR_DUR + .5;                             // rugido + 0,5 s antes de aceitar outro
     const pending = audioReady();
     setTimeout(() => {
+      if (visivel && !visivel()) { roarLock = 0; return; }             // saiu da tela antes de rugir: cancela
       AI.state = "roar"; AI.roarT = 0; AI.fogged = false;
       pending.then(buf => { if (!buf || !actx) return; const s = actx.createBufferSource(); s.buffer = buf; s.connect(actx.destination); s.start(); }).catch(() => {});
     }, 500);
