@@ -153,7 +153,7 @@ Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/j
   });
   earth.add(atmos(2.2, 0x6fb0ff, { thick: 1.03, power: 3.2, gain: .8, haze: .35 }));
   // Lua (menor que a Terra: ~27%)
-  world.moon = holder(l.scene, 0.6); scene.add(world.moon);
+  world.moon = holder(l.scene, 0.95); scene.add(world.moon); world.moon.userData.base = world.moon.scale.x;   // lua maior
   // Júpiter (o gigante)
   world.jup = holder(j.scene, 14); world.jup.position.copy(JUP); world.jup.rotation.z = .05;
   world.jup.add(atmos(14, 0xd9b27a, { thick: 1.02, power: 3.5, gain: .55, haze: .25 })); scene.add(world.jup);
@@ -299,7 +299,11 @@ function frame() {
     if (world.clouds) world.clouds.rotation.y += dt * .012 * spd;
     moonA += dt * .1 * spd; const R = 13;   // mesmo sentido de rotação da Terra (anti-horário visto de cima)
     world.moon.position.set(Math.cos(moonA) * R, Math.sin(moonA) * R * .18, -Math.sin(moonA) * R);
-    world.moon.rotation.y = -moonA + Math.PI;
+    // trava de maré: a mesma face (com o desenho) sempre voltada para a Terra; o lado escuro fica de costas
+    world.moon.rotation.y = Math.atan2(-Math.cos(moonA), Math.sin(moonA));
+    // mais perto da câmera (passando na frente da tela) a lua cresce, mas nunca some
+    const dC = world.moon.position.distanceTo(camera.position);
+    world.moon.scale.setScalar(world.moon.userData.base * Math.min(3, Math.max(.85, 10 / Math.max(dC, .1))));
     world.jup.rotation.y += dt * .09 * spd;
   }
   if (!reduce || !belts[0].done) belts.forEach(B => {
