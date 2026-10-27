@@ -378,9 +378,9 @@ gl_FragColor=vec4(col,d*fade*.97);}`
       else if (b < .55) { const k = ss(.35, .55, b); T.spine = lerp(-.05, lean, k); T.headPitch = lerp(-.2, hp0 + .15, k); T.headYaw = hy0; T.jaw = JAW_OPEN; }
       else if (b < .68) {
         const k = ss(.55, .68, b); T.jaw = lerp(JAW_OPEN, JAW_CLOSED, k); T.spine = lean; T.headPitch = hp0 + .15; T.headYaw = hy0;
-        if (!AI.struck && b > .65) {                                 // no momento da mordida: decide se acertou e congela a pose
+        if (!AI.hit && cursorNaBoca(true)) { AI.hit = true; comerMouse(); }   // se o cursor estiver na boca durante o bote, come na hora
+        if (!AI.struck && b > .65) {                                 // fim do bote: se não comeu, congela a pose e chacoalha
           AI.struck = true; AI.frozen = { yaw: hy0, pitch: hp0 + .15 };
-          AI.hit = cursorNaBoca(true); if (AI.hit) comerMouse();
         }
       }
       else if (b < 3.2) {
