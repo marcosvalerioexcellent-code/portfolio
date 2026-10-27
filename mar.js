@@ -10,7 +10,9 @@ const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quatern
 /* ---------- cursor de sangue (CSS) ---------- */
 const estilo = document.createElement("style");
 estilo.textContent = `
-  html.sangue, html.sangue * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='30' viewBox='0 0 26 30'><path d='M13 1 C13 1 3 13 3 19 a10 10 0 0 0 20 0 C23 13 13 1 13 1 Z' fill='%23a3080c' stroke='%23400004' stroke-width='1.2'/><ellipse cx='9' cy='18' rx='2' ry='3' fill='%23e0484f' opacity='.55'/></svg>") 13 4, auto !important; }
+  html.sangue, html.sangue * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='28' viewBox='0 0 24 28'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23ff3b3b'/><stop offset='1' stop-color='%23650008'/></linearGradient></defs><path d='M2 2 L2 21 L7 16.5 L10.5 24 L13.5 22.6 L10 15.4 L17 15.4 Z' fill='url(%23g)' stroke='%23300004' stroke-width='1.3' stroke-linejoin='round'/></svg>") 2 2, auto !important; }
+  .gota-sangue{position:fixed;width:5px;height:7px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:radial-gradient(circle at 40% 35%,#c4161f,#5a0006);pointer-events:none;z-index:60;animation:gotaCai 1.7s ease-in forwards}
+  @keyframes gotaCai{0%{transform:translate(0,0);opacity:.95}70%{opacity:.6}100%{transform:translate(0,60px);opacity:0}}
   #mar-fundo{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;
     background:radial-gradient(120% 90% at 50% 0%, rgba(4,28,38,.55), rgba(1,6,10,.9) 70%, #000 100%);}
 `;
@@ -144,12 +146,20 @@ export function createSea({ scene, camera, earth, renderer }) {
     document.documentElement.classList.add("sangue");
   }
   addEventListener("pointerdown", e => { if (e.button === 0) clique(); });
+  let gotaT = 0;
+  function pingar(dt) {                                              // solta gotinhas leves do cursor enquanto estiver em modo sangue
+    if (!sangue || uw < .3) return;
+    gotaT -= dt; if (gotaT > 0) return; gotaT = .18 + Math.random() * .15;
+    const g = document.createElement("div"); g.className = "gota-sangue";
+    g.style.left = (ptr.x + 1) / 2 * innerWidth - 2 + "px"; g.style.top = (1 - ptr.y) / 2 * innerHeight + 6 + "px";
+    document.body.append(g); setTimeout(() => g.remove(), 1700);
+  }
 
   /* ---------- atualização por quadro ---------- */
-  function update(dt, t) {
+  function update(dt, t, permitido = true) {
     // submerso quando a câmera está perto da Terra e sobre o mar
     const alt = camera.position.distanceTo(earth.position) - RAIO;
-    const alvo = (alt < 2.6 && ehMarSob(camera, earth)) ? 1 : 0;
+    const alvo = (permitido && alt < 2.6 && ehMarSob(camera, earth)) ? 1 : 0;   // só depois de subir do início (dinossauro primeiro)
     uw += (alvo - uw) * Math.min(1, dt * 2);
     if (uw < .003) uw = 0;
     fundo.style.opacity = (uw * .6).toFixed(3);
@@ -163,6 +173,7 @@ export function createSea({ scene, camera, earth, renderer }) {
       pos.needsUpdate = true;
       atualizarTubaroes(dt, t);
       atualizarSangue(dt);
+      pingar(dt);
     }
   }
 

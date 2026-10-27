@@ -286,8 +286,8 @@ function frame() {
   // subida: superfície (a=0) → atmosfera → espaço (a=1). Sem superfície, começa direto no espaço.
   const aT = surf ? Math.min(1, scrollY / (innerHeight * .12)) : 1; aS += (aT - aS) * Math.min(1, dt * 2.8); if (Math.abs(aT - aS) < .002) aS = aT;
   // cenas separadas: sobre o mar some o dinossauro; sobre a terra somem os tubarões e o mar
-  const uwNow = world.sea ? world.sea.uw : 0;
-  const a = aS, sa = surf ? surf.alpha(a) * (1 - uwNow) : 0;
+  const uwNow = world.sea ? world.sea.uw : 0, landK = 1 - bb(.15, .6, uwNow);   // sobre o mar, a cena da terra desaparece de vez
+  const a = aS, sa = surf ? surf.alpha(a) * landK : 0;
   if (a < 1) { const b = bb(.4, 1, a); camera.position.lerp(ENTRY_P, 1 - b); look.lerp(ENTRY_L, 1 - b); }
   // no celular, a Terra sobe para ficar atrás do título em vez de ao lado
   if (innerWidth < 900) { look.x = look.x * .4; look.y += (1 - u * 6 > 0 ? -1.6 * (1 - u * 6) : 0); }
@@ -325,7 +325,7 @@ function frame() {
     try { surf.update(dt, t, a); surf.render(a, t, dt); } catch (err) { console.error("Erro na superfície:", err); }
     shade.style.opacity = sa;
   }
-  if (world.sea) world.sea.update(dt, t);
+  if (world.sea) world.sea.update(dt, t, aS > .6);
   if (sa < 1) renderer.render(scene, camera); else renderer.clear();
   if (sa > 0) surf.composite();
 }
