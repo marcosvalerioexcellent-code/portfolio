@@ -308,15 +308,23 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   const fogBurst = () => { for (const sd of [-1, 1]) { footAt(sd * 1.2); puff(tmp.x, tmp.y + .3, tmp.z, 5, 3, .6, 4.5, 0x7a828e, .35, 2.6, 3.5); } };
 
   /* ---------- rugido: áudio realista + pose; quem pede espera 0,5 s, depois ruge ---------- */
-  const roarSnd = new Audio("/sounds/trex-roar.wav"); roarSnd.preload = "auto";
+  /* áudio via Web Audio: o contexto é liberado no próprio clique, então o som sempre toca */
+  let actx = null, roarBuf = null;
+  function audioReady() {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+    if (!roarBuf) roarBuf = fetch("/sounds/trex-roar.wav").then(r => r.arrayBuffer()).then(b => actx.decodeAudioData(b)).catch(e => console.warn("Rugido não carregado:", e));
+    return roarBuf;
+  }
   let roarLock = 0;                                                  // até quando novos pedidos são ignorados
   function roar() {
     const now = performance.now() / 1000;
     if (now < roarLock) return;                                      // já rugindo ou esperando: não cancela
     roarLock = now + .5 + ROAR_DUR + .5;                             // rugido + 0,5 s antes de aceitar outro
+    const pending = audioReady();
     setTimeout(() => {
       AI.state = "roar"; AI.roarT = 0; AI.fogged = false;
-      roarSnd.currentTime = 0; roarSnd.play().catch(() => {});
+      pending.then(buf => { if (!buf || !actx) return; const s = actx.createBufferSource(); s.buffer = buf; s.connect(actx.destination); s.start(); }).catch(() => {});
     }, 500);
   }
 

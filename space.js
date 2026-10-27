@@ -247,7 +247,7 @@ const ENTRY_P = V(0, .5, 2.8), ENTRY_L = V(0, -.18, 1.15);   // câmera rasante 
 const bb = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 addEventListener("pointermove", e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; if (surf) { surf.setPointer(e.clientX, e.clientY, e.pointerType !== "mouse"); surf.noteMove(); } });
 addEventListener("pointerdown", e => { if (surf) { surf.setPointer(e.clientX, e.clientY, e.pointerType !== "mouse"); surf.noteMove(); } });
-addEventListener("contextmenu", e => { e.preventDefault(); if (surf) surf.roar(); });   // botão direito: o T-Rex ruge
+addEventListener("pointerdown", e => { if (e.button === 0 && surf) surf.roar(); });   // botão esquerdo: o T-Rex ruge
 document.documentElement.addEventListener("pointerleave", () => surf && surf.leave());
 
 function target() {
