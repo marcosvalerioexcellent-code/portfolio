@@ -82,7 +82,7 @@ export async function createSurface(renderer, { mobile = false, reduce = false }
   const SKYSUN = new THREE.Vector3(.25, .06, -.97).normalize();   // brilho do poente (atrás do T-Rex)
   const KEY = new THREE.Vector3(-.55, .62, .75).normalize();      // luz principal: frente, esquerda, alto
   const RIM = new THREE.Vector3(.4, .3, -.87).normalize();        // contraluz laranja
-  const S = mobile ? .8 : 1.2;                                    // escala do T-Rex: menor e mais perto, sem cortar a cabeça
+  const S = mobile ? .75 : 1.1;                                    // escala do T-Rex: menor e mais perto, sem cortar a cabeça
   const U = { time: { value: 0 } };
 
   let qLevel = 0;
@@ -303,7 +303,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     return { yaw: Math.atan2(dx, dz), pitch: -Math.atan2(dy, Math.hypot(dx, dz)) + .08 };
   }
 
-  const DINO_Z = CAM0.z - 10, ROAR_DUR = 4.68, T0 = performance.now() / 1000;   // T-Rex parado a 10 m da câmera (sem andar)
+  const DINO_Z = CAM0.z - 12, ROAR_DUR = 4.68, T0 = performance.now() / 1000;   // T-Rex parado a 10 m da câmera (sem andar)
   const footAt = (side) => { tmp.set(side * .95, .1, .25); dino.root.localToWorld(tmp); return tmp; };
   const fogBurst = () => { for (const sd of [-1, 1]) { footAt(sd * 1.2); puff(tmp.x, tmp.y + .3, tmp.z, 5, 3, .6, 4.5, 0x7a828e, .35, 2.6, 3.5); } };
 
@@ -396,7 +396,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
 
     // vapor da respiração saindo do focinho
     tipW.set(out.pos[tipI * 3], out.pos[tipI * 3 + 1] + .02, out.pos[tipI * 3 + 2]); dino.root.localToWorld(tipW); headW.copy(tipW);
-    breathT -= dt; if (breathT <= 0) { breathT = 2.4 + Math.random() * 1.2; puff(tipW.x, tipW.y, tipW.z, 2, .3, .5, 1.1, 0xb4bdd0, .22, 3.2, 1.9); }
+    // vapor da respiração removido (saía com posição errada do focinho)
 
     for (const q of puffs) if (q.life > 0) {
       q.life -= dt; if (q.life <= 0) { q.s.visible = false; q.s.material.opacity = 0; continue; }

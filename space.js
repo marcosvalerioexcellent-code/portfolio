@@ -91,7 +91,7 @@ const stars = new THREE.Points(starGeo, starMat); stars.frustumCulled = false; s
 
 /* poeira próxima: dá sensação de velocidade ao viajar */
 const dust = new THREE.Points(
-  new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(Float32Array.from({ length: mobile ? 6000 : 13500 }, (_, i) => i % 3 == 2 ? -Math.random() * 560 + 20 : (Math.random() - .5) * 90), 3)),
+  new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(Float32Array.from({ length: mobile ? 1800 : 4000 }, (_, i) => i % 3 == 2 ? -Math.random() * 560 + 20 : (Math.random() - .5) * 90), 3)),
   new THREE.PointsMaterial({ size: .09, color: 0xbfc9ff, transparent: true, opacity: .55, depthWrite: false })
 ); dust.frustumCulled = false; scene.add(dust);
 
@@ -298,8 +298,8 @@ function frame() {
   if (world.earth) {
     world.earth.rotation.y += dt * .05 * spd;
     if (world.clouds) world.clouds.rotation.y += dt * .012 * spd;
-    moonA += dt * .1 * spd; const R = 13;
-    world.moon.position.set(Math.cos(moonA) * R, Math.sin(moonA) * R * .18, Math.sin(moonA) * R);
+    moonA += dt * .1 * spd; const R = 13;   // mesmo sentido de rotação da Terra (anti-horário visto de cima)
+    world.moon.position.set(Math.cos(moonA) * R, Math.sin(moonA) * R * .18, -Math.sin(moonA) * R);
     world.moon.rotation.y = -moonA + Math.PI;
     world.jup.rotation.y += dt * .09 * spd;
   }
