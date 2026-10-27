@@ -71,6 +71,7 @@ export function createSea({ scene, camera, earth, renderer }) {
   root.add(rastro);
   let sIdx = 0;
   function sangrar(pos, qtd, forca) {
+    if (!Number.isFinite(pos.x + pos.y + pos.z)) return;             // nunca grava coordenadas inválidas
     for (let k = 0; k < qtd; k++) {
       const i = sIdx; sIdx = (sIdx + 1) % NS;
       sp[i * 3] = pos.x + (Math.random() - .5) * 1.2; sp[i * 3 + 1] = pos.y + (Math.random() - .5) * 1.2; sp[i * 3 + 2] = pos.z + (Math.random() - .5) * 1.2;
@@ -127,7 +128,7 @@ export function createSea({ scene, camera, earth, renderer }) {
           morde = 0;                                                  // se escapou, tenta de novo enquanto o cursor estiver perto
         }
       }
-      if (sangueT > 7 && !comeu) { sangue = false; }                 // sem chance: volta ao normal
+      if (sangueT > 2 && !comeu) { sangue = false; }                 // o sangue dura só 2 s; sem chance, volta ao normal
     }
     if (!sangue && document.documentElement.classList.contains("sangue")) document.documentElement.classList.remove("sangue");
     if (comeu) { comeuT += dt; if (comeuT > 1.5) comeu = false; }
@@ -157,6 +158,7 @@ export function createSea({ scene, camera, earth, renderer }) {
 
   /* ---------- atualização por quadro ---------- */
   function update(dt, t, permitido = true) {
+    if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
     // submerso quando a câmera está perto da Terra e sobre o mar
     const alt = camera.position.distanceTo(earth.position) - RAIO;
     const alvo = (permitido && alt < 2.6 && ehMarSob(camera, earth)) ? 1 : 0;   // só depois de subir do início (dinossauro primeiro)
