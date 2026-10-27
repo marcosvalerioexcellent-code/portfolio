@@ -345,7 +345,7 @@ gl_FragColor=vec4(col,d*fade*.97);}`
   function cursorNaBoca() {
     tmp.copy(headW).project(camera);
     const dx = (tmp.x - (ptr.x * 2 - 1)) * innerWidth / 2, dy = (tmp.y + (ptr.y * 2 - 1)) * innerHeight / 2;
-    return Math.hypot(dx, dy) < 70;
+    return Math.hypot(dx, dy) < 140;   // área da boca (inclui a mandíbula, não só o focinho)
   }
   function think(dt, t, info) {
     const now = performance.now() / 1000;
