@@ -118,17 +118,17 @@
     h1,h2,h3,.logo,.loading-mark{font-family:var(--font-display)}
     .mono{font-family:var(--font-mono)}
 
-    /* DESTAQUE DE TEXTO: ouro metálico com um reflexo claro que atravessa as letras */
+    /* DESTAQUE DE TEXTO: ouro metálico igual ao logo, com reflexo claro passando */
     .highlight {
-      background:linear-gradient(100deg, #b08a2e 0%, #d6b24e 30%, #f6e39a 44%, #fff8d6 50%, #f6e39a 56%, #d6b24e 70%, #b08a2e 100%);
-      background-size:220% auto;
+      background:linear-gradient(110deg, #7a4f10 0%, #b8862a 22%, #e9bd58 34%, #fff6d2 44%, #e9bd58 54%, #b8862a 72%, #7a4f10 88%, #b8862a 100%);
+      background-size:300% auto;
       -webkit-background-clip:text;
       background-clip:text;
-      color:#d6b24e;
+      color:#e9bd58;
       -webkit-text-fill-color:transparent;
       font-weight:700;
-      filter:drop-shadow(0 0 8px rgba(214,178,78,.25));
-      animation:goldSweep 4.5s ease-in-out infinite;
+      filter:drop-shadow(0 0 6px rgba(233,189,88,.3));
+      animation:goldSweep 3s linear infinite;
     }
     @keyframes goldSweep{from{background-position:100% 0}to{background-position:0% 0}}
     @media (prefers-reduced-motion: reduce){.highlight{animation:none}}
@@ -954,18 +954,8 @@
         scroll-behavior:auto !important;
       }
     }
-    /* ===== HOVER DOS CARDS: borda dourada, brilho e reflexo que atravessa o card ===== */
-    .service-card,.project,.stat,.equipe-card{position:relative;overflow:hidden;isolation:isolate}
-    .service-card::after,.project::after,.stat::after,.equipe-card::after{
-      content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
-      background:linear-gradient(115deg, transparent 38%, rgba(255,240,190,.20) 50%, transparent 62%);
-      transform:translateX(-120%);transition:transform .9s cubic-bezier(.2,.7,.2,1);
-    }
-    .service-card:hover::after,.project:hover::after,.stat:hover::after,.equipe-card:hover::after{transform:translateX(120%)}
-    .service-card:hover,.project:hover,.stat:hover,.equipe-card:hover{
-      border-color:rgba(214,178,78,.75);
-      box-shadow:0 0 0 1px rgba(214,178,78,.22), 0 18px 48px rgba(214,178,78,.16), inset 0 1px 0 rgba(255,240,190,.12);
-    }
+    /* ===== HOVER DOS CARDS: todos se aproximam igual, sem brilho ===== */
+    .service-card:hover,.project:hover,.stat:hover,.equipe-card:hover{transform:translateY(-6px) scale(1.025)}
   </style>
   <link rel="stylesheet" href="/space.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
