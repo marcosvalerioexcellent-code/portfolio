@@ -89,9 +89,22 @@ if(g<.01)discard;gl_FragColor=vec4(c*g*a*1.6,1.);}`
 });
 const stars = new THREE.Points(starGeo, starMat); stars.frustumCulled = false; scene.add(stars);
 
+/* poeira espalhada de forma uniforme (um ponto em cada célula com leve variação), sem aglomerados */
+function dustPositions(n) {
+  const W = 90, D = 560, Z0 = 20;                                  // largura/altura ±45, profundidade de -540 a +20
+  const s = Math.cbrt((W * W * D) / n);                            // tamanho da célula para dar ~n pontos
+  const gx = Math.round(W / s), gy = gx, gz = Math.round(D / s);
+  const out = new Float32Array(gx * gy * gz * 3); let k = 0;
+  for (let i = 0; i < gx; i++) for (let j = 0; j < gy; j++) for (let l = 0; l < gz; l++) {
+    out[k++] = -W / 2 + (i + .15 + Math.random() * .7) * (W / gx);
+    out[k++] = -W / 2 + (j + .15 + Math.random() * .7) * (W / gy);
+    out[k++] = Z0 - (l + .15 + Math.random() * .7) * (D / gz);
+  }
+  return out;
+}
 /* poeira próxima: dá sensação de velocidade ao viajar */
 const dust = new THREE.Points(
-  new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(Float32Array.from({ length: mobile ? 6000 : 13500 }, (_, i) => i % 3 == 2 ? -Math.random() * 560 + 20 : (Math.random() - .5) * 90), 3)),
+  new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(dustPositions(mobile ? 6000 : 13500), 3)),
   new THREE.PointsMaterial({ size: .09, color: 0xbfc9ff, transparent: true, opacity: .55, depthWrite: false })
 ); dust.frustumCulled = false; scene.add(dust);
 
