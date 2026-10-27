@@ -170,7 +170,8 @@ export async function createSurface(renderer, { mobile = false, reduce = false }
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s3 = new THREE.Vector3(), e = new THREE.Euler();
     for (let i = 0; i < NRK; i++) {
       const big = i < 7, side = rand() < .5 ? -1 : 1;
-      const x = big ? side * (22 + rand() * 30) : (rand() - .5) * 40, z = big ? -18 - rand() * 40 : -3 - rand() * 28;
+      let x, z; do { x = big ? side * (22 + rand() * 30) : (rand() - .5) * 40; z = big ? -18 - rand() * 40 : -3 - rand() * 28; }
+      while (!big && Math.hypot(x - 1.75, z - (CAM0.z - 12)) < 9);   // nada de pedra embaixo do T-Rex
       const sz = big ? 2.5 + rand() * 4.5 : .25 + Math.pow(rand(), 2.2) * .9, h = heightAt(x, z);
       p.set(x, h + sz * .12, z); q.setFromEuler(e.set(rand() * .3, rand() * 6.28, rand() * .3)); s3.set(sz, sz * (.7 + rand() * .5), sz); m.compose(p, q, s3); rocks.setMatrixAt(i, m);
     }
@@ -341,8 +342,8 @@ gl_FragColor=vec4(col,d*fade*.97);}`
     if (AI.state === "roar") {                                       // rugido: boca abre, cabeça sobe, tremor
       AI.roarT += dt; const b = AI.roarT;
       const up = ss(0, .6, b) * (1 - ss(ROAR_DUR - .7, ROAR_DUR, b)), tr = Math.sin(b * 34) * .03 * up;
-      T.spine = -.1 * up; T.headPitch = -.5 * up + tr; T.headYaw = clamp(ly, -1.35, 1.35) * (1 - up);
-      T.jaw = lerp(JAW_CLOSED, JAW_OPEN + .1, up) + Math.sin(b * 22) * .04 * up;
+      T.spine = -.05 * up; T.headPitch = -.32 * up + tr; T.headYaw = clamp(ly, -1.35, 1.35) * (1 - up);   // cabeça esticada para frente
+      T.jaw = lerp(JAW_CLOSED, .32, up) + Math.sin(b * 22) * .04 * up;   // boca bem aberta
       if (b > .6 && b < ROAR_DUR - .6) AI.shake = Math.max(AI.shake, .55);
       if (!AI.fogged && b > .8) { AI.fogged = true; fogBurst(); }
       if (b >= ROAR_DUR) { AI.state = "track"; AI.fogged = false; }
