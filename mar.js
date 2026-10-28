@@ -5,16 +5,13 @@ import { OCEAN_MASK, MASK_W, MASK_H } from "/ocean.js";
 const RAIO = 2.2;                                     // raio da Terra (igual ao space.js)
 const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const lerp = (a, b, k) => a + (b - a) * k;
-const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quaternion();
+const _v = new THREE.Vector3(), _d = new THREE.Vector3();
 
-/* ---------- cursor de sangue (CSS) ---------- */
+/* ---------- vinheta escura da água (CSS) ---------- */
 const estilo = document.createElement("style");
 estilo.textContent = `
-  html.sangue, html.sangue * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='28' viewBox='0 0 24 28'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23ff3b3b'/><stop offset='1' stop-color='%23650008'/></linearGradient></defs><path d='M2 2 L2 21 L7 16.5 L10.5 24 L13.5 22.6 L10 15.4 L17 15.4 Z' fill='url(%23g)' stroke='%23300004' stroke-width='1.3' stroke-linejoin='round'/></svg>") 2 2, auto !important; }
-  .gota-sangue{position:fixed;width:5px;height:7px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:radial-gradient(circle at 40% 35%,#c4161f,#5a0006);pointer-events:none;z-index:60;animation:gotaCai 1.7s ease-in forwards}
-  @keyframes gotaCai{0%{transform:translate(0,0);opacity:.95}70%{opacity:.6}100%{transform:translate(0,60px);opacity:0}}
   #mar-fundo{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;
-    background:radial-gradient(120% 100% at 50% 40%, rgba(0,0,0,0) 45%, rgba(0,12,20,.6) 100%);}
+    background:radial-gradient(120% 100% at 50% 40%, rgba(0,0,0,0) 30%, rgba(0,6,10,.85) 100%);}
 `;
 document.head.append(estilo);
 const fundo = document.createElement("div"); fundo.id = "mar-fundo"; document.body.append(fundo);
@@ -55,166 +52,155 @@ function prepararTubarao(gltf, comprimento, grupo) {
   m.traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.material.side = THREE.DoubleSide; } });
 }
 
+/* ponto redondo e suave (bolhas / sangue) */
+function pontoTex() {
+  const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.45, "rgba(255,255,255,.55)"); r.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+}
+/* nado procedural: o GLB não tem ossos, então o vertex shader faz: ondulação do corpo (cabeça oposta à cauda, como um tubarão de
+   verdade), curva do corpo nas viradas e batida das peitorais. Unidades = as do modelo. */
+const uniTubarao = () => ({ uPh: { value: 0 }, uAmp: { value: .06 }, uBend: { value: 0 }, uZ0: { value: 0 }, uZ1: { value: 1 } });
+function animarTubarao(model, uni) {
+  model.traverse(o => {
+    if (!o.isMesh) return;
+    o.geometry.computeBoundingBox(); uni.uZ0.value = o.geometry.boundingBox.min.z; uni.uZ1.value = o.geometry.boundingBox.max.z;
+    o.material.onBeforeCompile = sh => {
+      Object.assign(sh.uniforms, uni);
+      sh.vertexShader = "uniform float uPh,uAmp,uBend,uZ0,uZ1;\n" + sh.vertexShader.replace("#include <begin_vertex>", `
+        vec3 transformed = vec3(position);
+        float L = uZ1 - uZ0;
+        float zn = clamp((position.z - uZ0) / L, 0., 1.);
+        float env = .12 + .88 * pow(1. - zn, 2.);                      // amplitude cresce até a cauda; cabeça balança pouco
+        transformed.x += sin(uPh + zn * 3.14159) * uAmp * L * env;      // onda viaja da cabeça à cauda; cabeça e cauda em oposição
+        transformed.x += uBend * L * (.14 * pow(2. * zn - 1., 2.) + .06 * (zn - .5));   // corpo curva em C na virada
+        float fm = smoothstep(.12, .3, zn) * (1. - smoothstep(.62, .85, zn));
+        float fx = smoothstep(.07 * L, .16 * L, abs(position.x));
+        transformed.y += sin(uPh * .6 - zn * 2.) * fx * fm * uAmp * L * .6;`);
+    };
+    o.material.customProgramCacheKey = () => "tubarao";
+  });
+}
+
 /* fundo de água (esfera em volta da câmera) */
 const AGUA_VS = "varying vec3 v;void main(){v=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}";
 const AGUA_FS = `varying vec3 v;uniform float a;uniform float t;void main(){
   vec3 d=normalize(v);float y=d.y;
-  vec3 deep=vec3(.004,.05,.085),mid=vec3(.02,.2,.28),top=vec3(.12,.48,.58);
+  vec3 deep=vec3(.001,.008,.016),mid=vec3(.007,.06,.09),top=vec3(.04,.2,.26);
   vec3 c=mix(deep,mid,smoothstep(-.8,.1,y));c=mix(c,top,smoothstep(.1,1.,y)*.8);
-  float ang=atan(d.x,d.z);float ray=pow(max(0.,sin(ang*6.+t*.15)*.5+.5),3.)*smoothstep(.0,.9,y)*.12;
+  float ang=atan(d.x,d.z);float ray=pow(max(0.,sin(ang*6.+t*.15)*.5+.5),3.)*smoothstep(.0,.9,y)*.07;
   gl_FragColor=vec4(c+ray*vec3(.3,.6,.7),a);}`;
 
-export function createSea({ scene, camera, earth, renderer }) {
+export function createSea({ scene, camera, earth, renderer, light }) {
   const root = new THREE.Group(); root.visible = false; scene.add(root);
-  root.add(new THREE.HemisphereLight(0x8fd8ee, 0x0a2433, 1.6));
+  /* iluminação subaquática: pouca luz, vinda de cima, azulada (o sol de fora é reduzido enquanto submerso) */
+  root.add(new THREE.HemisphereLight(0x3d7f95, 0x020a10, .8));
+  const topo = new THREE.DirectionalLight(0x8fc4d6, 2.8); topo.position.set(.2, 1, .35); root.add(topo);
+  const sunBase = light ? { i: light.intensity, c: light.color.clone() } : null, sunCold = new THREE.Color(0x6f9fb2);
   const agua = new THREE.Mesh(new THREE.SphereGeometry(1400, 24, 16), new THREE.ShaderMaterial({
     side: THREE.BackSide, transparent: true, depthWrite: false, uniforms: { a: { value: 0 }, t: { value: 0 } }, vertexShader: AGUA_VS, fragmentShader: AGUA_FS }));
   agua.renderOrder = -20; agua.frustumCulled = false; agua.visible = false; scene.add(agua);
-  const neblina = new THREE.FogExp2(0x0a3a4d, 0); scene.fog = neblina;   // densidade 0 fora d'água: nada muda
-  let uw = 0;                                                        // 0 = fora d'água, 1 = submerso
-  let sangue = false, sangueT = 0, comeu = false, comeuT = 0;
-  const ptr = { x: 0, y: 0 };                                        // -1..1
-  addEventListener("pointermove", e => { ptr.x = e.clientX / innerWidth * 2 - 1; ptr.y = -(e.clientY / innerHeight * 2 - 1); });
+  const neblina = new THREE.FogExp2(0x02111a, 0); scene.fog = neblina;   // densidade 0 fora d'água: nada muda
+
+  let uw = 0, latch = null, apareceu = false;                        // uw: 0 = fora d'água, 1 = submerso; latch: mar/terra decidido ao chegar perto da Terra
 
   /* ---------- tubarões (carregam só quando for preciso) ---------- */
   const loader = new GLTFLoader(); loader.register(p => new SpecGlossPlugin(p));
-  let carregando = false, pronto = false;
-  const branco = new THREE.Group(), martelo = new THREE.Group();
+  let carregando = false;
+  const branco = new THREE.Group(), martelo = new THREE.Group(), mats = [];
   root.add(branco, martelo);
+  const uniB = uniTubarao(), uniM = uniTubarao();
+  function afinar(g) {                                               // pele úmida e escura, sem brilho plástico; transparente só p/ sumir ao sair da água
+    g.scene.traverse(o => { if (o.isMesh) { const m = o.material; m.roughness = .6; m.metalness = 0; m.envMapIntensity = 0; if (m.normalScale) m.normalScale.set(1.6, 1.6); m.color.multiplyScalar(.85); m.transparent = true; mats.push(m); } });
+  }
   function carregar() {
     if (carregando) return; carregando = true;
-    loader.load("/models/tubarao-branco.glb", g => {
-      prepararTubarao(g, 2.6, branco);
-      pronto = true;
-    }, undefined, e => console.warn("Tubarão branco não carregou:", e));
-    loader.load("/models/tubarao-martelo.glb", g => {
-      prepararTubarao(g, 4.5, martelo);
-    }, undefined, e => console.warn("Tubarão martelo não carregou:", e));
+    loader.load("/models/tubarao-branco.glb", g => { afinar(g); prepararTubarao(g, 4.6, branco); animarTubarao(g.scene, uniB); },
+      undefined, e => console.warn("Tubarão branco não carregou:", e));
+    loader.load("/models/tubarao-martelo.glb", g => { afinar(g); prepararTubarao(g, 7.5, martelo); animarTubarao(g.scene, uniM); },
+      undefined, e => console.warn("Tubarão martelo não carregou:", e));
   }
 
-  /* ---------- bolhas ---------- */
-  const NB = 160, bp = new Float32Array(NB * 3), bv = new Float32Array(NB);
-  for (let i = 0; i < NB; i++) { bp[i * 3] = (Math.random() - .5) * 26; bp[i * 3 + 1] = (Math.random() - .5) * 16; bp[i * 3 + 2] = -Math.random() * 22; bv[i] = .3 + Math.random() * .6; }
+  /* ---------- bolhas / partículas: fixas no mundo (dão paralaxe), repetem num bloco em volta da câmera ---------- */
+  const tex = pontoTex();
+  const NB = 260, bp = new Float32Array(NB * 3), bb0 = new Float32Array(NB * 3), bv = new Float32Array(NB);
+  const BX = 30, BY = 16, BZ = 36;
+  for (let i = 0; i < NB; i++) { bb0[i * 3] = (Math.random() - .5) * BX; bb0[i * 3 + 1] = (Math.random() - .5) * BY; bb0[i * 3 + 2] = (Math.random() - .5) * BZ; bv[i] = .15 + Math.random() * .35; }
   const bg = new THREE.BufferGeometry(); bg.setAttribute("position", new THREE.BufferAttribute(bp, 3));
-  const bolhas = new THREE.Points(bg, new THREE.PointsMaterial({ color: 0x9fd8e6, size: .09, transparent: true, opacity: .45, depthWrite: false, fog: false }));
+  const bolhas = new THREE.Points(bg, new THREE.PointsMaterial({ color: 0x7fa9b8, size: .12, map: tex, transparent: true, opacity: .4, depthWrite: false, fog: false }));
   bolhas.frustumCulled = false; root.add(bolhas);
+  const wrap = (v, s) => ((v + s / 2) % s + s) % s - s / 2;
 
-  /* ---------- rastro de sangue (some devagar) ---------- */
-  const NS = 260, sp = new Float32Array(NS * 3), sc = new Float32Array(NS * 4), sl = new Float32Array(NS);
-  const sg = new THREE.BufferGeometry();
-  sg.setAttribute("position", new THREE.BufferAttribute(sp, 3)); sg.setAttribute("color", new THREE.BufferAttribute(sc, 4));
-  const rastro = new THREE.Points(sg, new THREE.PointsMaterial({ size: .16, vertexColors: true, transparent: true, depthWrite: false, fog: false }));
-  rastro.frustumCulled = false; root.add(rastro);
-  let sIdx = 0;
-  function sangrar(pos, qtd, forca) {
-    if (!Number.isFinite(pos.x + pos.y + pos.z)) return;             // nunca grava coordenadas inválidas
-    for (let k = 0; k < qtd; k++) {
-      const i = sIdx; sIdx = (sIdx + 1) % NS;
-      sp[i * 3] = pos.x + (Math.random() - .5) * 1.2; sp[i * 3 + 1] = pos.y + (Math.random() - .5) * 1.2; sp[i * 3 + 2] = pos.z + (Math.random() - .5) * 1.2;
-      sl[i] = 1 * forca;
-    }
+  /* ---------- tubarões: rotas calmas ancoradas no mundo ---------- */
+  const novo = () => ({ p: new THREE.Vector3(), yaw: 0, pit: 0, rol: 0, yr: 0, sp: 0, bend: 0 });   // yaw/pitch/roll próprios: nunca fica de barriga pra cima
+  const B = novo(), M = novo();
+  const anc = { p: new THREE.Vector3(), r: new THREE.Vector3(1, 0, 0), f: new THREE.Vector3(0, 0, -1), v: new THREE.Vector3(0, 0, -1) };   // âncora da cena: posição, direita, frente horizontal, direção real do olhar
+  const UP = new THREE.Vector3(0, 1, 0);
+  function ancorar(k) {                                              // acompanha a câmera bem devagar (k=1 = encaixa na hora)
+    const v = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion), f = v.clone(); f.y = 0;
+    if (f.lengthSq() < 1e-4) f.set(0, 0, -1); f.normalize();
+    anc.p.lerp(camera.position, k); anc.f.lerp(f, k).normalize(); anc.v.lerp(v, k).normalize(); anc.r.crossVectors(anc.f, UP).normalize();
   }
-
-  /* ---------- estado dos tubarões ---------- */
-  const B = { p: new THREE.Vector3(0, 0, -8), vel: new THREE.Vector3(0, 0, -1), ang: 0 };
-  const M = { p: new THREE.Vector3(0, -3, -22), vel: new THREE.Vector3(0, 0, -1), ang: 0 };
-  let morde = 0;                                                     // 0 nada; >0 em bote
-
-  function alvoDoCursor(prof) {                                      // ponto do cursor na profundidade "prof" (à frente da câmera)
-    _v.set(ptr.x, ptr.y, .5).unproject(camera).sub(camera.position).normalize();
-    return _w.copy(camera.position).addScaledVector(_v, prof).clone();
+  const rotaB = (t, out) => { const a = t * .2; return out.copy(anc.p).addScaledVector(anc.v, 7).addScaledVector(anc.f, Math.sin(a) * 2.6).addScaledVector(anc.r, Math.cos(a) * 5.2).addScaledVector(UP, Math.sin(a * 1.7) * 1.1); };   // centro no olhar da câmera; rota no plano horizontal
+  const rotaM = (t, out) => { const a = t * .09 + 1.3; return out.copy(anc.p).addScaledVector(anc.v, 16).addScaledVector(anc.f, Math.sin(a) * 6).addScaledVector(anc.r, Math.cos(a) * 11).addScaledVector(UP, -3.2 + Math.sin(a * 2) * .8); };
+  const alvoB = new THREE.Vector3(), alvoM = new THREE.Vector3();
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; };
+  const dirDe = (S, out) => { const cp = Math.cos(S.pit); return out.set(Math.sin(S.yaw) * cp, -Math.sin(S.pit), Math.cos(S.yaw) * cp); };
+  /* "veículo": vira em direção ao alvo com taxa limitada (curva de verdade), acelera e avança na direção em que aponta */
+  function guiar(S, alvo, vel, giro, dt, pitMax) {
+    _d.subVectors(alvo, S.p); const dist = _d.length(); if (dist > 1e-4) _d.divideScalar(dist);
+    const ty = Math.atan2(_d.x, _d.z), tp = clamp(-Math.asin(clamp(_d.y, -1, 1)), -pitMax, pitMax);
+    const dy = clamp(angDiff(S.yaw, ty), -giro * dt, giro * dt), dp = clamp(angDiff(S.pit, tp), -giro * .5 * dt, giro * .5 * dt);
+    S.yaw += dy; S.pit += dp;
+    S.yr += (dy / dt - S.yr) * Math.min(1, dt * 4);                  // taxa de giro suavizada
+    S.sp += (vel - S.sp) * Math.min(1, dt * 1.5);
+    dirDe(S, _d); S.p.addScaledVector(_d, S.sp * dt);
   }
-
+  /* aplica a pose: guinada/inclinação, leve rolagem para dentro da curva, corpo em C na virada e cauda proporcional à velocidade */
+  function aplicar(S, grupo, uni, dt) {
+    S.rol += (-clamp(S.yr * .22, -.3, .3) - S.rol) * Math.min(1, dt * 3);
+    grupo.rotation.set(S.pit, S.yaw, S.rol, "YXZ"); grupo.position.copy(S.p);
+    S.bend += (clamp(S.yr * .9, -1, 1) - S.bend) * Math.min(1, dt * 4);
+    uni.uBend.value = S.bend;
+    uni.uPh.value += dt * (2.4 + S.sp * 1.7);
+    uni.uAmp.value = .055 + Math.min(.05, S.sp * .006);
+  }
   function atualizarTubaroes(dt, t) {
-    // branco: nada em círculos ao redor de um ponto à frente, levemente influenciado pelo cursor (não segue de fato)
-    const frente = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    const centro = camera.position.clone().addScaledVector(frente, 10);
-    let alvo;
-    if (sangue) {
-      alvo = alvoDoCursor(morde > 0 ? 2.6 : 5.5);                    // em bote: chega quase na tela
-    } else {
-      const ang = t * .22;
-      alvo = centro.clone().add(new THREE.Vector3(Math.cos(ang) * 6 + ptr.x * 1.2, Math.sin(ang * 1.7) * 1.4 + ptr.y * .6, Math.sin(ang) * 6));
-    }
-    const k = sangue ? Math.min(1, dt * 2.4) : Math.min(1, dt * .8);
-    const antes = B.p.clone(); B.p.lerp(alvo, k);
-    B.vel.subVectors(B.p, antes).divideScalar(Math.max(dt, 1e-3));
-    if (B.vel.lengthSq() > .01) { _q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), B.vel.clone().normalize()); branco.quaternion.slerp(_q, Math.min(1, dt * 5)); }
-    branco.position.copy(B.p);
-    if (branco.children[0]) branco.children[0].rotation.y = Math.sin(t * 6) * .08;   // balanço do corpo/cauda (só no modelo, não acumula)
-
-    // martelo: mais fundo, mais lento, perambula em volta da cena (não segue o cursor)
-    const angM = t * .08 + 1.3;
-    const destM = centro.clone().add(new THREE.Vector3(Math.cos(angM) * 16, -5 + Math.sin(angM * 2) * .6, Math.sin(angM) * 14));
-    const antesM = M.p.clone(); M.p.lerp(destM, Math.min(1, dt * .6));
-    M.vel.subVectors(M.p, antesM).divideScalar(Math.max(dt, 1e-3));
-    if (M.vel.lengthSq() > .001) { _q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), M.vel.clone().normalize()); martelo.quaternion.slerp(_q, Math.min(1, dt * 3)); }
-    martelo.position.copy(M.p);
-    if (martelo.children[0]) martelo.children[0].rotation.y = Math.sin(t * 2.4) * .05;
-  }
-
-  function atualizarSangue(dt) {
-    if (sangue) {
-      sangueT += dt;
-      if (morde === 0 && B.p.distanceTo(alvoDoCursor(2.6)) < 1.2) morde = .001;   // só dá o bote quando o cursor está ao alcance
-      if (morde > 0) {
-        morde += dt;
-        if (morde > .45) {                                           // momento da mordida: come se o cursor ainda estiver na boca
-          if (B.p.distanceTo(alvoDoCursor(2.6)) < 2.2) { comeu = true; comeuT = 0; sangrar(alvoDoCursor(3), 110, 1); sangue = false; }
-          morde = 0;                                                  // se escapou, tenta de novo enquanto o cursor estiver perto
-        }
-      }
-      if (sangueT > 2 && !comeu) { sangue = false; }                 // o sangue dura só 2 s; sem chance, volta ao normal
-    }
-    if (!sangue && document.documentElement.classList.contains("sangue")) document.documentElement.classList.remove("sangue");
-    if (comeu) { comeuT += dt; if (comeuT > 1.5) comeu = false; }
-    // rastro: cada partícula escurece e some
-    for (let i = 0; i < NS; i++) {
-      if (sl[i] > 0) { sl[i] = Math.max(0, sl[i] - dt * .16); }
-      const v = sl[i];
-      sc[i * 4] = .55; sc[i * 4 + 1] = .03; sc[i * 4 + 2] = .05; sc[i * 4 + 3] = Math.min(1, v * 1.5);
-    }
-    sg.attributes.color.needsUpdate = true; sg.attributes.position.needsUpdate = true;
-  }
-
-  function clique() {
-    if (uw < .5 || comeu) return;
-    sangue = true; sangueT = 0; morde = 0;
-    document.documentElement.classList.add("sangue");
-  }
-  addEventListener("pointerdown", e => { if (e.button === 0) clique(); });
-  let gotaT = 0;
-  function pingar(dt) {                                              // solta gotinhas leves do cursor enquanto estiver em modo sangue
-    if (!sangue || uw < .3) return;
-    gotaT -= dt; if (gotaT > 0) return; gotaT = .18 + Math.random() * .15;
-    const g = document.createElement("div"); g.className = "gota-sangue";
-    g.style.left = (ptr.x + 1) / 2 * innerWidth - 2 + "px"; g.style.top = (1 - ptr.y) / 2 * innerHeight + 6 + "px";
-    document.body.append(g); setTimeout(() => g.remove(), 1700);
+    ancorar(Math.min(1, dt * .5));   // a cena acompanha a câmera com atraso de ~2 s (dá paralaxe ao mover, e se recompõe se a câmera mudar)
+    rotaB(t + 1.6, alvoB); guiar(B, alvoB, 1.3 + .25 * Math.sin(t * .37) + clamp((B.p.distanceTo(alvoB) - 3) * .5, 0, 3.5), .8, dt, .5); aplicar(B, branco, uniB, dt);
+    rotaM(t + 4, alvoM); guiar(M, alvoM, 1.0 + .2 * Math.sin(t * .23 + 1) + clamp((M.p.distanceTo(alvoM) - 4) * .4, 0, 3.5), .5, dt, .4); aplicar(M, martelo, uniM, dt);
   }
 
   /* ---------- atualização por quadro ---------- */
   function update(dt, t, permitido = true) {
     if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-    // submerso quando a câmera está perto da Terra e sobre o mar
-    const alt = camera.position.distanceTo(earth.position) - RAIO;
-    const alvo = (permitido && alt < 2.6 && ehMarSob(camera, earth)) ? 1 : 0;   // só depois de subir do início (dinossauro primeiro)
+    // mar ou terra é decidido UMA vez ao chegar perto da Terra (ela para de girar nesse momento): sem alternar para o dinossauro
+    const alt = camera.position.distanceTo(earth.position) - RAIO, perto = alt < 2.6;
+    if (!perto || !permitido) latch = null; else if (latch === null) latch = ehMarSob(camera, earth);
+    const alvo = (perto && permitido && latch) ? 1 : 0;
     uw += (alvo - uw) * Math.min(1, dt * 2);
     if (uw < .003) uw = 0;
-    fundo.style.opacity = (uw * .6).toFixed(3);
-    root.visible = uw > .01;
-    agua.visible = root.visible; agua.material.uniforms.a.value = ss(0, .3, uw); agua.material.uniforms.t.value = t; agua.position.copy(camera.position);
-    neblina.density = .05 * uw;
-    if (root.visible) {
-      if (!carregando) carregar();
-      bolhas.material.opacity = .45 * uw;
-      bolhas.position.copy(camera.position); bolhas.quaternion.copy(camera.quaternion);
-      const pos = bolhas.geometry.attributes.position;
-      for (let i = 0; i < NB; i++) { pos.array[i * 3 + 1] += bv[i] * dt; if (pos.array[i * 3 + 1] > 8) pos.array[i * 3 + 1] = -8; }
-      pos.needsUpdate = true;
-      atualizarTubaroes(dt, t);
-      atualizarSangue(dt);
-      pingar(dt);
+    fundo.style.opacity = uw.toFixed(3);
+    agua.visible = uw > .01; agua.material.uniforms.a.value = ss(0, .6, uw); agua.material.uniforms.t.value = t; agua.position.copy(camera.position);
+    neblina.density = .07 * uw;
+    if (light && sunBase) { light.intensity = lerp(sunBase.i, .5, uw); light.color.copy(sunBase.c).lerp(sunCold, uw); }   // sol suavizado debaixo d'água
+    root.visible = uw > .45;                                         // tubarões só existem bem dentro d'água: ao sair, somem antes de o espaço reaparecer
+    if (!root.visible) { apareceu = false; return; }
+    if (!carregando) carregar();
+    if (!apareceu) {                                                 // primeira vez na água: já nadando, na direção da rota
+      apareceu = true; ancorar(1);
+      for (const [S, rota, d0] of [[B, rotaB, .5], [M, rotaM, 1]]) { rota(t, S.p); rota(t + d0, _d); _d.sub(S.p); S.yaw = Math.atan2(_d.x, _d.z); S.pit = 0; S.rol = 0; S.yr = 0; S.bend = 0; S.sp = 1.2; }
     }
+    const op = ss(.45, .8, uw); for (const m of mats) m.opacity = op;
+    bolhas.material.opacity = .4 * uw;
+    const c = _v.set(0, 0, -10).applyQuaternion(camera.quaternion).add(camera.position);
+    for (let i = 0; i < NB; i++) {
+      bb0[i * 3 + 1] += bv[i] * dt;
+      bp[i * 3] = c.x + wrap(bb0[i * 3] - c.x, BX); bp[i * 3 + 1] = c.y + wrap(bb0[i * 3 + 1] - c.y, BY); bp[i * 3 + 2] = c.z + wrap(bb0[i * 3 + 2] - c.z, BZ);
+    }
+    bg.attributes.position.needsUpdate = true;
+    atualizarTubaroes(dt, t);
   }
 
   return { update, get uw() { return uw; }, get submerso() { return uw > .3; } };
