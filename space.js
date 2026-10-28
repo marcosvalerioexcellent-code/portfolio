@@ -11,6 +11,7 @@ import { createSea } from "/mar.js";
 
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const mobile = innerWidth < 760;
+if (mobile) document.documentElement.classList.add("lite");   // celular: sem 3D, sem modelos e sem som; fundo quadriculado igual ao do painel (space.css)
 const canvas = document.createElement("canvas");
 if (mobile) canvas.style.display = "none";   // celular: sem 3D (fica o fundo leve do painel, sem travar)
 canvas.id = "space";
@@ -139,9 +140,10 @@ const atmos = (r, color, { thick = 1.035, power = 3, gain = 1.1, haze = .5 } = {
 const tag = document.body; tag.dataset.space = "loading";
 /* Superfície da Terra (T-Rex). Se falhar, o site segue direto no espaço. */
 let surf = null;
-const surfReady = createSurface(renderer, { mobile, reduce }).then(s => { surf = s; s.setQuality(STEPS[qi][1]); }).catch(e => console.warn("Superfície não carregada:", e));
+const surfReady = mobile ? Promise.resolve() : createSurface(renderer, { mobile, reduce }).then(s => { surf = s; s.setQuality(STEPS[qi][1]); }).catch(e => console.warn("Superfície não carregada:", e));
 
-Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/jupiter.glb"), surfReady]).then(([t, l, j]) => {
+if (mobile) tag.dataset.space = "ready";
+else Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/jupiter.glb"), surfReady]).then(([t, l, j]) => {
   // Terra
   const earth = holder(t.scene, 2.2); world.earth = earth; scene.add(earth);
   earth.rotation.y = 4.22;   // começa com TERRA (e não mar) sob a câmera: o dinossauro é terra e sair dali é sair da terra

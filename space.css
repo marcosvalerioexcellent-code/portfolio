@@ -8,6 +8,10 @@
 }
 body{background:#000}
 body::before,body::after{display:none}
+/* celular (html.lite): volta o fundo quadriculado dourado, igual ao do painel */
+html.lite body{background:#08070a}
+html.lite body::before{display:block}
+html.lite body::after{display:block}
 #space{position:fixed;inset:0;width:100%;height:100%;z-index:-1;display:block;
   opacity:0;transition:opacity 2.2s ease .3s}
 body:not([data-space="loading"]) #space{opacity:1}
