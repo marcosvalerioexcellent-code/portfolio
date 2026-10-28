@@ -144,7 +144,7 @@ const surfReady = createSurface(renderer, { mobile, reduce }).then(s => { surf =
 Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/jupiter.glb"), surfReady]).then(([t, l, j]) => {
   // Terra
   const earth = holder(t.scene, 2.2); world.earth = earth; scene.add(earth);
-  world.sea = createSea({ scene, camera, earth, renderer });
+  world.sea = createSea({ scene, camera, earth, renderer, light: sunLight });
   t.scene.traverse(o => {
     if (o.name === "Clouds") world.clouds = o;
     if (o.isMesh && o.material.emissiveMap) {
@@ -165,6 +165,7 @@ Promise.all([load("/models/terra.glb"), load("/models/lua.glb"), load("/models/j
 
 /* ---------- Trajetória da câmera ---------- */
 const V = (...a) => new THREE.Vector3(...a);
+let earthSpd = 1;
 let rolou = false;                                                 // o mar só aparece depois da primeira rolagem (no início, o foco é o dinossauro)
 addEventListener("scroll", () => { rolou = true; }, { passive: true });
 const camPath = new THREE.CatmullRomCurve3([V(0, .6, 10), V(-7, 2, -8), V(5, 1, -150), V(-4, -1, -260), V(9, 3, -380), V(14, 4, -483), V(-16, 5, -483)], false, "catmullrom", .4);
@@ -288,7 +289,7 @@ function frame() {
   // subida: superfície (a=0) → atmosfera → espaço (a=1). Sem superfície, começa direto no espaço.
   const aT = surf ? Math.min(1, scrollY / (innerHeight * .12)) : 1; aS += (aT - aS) * Math.min(1, dt * 2.8); if (Math.abs(aT - aS) < .002) aS = aT;
   // cenas separadas: sobre o mar some o dinossauro; sobre a terra somem os tubarões e o mar
-  const uwNow = world.sea ? world.sea.uw : 0, landK = 1 - bb(.15, .6, uwNow);   // sobre o mar, a cena da terra desaparece de vez
+  const uwNow = world.sea ? world.sea.uw : 0, landK = 1 - bb(.02, .3, uwNow);   // sobre o mar, a cena da terra desaparece de vez
   const a = aS, sa = surf ? surf.alpha(a) * landK : 0;
   const sub = world.sea ? world.sea.submerso : false;   // submerso: some o espaço (a água o substitui) e a Terra (senão esconde os tubarões)
   if (world.earth) world.earth.visible = !sub;
@@ -308,7 +309,9 @@ function frame() {
   sv.copy(SUN).transformDirection(camera.matrixWorldInverse); nightU.v.value.copy(sv);
 
   if (world.earth) {
-    world.earth.rotation.y += dt * .05 * spd;
+    const perto = rolou && camera.position.distanceTo(world.earth.position) - 2.2 < 2.6;   // perto da Terra: ela para de girar (mar/terra não alterna)
+    earthSpd += ((perto ? 0 : 1) - earthSpd) * Math.min(1, dt * 3);
+    world.earth.rotation.y += dt * .05 * spd * earthSpd;
     if (world.clouds) world.clouds.rotation.y += dt * .012 * spd;
     moonA += dt * .1 * spd; const R = 13;   // mesmo sentido de rotação da Terra (anti-horário visto de cima)
     world.moon.position.set(Math.cos(moonA) * R, Math.sin(moonA) * R * .18, -Math.sin(moonA) * R);
@@ -329,7 +332,7 @@ function frame() {
   if (!sub) updateMeteors(dt); else meteors.forEach(q => { q.m.visible = false; q.life = 0; });
   hudBar.style.transform = `scaleY(${u})`;
   if (surf) {
-    try { surf.update(dt, t, a); surf.render(a, t, dt); } catch (err) { console.error("Erro na superfície:", err); }
+    try { if (!sub) surf.update(dt, t, a); else document.documentElement.classList.remove("mouse-comido"); surf.render(a, t, dt); } catch (err) { console.error("Erro na superfície:", err); }
     shade.style.opacity = sa;
   }
   if (world.sea) world.sea.update(dt, t, rolou);

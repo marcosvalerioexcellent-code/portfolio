@@ -14,7 +14,7 @@ estilo.textContent = `
   .gota-sangue{position:fixed;width:5px;height:7px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:radial-gradient(circle at 40% 35%,#c4161f,#5a0006);pointer-events:none;z-index:60;animation:gotaCai 1.7s ease-in forwards}
   @keyframes gotaCai{0%{transform:translate(0,0);opacity:.95}70%{opacity:.6}100%{transform:translate(0,60px);opacity:0}}
   #mar-fundo{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;
-    background:radial-gradient(120% 100% at 50% 40%, rgba(0,0,0,0) 45%, rgba(0,12,20,.6) 100%);}
+    background:radial-gradient(120% 100% at 50% 40%, rgba(0,0,0,0) 30%, rgba(0,6,10,.85) 100%);}
 `;
 document.head.append(estilo);
 const fundo = document.createElement("div"); fundo.id = "mar-fundo"; document.body.append(fundo);
@@ -55,55 +55,91 @@ function prepararTubarao(gltf, comprimento, grupo) {
   m.traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.material.side = THREE.DoubleSide; } });
 }
 
+/* ponto redondo e suave (bolhas / sangue) */
+function pontoTex() {
+  const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.45, "rgba(255,255,255,.55)"); r.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+}
+/* nado procedural: o GLB não tem ossos, então a cauda/corpo ondulam e as peitorais batem no vertex shader */
+function animarTubarao(model, uni) {
+  model.traverse(o => {
+    if (!o.isMesh) return;
+    o.geometry.computeBoundingBox(); uni.uZ0.value = o.geometry.boundingBox.min.z; uni.uZ1.value = o.geometry.boundingBox.max.z;
+    o.material.onBeforeCompile = sh => {
+      Object.assign(sh.uniforms, uni);
+      sh.vertexShader = "uniform float uPh,uAmp,uZ0,uZ1;\n" + sh.vertexShader.replace("#include <begin_vertex>", `
+        vec3 transformed = vec3(position);
+        float L = uZ1 - uZ0;
+        float zn = clamp((position.z - uZ0) / L, 0., 1.);
+        float tw = pow(1. - zn, 2.2);
+        transformed.x += sin(uPh - zn * 5.5) * uAmp * L * (0.015 + 0.17 * tw);
+        float fm = smoothstep(.12, .3, zn) * (1. - smoothstep(.62, .85, zn));
+        float fx = smoothstep(.07 * L, .16 * L, abs(position.x));
+        transformed.y += sin(uPh * .6 - zn * 2.) * fx * fm * uAmp * L * .5;`);
+    };
+    o.material.customProgramCacheKey = () => "tubarao";
+  });
+}
+
 /* fundo de água (esfera em volta da câmera) */
 const AGUA_VS = "varying vec3 v;void main(){v=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}";
 const AGUA_FS = `varying vec3 v;uniform float a;uniform float t;void main(){
   vec3 d=normalize(v);float y=d.y;
-  vec3 deep=vec3(.004,.05,.085),mid=vec3(.02,.2,.28),top=vec3(.12,.48,.58);
+  vec3 deep=vec3(.001,.008,.016),mid=vec3(.007,.06,.09),top=vec3(.04,.2,.26);
   vec3 c=mix(deep,mid,smoothstep(-.8,.1,y));c=mix(c,top,smoothstep(.1,1.,y)*.8);
-  float ang=atan(d.x,d.z);float ray=pow(max(0.,sin(ang*6.+t*.15)*.5+.5),3.)*smoothstep(.0,.9,y)*.12;
+  float ang=atan(d.x,d.z);float ray=pow(max(0.,sin(ang*6.+t*.15)*.5+.5),3.)*smoothstep(.0,.9,y)*.07;
   gl_FragColor=vec4(c+ray*vec3(.3,.6,.7),a);}`;
 
-export function createSea({ scene, camera, earth, renderer }) {
+export function createSea({ scene, camera, earth, renderer, light }) {
   const root = new THREE.Group(); root.visible = false; scene.add(root);
-  root.add(new THREE.HemisphereLight(0x8fd8ee, 0x0a2433, 1.6));
+  /* iluminação subaquática: pouca luz, vinda de cima, azulada (o sol de fora é reduzido enquanto submerso) */
+  root.add(new THREE.HemisphereLight(0x3d7f95, 0x020a10, .8));
+  const topo = new THREE.DirectionalLight(0x8fc4d6, 2.8); topo.position.set(.2, 1, .35); root.add(topo);
+  const sunBase = light ? { i: light.intensity, c: light.color.clone() } : null, sunCold = new THREE.Color(0x6f9fb2);
   const agua = new THREE.Mesh(new THREE.SphereGeometry(1400, 24, 16), new THREE.ShaderMaterial({
     side: THREE.BackSide, transparent: true, depthWrite: false, uniforms: { a: { value: 0 }, t: { value: 0 } }, vertexShader: AGUA_VS, fragmentShader: AGUA_FS }));
   agua.renderOrder = -20; agua.frustumCulled = false; agua.visible = false; scene.add(agua);
-  const neblina = new THREE.FogExp2(0x0a3a4d, 0); scene.fog = neblina;   // densidade 0 fora d'água: nada muda
-  let uw = 0;                                                        // 0 = fora d'água, 1 = submerso
+  const neblina = new THREE.FogExp2(0x02111a, 0); scene.fog = neblina;   // densidade 0 fora d'água: nada muda
+
+  let uw = 0, latch = null;                                          // uw: 0 = fora d'água, 1 = submerso; latch: mar/terra decidido ao chegar perto da Terra
   let sangue = false, sangueT = 0, comeu = false, comeuT = 0;
   const ptr = { x: 0, y: 0 };                                        // -1..1
   addEventListener("pointermove", e => { ptr.x = e.clientX / innerWidth * 2 - 1; ptr.y = -(e.clientY / innerHeight * 2 - 1); });
 
   /* ---------- tubarões (carregam só quando for preciso) ---------- */
   const loader = new GLTFLoader(); loader.register(p => new SpecGlossPlugin(p));
-  let carregando = false, pronto = false;
+  let carregando = false;
   const branco = new THREE.Group(), martelo = new THREE.Group();
   root.add(branco, martelo);
+  const uniB = { uPh: { value: 0 }, uAmp: { value: .05 }, uZ0: { value: 0 }, uZ1: { value: 1 } };
+  const uniM = { uPh: { value: 0 }, uAmp: { value: .05 }, uZ0: { value: 0 }, uZ1: { value: 1 } };
+  function afinar(g) {                                               // pele úmida e escura, sem brilho plástico
+    g.scene.traverse(o => { if (o.isMesh) { const m = o.material; m.roughness = .6; m.metalness = 0; m.envMapIntensity = 0; if (m.normalScale) m.normalScale.set(1.6, 1.6); m.color.multiplyScalar(.85); } });
+  }
   function carregar() {
     if (carregando) return; carregando = true;
-    loader.load("/models/tubarao-branco.glb", g => {
-      prepararTubarao(g, 2.6, branco);
-      pronto = true;
-    }, undefined, e => console.warn("Tubarão branco não carregou:", e));
-    loader.load("/models/tubarao-martelo.glb", g => {
-      prepararTubarao(g, 4.5, martelo);
-    }, undefined, e => console.warn("Tubarão martelo não carregou:", e));
+    loader.load("/models/tubarao-branco.glb", g => { afinar(g); prepararTubarao(g, 4.6, branco); animarTubarao(g.scene, uniB); },
+      undefined, e => console.warn("Tubarão branco não carregou:", e));
+    loader.load("/models/tubarao-martelo.glb", g => { afinar(g); prepararTubarao(g, 7.5, martelo); animarTubarao(g.scene, uniM); },
+      undefined, e => console.warn("Tubarão martelo não carregou:", e));
   }
 
-  /* ---------- bolhas ---------- */
-  const NB = 160, bp = new Float32Array(NB * 3), bv = new Float32Array(NB);
-  for (let i = 0; i < NB; i++) { bp[i * 3] = (Math.random() - .5) * 26; bp[i * 3 + 1] = (Math.random() - .5) * 16; bp[i * 3 + 2] = -Math.random() * 22; bv[i] = .3 + Math.random() * .6; }
+  /* ---------- bolhas / partículas: fixas no mundo (dão paralaxe), repetem num bloco em volta da câmera ---------- */
+  const tex = pontoTex();
+  const NB = 260, bp = new Float32Array(NB * 3), bb0 = new Float32Array(NB * 3), bv = new Float32Array(NB);
+  const BX = 30, BY = 16, BZ = 36;
+  for (let i = 0; i < NB; i++) { bb0[i * 3] = (Math.random() - .5) * BX; bb0[i * 3 + 1] = (Math.random() - .5) * BY; bb0[i * 3 + 2] = (Math.random() - .5) * BZ; bv[i] = .15 + Math.random() * .35; }
   const bg = new THREE.BufferGeometry(); bg.setAttribute("position", new THREE.BufferAttribute(bp, 3));
-  const bolhas = new THREE.Points(bg, new THREE.PointsMaterial({ color: 0x9fd8e6, size: .09, transparent: true, opacity: .45, depthWrite: false, fog: false }));
+  const bolhas = new THREE.Points(bg, new THREE.PointsMaterial({ color: 0x7fa9b8, size: .12, map: tex, transparent: true, opacity: .4, depthWrite: false, fog: false }));
   bolhas.frustumCulled = false; root.add(bolhas);
+  const wrap = (v, s) => ((v + s / 2) % s + s) % s - s / 2;
 
   /* ---------- rastro de sangue (some devagar) ---------- */
   const NS = 260, sp = new Float32Array(NS * 3), sc = new Float32Array(NS * 4), sl = new Float32Array(NS);
   const sg = new THREE.BufferGeometry();
   sg.setAttribute("position", new THREE.BufferAttribute(sp, 3)); sg.setAttribute("color", new THREE.BufferAttribute(sc, 4));
-  const rastro = new THREE.Points(sg, new THREE.PointsMaterial({ size: .16, vertexColors: true, transparent: true, depthWrite: false, fog: false }));
+  const rastro = new THREE.Points(sg, new THREE.PointsMaterial({ size: .22, map: tex, vertexColors: true, transparent: true, depthWrite: false, fog: false }));
   rastro.frustumCulled = false; root.add(rastro);
   let sIdx = 0;
   function sangrar(pos, qtd, forca) {
@@ -115,52 +151,54 @@ export function createSea({ scene, camera, earth, renderer }) {
     }
   }
 
-  /* ---------- estado dos tubarões ---------- */
-  const B = { p: new THREE.Vector3(0, 0, -8), vel: new THREE.Vector3(0, 0, -1), ang: 0 };
-  const M = { p: new THREE.Vector3(0, -3, -22), vel: new THREE.Vector3(0, 0, -1), ang: 0 };
+  /* ---------- tubarões: rotas calmas ancoradas no mundo; só aceleram para atacar ---------- */
+  const B = { p: new THREE.Vector3(), vel: new THREE.Vector3(0, 0, 1), sp: 0 };
+  const M = { p: new THREE.Vector3(), vel: new THREE.Vector3(0, 0, 1), sp: 0 };
+  const anc = { p: new THREE.Vector3(), r: new THREE.Vector3(1, 0, 0), f: new THREE.Vector3(0, 0, -1) };   // âncora da cena (posição, direita, frente)
+  const UP = new THREE.Vector3(0, 1, 0), Z = new THREE.Vector3(0, 0, 1);
   let morde = 0;                                                     // 0 nada; >0 em bote
 
   function alvoDoCursor(prof) {                                      // ponto do cursor na profundidade "prof" (à frente da câmera)
     _v.set(ptr.x, ptr.y, .5).unproject(camera).sub(camera.position).normalize();
     return _w.copy(camera.position).addScaledVector(_v, prof).clone();
   }
+  function ancorar(k) {                                              // acompanha a câmera bem devagar (k=1 = encaixa na hora)
+    const f = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); f.y = 0;
+    if (f.lengthSq() < 1e-4) f.set(0, 0, -1); f.normalize();
+    anc.p.lerp(camera.position, k); anc.f.lerp(f, k).normalize(); anc.r.crossVectors(anc.f, UP).normalize();
+  }
+  const rotaB = (t, out) => { const a = t * .2; return out.copy(anc.p).addScaledVector(anc.f, 7 + Math.sin(a) * 2.6).addScaledVector(anc.r, Math.cos(a) * 5.2).addScaledVector(UP, -.2 + Math.sin(a * 1.7) * 1.1); };
+  const rotaM = (t, out) => { const a = t * .09 + 1.3; return out.copy(anc.p).addScaledVector(anc.f, 17 + Math.sin(a) * 6).addScaledVector(anc.r, Math.cos(a) * 12).addScaledVector(UP, -5.5 + Math.sin(a * 2) * .8); };
+  const alvoB = new THREE.Vector3(), alvoM = new THREE.Vector3();
+
+  function nadar(S, grupo, uni, alvo, k, giro, dt, vmin) {
+    const antes = S.p.clone(); S.p.lerp(alvo, k);
+    S.vel.subVectors(S.p, antes).divideScalar(Math.max(dt, 1e-3));
+    S.sp += (S.vel.length() - S.sp) * Math.min(1, dt * 3);
+    if (S.vel.lengthSq() > vmin) { _q.setFromUnitVectors(Z, S.vel.clone().normalize()); grupo.quaternion.slerp(_q, Math.min(1, dt * giro)); }
+    grupo.position.copy(S.p);
+    uni.uPh.value += dt * (1.8 + S.sp * 1.5);                        // batida da cauda proporcional à velocidade
+    uni.uAmp.value = .045 + Math.min(.05, S.sp * .008);
+  }
 
   function atualizarTubaroes(dt, t) {
-    // branco: nada em círculos ao redor de um ponto à frente, levemente influenciado pelo cursor (não segue de fato)
-    const frente = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    const centro = camera.position.clone().addScaledVector(frente, 10);
-    let alvo;
-    if (sangue) {
-      alvo = alvoDoCursor(morde > 0 ? 2.6 : 5.5);                    // em bote: chega quase na tela
-    } else {
-      const ang = t * .22;
-      alvo = centro.clone().add(new THREE.Vector3(Math.cos(ang) * 6 + ptr.x * 1.2, Math.sin(ang * 1.7) * 1.4 + ptr.y * .6, Math.sin(ang) * 6));
-    }
-    const k = sangue ? Math.min(1, dt * 2.4) : Math.min(1, dt * .8);
-    const antes = B.p.clone(); B.p.lerp(alvo, k);
-    B.vel.subVectors(B.p, antes).divideScalar(Math.max(dt, 1e-3));
-    if (B.vel.lengthSq() > .01) { _q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), B.vel.clone().normalize()); branco.quaternion.slerp(_q, Math.min(1, dt * 5)); }
-    branco.position.copy(B.p);
-    if (branco.children[0]) branco.children[0].rotation.y = Math.sin(t * 6) * .08;   // balanço do corpo/cauda (só no modelo, não acumula)
-
-    // martelo: mais fundo, mais lento, perambula em volta da cena (não segue o cursor)
-    const angM = t * .08 + 1.3;
-    const destM = centro.clone().add(new THREE.Vector3(Math.cos(angM) * 16, -5 + Math.sin(angM * 2) * .6, Math.sin(angM) * 14));
-    const antesM = M.p.clone(); M.p.lerp(destM, Math.min(1, dt * .6));
-    M.vel.subVectors(M.p, antesM).divideScalar(Math.max(dt, 1e-3));
-    if (M.vel.lengthSq() > .001) { _q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), M.vel.clone().normalize()); martelo.quaternion.slerp(_q, Math.min(1, dt * 3)); }
-    martelo.position.copy(M.p);
-    if (martelo.children[0]) martelo.children[0].rotation.y = Math.sin(t * 2.4) * .05;
+    ancorar(Math.min(1, dt * .12));
+    rotaB(t, alvoB);
+    let k = Math.min(1, dt * 1.6), giro = 2.2;
+    if (sangue) { alvoB.copy(alvoDoCursor(morde > 0 ? 2.8 : 5.5)); k = Math.min(1, dt * 2.6); giro = 6; }
+    nadar(B, branco, uniB, alvoB, k, giro, dt, .0004);
+    rotaM(t, alvoM);
+    nadar(M, martelo, uniM, alvoM, Math.min(1, dt * 1.2), 1.4, dt, .0002);
   }
 
   function atualizarSangue(dt) {
     if (sangue) {
       sangueT += dt;
-      if (morde === 0 && B.p.distanceTo(alvoDoCursor(2.6)) < 1.2) morde = .001;   // só dá o bote quando o cursor está ao alcance
+      if (morde === 0 && B.p.distanceTo(alvoDoCursor(2.8)) < 1.8) morde = .001;   // só dá o bote quando o cursor está ao alcance
       if (morde > 0) {
         morde += dt;
         if (morde > .45) {                                           // momento da mordida: come se o cursor ainda estiver na boca
-          if (B.p.distanceTo(alvoDoCursor(2.6)) < 2.2) { comeu = true; comeuT = 0; sangrar(alvoDoCursor(3), 110, 1); sangue = false; }
+          if (B.p.distanceTo(alvoDoCursor(2.8)) < 3.2) { comeu = true; comeuT = 0; sangrar(alvoDoCursor(3), 110, 1); sangue = false; }
           morde = 0;                                                  // se escapou, tenta de novo enquanto o cursor estiver perto
         }
       }
@@ -193,24 +231,31 @@ export function createSea({ scene, camera, earth, renderer }) {
   }
 
   /* ---------- atualização por quadro ---------- */
+  let apareceu = false;
   function update(dt, t, permitido = true) {
     if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-    // submerso quando a câmera está perto da Terra e sobre o mar
-    const alt = camera.position.distanceTo(earth.position) - RAIO;
-    const alvo = (permitido && alt < 2.6 && ehMarSob(camera, earth)) ? 1 : 0;   // só depois de subir do início (dinossauro primeiro)
+    // mar ou terra é decidido UMA vez ao chegar perto da Terra (a Terra para de girar nesse momento): sem alternar para o dinossauro
+    const alt = camera.position.distanceTo(earth.position) - RAIO, perto = alt < 2.6;
+    if (!perto || !permitido) latch = null; else if (latch === null) latch = ehMarSob(camera, earth);
+    const alvo = (perto && permitido && latch) ? 1 : 0;
     uw += (alvo - uw) * Math.min(1, dt * 2);
     if (uw < .003) uw = 0;
-    fundo.style.opacity = (uw * .6).toFixed(3);
+    fundo.style.opacity = uw.toFixed(3);
     root.visible = uw > .01;
     agua.visible = root.visible; agua.material.uniforms.a.value = ss(0, .3, uw); agua.material.uniforms.t.value = t; agua.position.copy(camera.position);
-    neblina.density = .05 * uw;
+    neblina.density = .07 * uw;
+    if (light && sunBase) { light.intensity = lerp(sunBase.i, .5, uw); light.color.copy(sunBase.c).lerp(sunCold, uw); }   // sol suavizado debaixo d'água
+    if (!root.visible) { apareceu = false; }
     if (root.visible) {
       if (!carregando) carregar();
-      bolhas.material.opacity = .45 * uw;
-      bolhas.position.copy(camera.position); bolhas.quaternion.copy(camera.quaternion);
-      const pos = bolhas.geometry.attributes.position;
-      for (let i = 0; i < NB; i++) { pos.array[i * 3 + 1] += bv[i] * dt; if (pos.array[i * 3 + 1] > 8) pos.array[i * 3 + 1] = -8; }
-      pos.needsUpdate = true;
+      if (!apareceu) { apareceu = true; ancorar(1); rotaB(t, B.p); rotaM(t, M.p); branco.position.copy(B.p); martelo.position.copy(M.p); B.sp = M.sp = 0; }
+      bolhas.material.opacity = .4 * uw;
+      const c = _v.set(0, 0, -10).applyQuaternion(camera.quaternion).add(camera.position);
+      for (let i = 0; i < NB; i++) {
+        bb0[i * 3 + 1] += bv[i] * dt; if (bb0[i * 3 + 1] > 1e4) bb0[i * 3 + 1] -= 2e4;
+        bp[i * 3] = c.x + wrap(bb0[i * 3] - c.x, BX); bp[i * 3 + 1] = c.y + wrap(bb0[i * 3 + 1] - c.y, BY); bp[i * 3 + 2] = c.z + wrap(bb0[i * 3 + 2] - c.z, BZ);
+      }
+      bg.attributes.position.needsUpdate = true;
       atualizarTubaroes(dt, t);
       atualizarSangue(dt);
       pingar(dt);
